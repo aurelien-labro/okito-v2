@@ -1,8 +1,9 @@
-import type { Conversation, ConversationMessage } from "@okito/db";
+import type { Conversation, ConversationMessage, Tenant } from "@okito/db";
 import { ORCHESTRATOR_TOOLS, buildOrchestratorPrompt } from "@okito/prompts";
 import type { LLMClient, LLMToolCall } from "@okito/shared/llm";
 import { type ChatRequest, type ChatResponse, reservationCoreSchema } from "@okito/shared/types";
 import { logger } from "../lib/logger.js";
+import type { CapacityService } from "./capacity.js";
 import type { ConversationService } from "./conversation.js";
 import { DuplicateReservationError, type ReservationService } from "./reservation.js";
 import type { TenantService } from "./tenant.js";
@@ -14,6 +15,7 @@ export interface ChatDeps {
   conversation: ConversationService;
   reservation: ReservationService;
   tenant: TenantService;
+  capacity?: CapacityService;
 }
 
 interface ToolOutcome {
@@ -60,7 +62,7 @@ export class ChatService {
     });
 
     const outcome: ToolOutcome = llmResponse.toolCalls[0]
-      ? await this.executeTool(llmResponse.toolCalls[0], input.tenantId, input.channel)
+      ? await this.executeTool(llmResponse.toolCalls[0], tenant, input.channel)
       : {
           reply: llmResponse.text?.trim() ?? "Désolé, je n'ai pas compris.",
           status: "in_progress",
@@ -90,25 +92,64 @@ export class ChatService {
 
   private async executeTool(
     toolCall: LLMToolCall,
-    tenantId: string,
+    tenant: Tenant,
     channel: ChatRequest["channel"],
   ): Promise<ToolOutcome> {
     switch (toolCall.name) {
       case "create_reservation":
-        return this.handleCreate(toolCall.arguments, tenantId, channel);
+        return this.handleCreate(toolCall.arguments, tenant.id, channel);
       case "cancel_reservation":
-        return this.handleCancel(toolCall.arguments, tenantId);
+        return this.handleCancel(toolCall.arguments, tenant.id);
       case "ask_field":
         return this.handleAskField(toolCall.arguments);
       case "check_availability":
-        return {
-          reply: "Je vérifie la disponibilité… (fonction en cours d'implémentation)",
-          status: "in_progress",
-        };
+        return this.handleCheckAvailability(toolCall.arguments, tenant);
       default:
         logger.warn({ toolName: toolCall.name }, "tool inconnu retourné par le LLM");
         return { reply: "Désolé, je n'ai pas pu traiter cette action.", status: "error" };
     }
+  }
+
+  private async handleCheckAvailability(
+    rawArgs: Record<string, unknown>,
+    tenant: Tenant,
+  ): Promise<ToolOutcome> {
+    if (!this.deps.capacity) {
+      return {
+        reply: "Je n'arrive pas à vérifier la disponibilité pour le moment.",
+        status: "in_progress",
+      };
+    }
+
+    const date = typeof rawArgs.date === "string" ? rawArgs.date : null;
+    const time = typeof rawArgs.time === "string" ? rawArgs.time : null;
+    const couverts = typeof rawArgs.partySize === "number" ? rawArgs.partySize : null;
+
+    if (!date || !time || !couverts) {
+      return {
+        reply: "Pour vérifier, il me faut la date, l'heure et le nombre de personnes.",
+        status: "in_progress",
+      };
+    }
+
+    const check = await this.deps.capacity.check({
+      tenantId: tenant.id,
+      date,
+      heure: time,
+      couverts,
+      capacityMax: tenant.capacityMax,
+    });
+
+    if (check.available) {
+      return {
+        reply: `Oui, c'est dispo pour ${couverts} le ${formatDateFr(date)} à ${time.slice(0, 5)}. Je le note ?`,
+        status: "in_progress",
+      };
+    }
+    return {
+      reply: `Désolé, plus de place pour ${couverts} à cette heure-là (${check.remaining} couverts restants). Un autre créneau ?`,
+      status: "in_progress",
+    };
   }
 
   private async handleCreate(

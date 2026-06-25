@@ -4,6 +4,7 @@ import { getDb } from "@okito/db";
 import { type AppServices, createApp } from "./app.js";
 import { loadEnv } from "./lib/env.js";
 import { logger } from "./lib/logger.js";
+import { CapacityService } from "./services/capacity.js";
 import { ChatService } from "./services/chat.js";
 import { ConversationService } from "./services/conversation.js";
 import { createLLMClient } from "./services/llm/index.js";
@@ -18,11 +19,13 @@ if (env.DATABASE_URL) {
   const reservation = new ReservationService(db);
   const conversation = new ConversationService(db);
   const tenant = new TenantService(db);
+  const capacity = new CapacityService(db);
   services.reservation = reservation;
+  services.db = db;
 
   if (env.GEMINI_API_KEY) {
     const llm = createLLMClient(env);
-    services.chat = new ChatService({ llm, conversation, reservation, tenant });
+    services.chat = new ChatService({ llm, conversation, reservation, tenant, capacity });
   } else {
     logger.warn("GEMINI_API_KEY absent — moteur conversationnel désactivé");
   }

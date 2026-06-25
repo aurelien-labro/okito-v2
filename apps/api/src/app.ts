@@ -1,3 +1,4 @@
+import type { Database } from "@okito/db";
 import { Hono } from "hono";
 import type { Env } from "./lib/env.js";
 import { HttpError } from "./lib/errors.js";
@@ -12,6 +13,8 @@ import type { ReservationService } from "./services/reservation.js";
 export interface AppServices {
   reservation?: ReservationService;
   chat?: ChatService;
+  /** Si fourni, /health ping la DB. Sinon /health remonte db.status="not_configured". */
+  db?: Database;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -25,7 +28,7 @@ export function createApp(env: Env, services: AppServices = {}) {
   });
 
   // Public.
-  app.route("/health", healthRoute(env));
+  app.route("/health", healthRoute(env, { db: services.db }));
 
   // Routes authentifiées (préfixe /v1).
   const hasAuthRoutes = services.reservation || services.chat;

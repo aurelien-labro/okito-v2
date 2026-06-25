@@ -1,5 +1,6 @@
 import type { LLMClient, LLMResponse } from "@okito/shared/llm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { CapacityService } from "../src/services/capacity.js";
 import { ChatService } from "../src/services/chat.js";
 import type { ConversationService } from "../src/services/conversation.js";
 import { DuplicateReservationError, type ReservationService } from "../src/services/reservation.js";
@@ -54,17 +55,20 @@ function makeStubs() {
       name: "OKITO",
       slug: "okito",
       timezone: "Europe/Paris",
+      capacityMax: 50,
     }),
   };
+  const capacity = { check: vi.fn() };
 
   const service = new ChatService({
     llm: llm as unknown as LLMClient,
     conversation: conversation as unknown as ConversationService,
     reservation: reservation as unknown as ReservationService,
     tenant: tenant as unknown as TenantService,
+    capacity: capacity as unknown as CapacityService,
   });
 
-  return { service, llm, conversation, reservation, tenant };
+  return { service, llm, conversation, reservation, tenant, capacity };
 }
 
 const baseRequest = {
@@ -202,6 +206,45 @@ describe("ChatService.handle", () => {
     const out = await stubs.service.handle(baseRequest);
     expect(out.reply).toMatch(/aucune/i);
     expect(stubs.reservation.cancel).not.toHaveBeenCalled();
+  });
+
+  it("check_availability dispo → reply confirmant", async () => {
+    stubs.llm.complete.mockResolvedValueOnce(
+      toolResponse("check_availability", { date: "2026-06-28", time: "20:00", partySize: 4 }),
+    );
+    stubs.capacity.check.mockResolvedValueOnce({
+      available: true,
+      occupied: 10,
+      capacityMax: 50,
+      remaining: 40,
+    });
+    const out = await stubs.service.handle(baseRequest);
+    expect(out.status).toBe("in_progress");
+    expect(out.reply).toMatch(/dispo/i);
+    expect(stubs.capacity.check).toHaveBeenCalledWith(
+      expect.objectContaining({ tenantId: TENANT_ID, capacityMax: 50, couverts: 4 }),
+    );
+  });
+
+  it("check_availability complet → reply désolé avec remaining", async () => {
+    stubs.llm.complete.mockResolvedValueOnce(
+      toolResponse("check_availability", { date: "2026-06-28", time: "20:00", partySize: 6 }),
+    );
+    stubs.capacity.check.mockResolvedValueOnce({
+      available: false,
+      occupied: 47,
+      capacityMax: 50,
+      remaining: 3,
+    });
+    const out = await stubs.service.handle(baseRequest);
+    expect(out.reply).toMatch(/désolé.*3 couverts/i);
+  });
+
+  it("check_availability sans args → demande date/heure/personnes", async () => {
+    stubs.llm.complete.mockResolvedValueOnce(toolResponse("check_availability", {}));
+    const out = await stubs.service.handle(baseRequest);
+    expect(out.reply).toMatch(/date.*heure.*personnes/i);
+    expect(stubs.capacity.check).not.toHaveBeenCalled();
   });
 
   it("tool inconnu → reply erreur, status error", async () => {
