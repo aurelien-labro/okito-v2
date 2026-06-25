@@ -11,12 +11,24 @@ importers:
       '@biomejs/biome':
         specifier: ^1.9.4
         version: 1.9.4
+      '@okito/db':
+        specifier: workspace:*
+        version: link:packages/db
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.0
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.6.1
       husky:
         specifier: ^9.1.7
         version: 9.1.7
       lint-staged:
         specifier: ^15.2.11
         version: 15.5.2
+      tsx:
+        specifier: ^4.19.2
+        version: 4.22.4
       turbo:
         specifier: ^2.3.3
         version: 2.9.18

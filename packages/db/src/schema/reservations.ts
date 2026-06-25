@@ -1,4 +1,15 @@
-import { integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import {
+  date,
+  index,
+  integer,
+  pgTable,
+  text,
+  time,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { tenants } from "./tenants.js";
 
 export const reservations = pgTable(
@@ -8,30 +19,50 @@ export const reservations = pgTable(
     tenantId: uuid("tenant_id")
       .notNull()
       .references(() => tenants.id, { onDelete: "cascade" }),
+
+    dateReservation: date("date_reservation").notNull(),
+    heure: time("heure").notNull(),
+    couverts: integer("couverts").notNull(),
+
     customerName: text("customer_name").notNull(),
     customerPhone: text("customer_phone").notNull(),
-    partySize: integer("party_size").notNull(),
-    reservedDate: text("reserved_date").notNull(),
-    reservedTime: text("reserved_time").notNull(),
-    notes: text("notes"),
-    status: text("status", {
-      enum: ["pending", "confirmed", "cancelled", "no_show", "completed"],
-    })
+    customerEmail: text("customer_email"),
+
+    status: text("status", { enum: ["confirmed", "cancelled", "no_show", "completed"] })
       .notNull()
       .default("confirmed"),
-    channel: text("channel", { enum: ["web", "whatsapp", "voice"] }).notNull(),
+    source: text("source", { enum: ["web_widget", "whatsapp", "voice", "manual", "unknown"] })
+      .notNull()
+      .default("unknown"),
+
+    notes: text("notes"),
+
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
   },
   (table) => ({
-    uniqueSlot: uniqueIndex("reservations_tenant_phone_slot_unique").on(
+    uniqActiveReservation: uniqueIndex("uniq_active_reservation").on(
       table.tenantId,
       table.customerPhone,
-      table.reservedDate,
-      table.reservedTime,
+      table.dateReservation,
+      table.heure,
     ),
+    tenantDateConfirmed: index("idx_reservations_tenant_date")
+      .on(table.tenantId, table.dateReservation)
+      .where(sql`status = 'confirmed'`),
+    phoneLookup: index("idx_reservations_phone").on(
+      table.tenantId,
+      table.customerPhone,
+      table.dateReservation,
+    ),
+    creneauConfirmed: index("idx_reservations_creneau")
+      .on(table.tenantId, table.dateReservation, table.heure)
+      .where(sql`status = 'confirmed'`),
   }),
 );
 
 export type Reservation = typeof reservations.$inferSelect;
 export type NewReservation = typeof reservations.$inferInsert;
+export type ReservationStatus = NonNullable<Reservation["status"]>;
+export type ReservationSource = NonNullable<Reservation["source"]>;

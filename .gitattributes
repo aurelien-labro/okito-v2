@@ -1,0 +1,13 @@
+# Force LF line endings on all platforms.
+# Évite les chamailleries Biome / autocrlf Windows.
+* text=auto eol=lf
+
+# Binary files - never touch.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
