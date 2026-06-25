@@ -1,10 +1,3 @@
-# CLAUDE.md — Template à copier à la racine du repo `okito-v2`
-
-> Ce fichier sera lu automatiquement par Claude Code lors de chaque session sur le repo OKITO V2.
-> Copier le contenu ci-dessous dans `okito-v2/CLAUDE.md` du repo Git.
-
----
-
 # OKITO V2 — SaaS Réservation Multi-Restaurants
 
 ## Vue d'ensemble
@@ -16,7 +9,7 @@ Documentation projet complète : `~/Desktop/claude-brain/projects/okito-v2/`
 - Backend : Hono + TypeScript (Node 22)
 - DB : Supabase Postgres (région EU Paris) + Drizzle ORM
 - Frontend : Next.js 15 + Tailwind + shadcn/ui
-- LLM : Claude Haiku 4.5 (`claude-haiku-4-5`) — fallback Sonnet 4.6
+- LLM : Gemini 2.5 Flash (`gemini-2.5-flash`) — fallback Gemini 2.5 Pro (SDK `@google/genai`)
 - Jobs : Inngest
 - Tests : Vitest (unit) + Playwright (E2E)
 - Hosting : Fly.io (api) + Vercel (dashboard)
@@ -25,7 +18,7 @@ Documentation projet complète : `~/Desktop/claude-brain/projects/okito-v2/`
 
 **1. Multi-tenant strict** — Aucune query sans `WHERE tenant_id = ?`. Tests RLS obligatoires.
 
-**2. Coût LLM contrôlé** — `LLM_MODEL=claude-haiku-4-5` en dev, mock dans les tests unitaires, cache local en dev. Sonnet 4.6 réservé aux cas où Haiku échoue (retry pattern).
+**2. Coût LLM contrôlé** — `LLM_MODEL=gemini-2.5-flash` en dev, mock dans les tests unitaires, cache local en dev. Gemini 2.5 Pro réservé aux cas où Flash échoue (retry pattern). Interface `LLMClient` abstraite dans `packages/shared/` pour pouvoir basculer Claude/OpenAI plus tard sans rewrite.
 
 **3. Idempotency** — Toute opération de création/modification doit être idempotente. Une résa = une contrainte unique `(tenant_id, customer_phone, date, heure)`.
 
@@ -55,7 +48,7 @@ Voir `~/Desktop/claude-brain/projects/okito-v2/STRUCTURE.md` pour l'arborescence
 ## Règles métier
 Source de vérité : `~/Desktop/claude-brain/projects/okito-v2/BUSINESS_RULES.md`. Toute modification des règles métier doit y être répercutée AVANT le code.
 
-## Prompts Claude
+## Prompts LLM
 Source de vérité : `~/Desktop/claude-brain/projects/okito-v2/prompts/`. Le code dans `packages/prompts/` doit refléter ces fichiers.
 
 ## Routine fin de session
@@ -73,14 +66,14 @@ Mettre à jour `~/Desktop/claude-brain/projects/okito-v2/PROJECT.md` section "Lo
 
 ## Anti-patterns à éviter
 
-- ❌ `any` en TS sans justification commentée
-- ❌ Query SQL sans `WHERE tenant_id`
-- ❌ Appel LLM sans `LLM_MODEL` env var (toujours configurable)
-- ❌ Test unitaire qui appelle vraiment Anthropic API (mock obligatoire)
-- ❌ Fonction qui throw une string (utiliser classes d'erreur typées)
-- ❌ `console.log` en code de prod (logger structuré uniquement)
-- ❌ Migration Drizzle non testée localement avant push
-- ❌ PR > 600 LOC sans découpe préalable
+- `any` en TS sans justification commentée
+- Query SQL sans `WHERE tenant_id`
+- Appel LLM sans `LLM_MODEL` env var (toujours configurable)
+- Test unitaire qui appelle vraiment l'API Gemini (mock obligatoire)
+- Fonction qui throw une string (utiliser classes d'erreur typées)
+- `console.log` en code de prod (logger structuré uniquement)
+- Migration Drizzle non testée localement avant push
+- PR > 600 LOC sans découpe préalable
 
 ## Commandes utiles Claude Code
 
