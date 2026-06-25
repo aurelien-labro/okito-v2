@@ -1,3 +1,4 @@
+import type { Database } from "@okito/db";
 import { Hono } from "hono";
 import type { Env } from "./lib/env.js";
 import { HttpError } from "./lib/errors.js";
@@ -12,6 +13,8 @@ import type { ReservationService } from "./services/reservation.js";
 export interface AppServices {
   reservation?: ReservationService;
   chat?: ChatService;
+  /** Si fourni, /health ping la DB. Sinon /health remonte db.status="not_configured". */
+  db?: Database;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -24,12 +27,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     return c.json({ error: { code: "internal_error", message: "Erreur serveur" } }, 500);
   });
 
-  // Public.
-  app.route("/health", healthRoute(env));
+  app.route("/health", healthRoute(env, services.db));
 
-  // Routes authentifiées (préfixe /v1).
-  const hasAuthRoutes = services.reservation || services.chat;
-  if (hasAuthRoutes) {
+  if (services.reservation || services.chat) {
     const v1 = new Hono<AppEnv>();
     v1.use("*", createAuthMiddleware(env));
     if (services.reservation) v1.route("/reservations", reservationsRoute(services.reservation));
