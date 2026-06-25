@@ -8,6 +8,8 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().optional(),
   LLM_MODEL: z.string().default("gemini-2.5-flash"),
   LLM_FALLBACK_MODEL: z.string().default("gemini-2.5-pro"),
+  LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
+  LLM_RETRY_MAX: z.coerce.number().int().min(0).max(10).default(3),
   SENTRY_DSN: z.string().url().optional(),
 });
 
