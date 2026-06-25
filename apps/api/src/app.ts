@@ -3,12 +3,15 @@ import type { Env } from "./lib/env.js";
 import { HttpError } from "./lib/errors.js";
 import type { AppEnv } from "./lib/types.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
+import { chatRoute } from "./routes/chat.js";
 import { healthRoute } from "./routes/health.js";
 import { reservationsRoute } from "./routes/reservations.js";
+import type { ChatService } from "./services/chat.js";
 import type { ReservationService } from "./services/reservation.js";
 
 export interface AppServices {
   reservation?: ReservationService;
+  chat?: ChatService;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -25,10 +28,12 @@ export function createApp(env: Env, services: AppServices = {}) {
   app.route("/health", healthRoute(env));
 
   // Routes authentifiées (préfixe /v1).
-  if (services.reservation) {
+  const hasAuthRoutes = services.reservation || services.chat;
+  if (hasAuthRoutes) {
     const v1 = new Hono<AppEnv>();
     v1.use("*", createAuthMiddleware(env));
-    v1.route("/reservations", reservationsRoute(services.reservation));
+    if (services.reservation) v1.route("/reservations", reservationsRoute(services.reservation));
+    if (services.chat) v1.route("/chat", chatRoute(services.chat));
     app.route("/v1", v1);
   }
 

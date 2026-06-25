@@ -114,6 +114,25 @@ export class ReservationService {
     }
   }
 
+  async findActiveByPhoneAndDate(args: {
+    tenantId: string;
+    customerPhone: string;
+    dateReservation: string;
+  }) {
+    return this.db
+      .select()
+      .from(schema.reservations)
+      .where(
+        and(
+          eq(schema.reservations.tenantId, args.tenantId),
+          eq(schema.reservations.customerPhone, args.customerPhone),
+          eq(schema.reservations.dateReservation, args.dateReservation),
+          eq(schema.reservations.status, "confirmed"),
+        ),
+      )
+      .limit(2);
+  }
+
   async cancel(args: { tenantId: string; id: string }) {
     const [row] = await this.db
       .update(schema.reservations)
