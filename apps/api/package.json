@@ -19,6 +19,7 @@
     "@okito/db": "workspace:*",
     "@okito/prompts": "workspace:*",
     "@okito/shared": "workspace:*",
+    "@sentry/node": "^9.0.0",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.36.4",
     "hono": "^4.6.14",

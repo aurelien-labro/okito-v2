@@ -4,6 +4,7 @@ import { getDb } from "@okito/db";
 import { type AppServices, createApp } from "./app.js";
 import { loadEnv } from "./lib/env.js";
 import { logger } from "./lib/logger.js";
+import { initSentry } from "./lib/sentry.js";
 import { CapacityService } from "./services/capacity.js";
 import { ChatService } from "./services/chat.js";
 import { ConversationService } from "./services/conversation.js";
@@ -12,6 +13,7 @@ import { ReservationService } from "./services/reservation.js";
 import { TenantService } from "./services/tenant.js";
 
 const env = loadEnv();
+initSentry(env);
 
 const services: AppServices = {};
 if (env.DATABASE_URL) {
