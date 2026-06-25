@@ -5,6 +5,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
   APP_URL: z.string().url().default("http://localhost:3000"),
   DATABASE_URL: z.string().url().optional(),
+  SUPABASE_JWT_SECRET: z.string().min(16).optional(),
   GEMINI_API_KEY: z.string().optional(),
   LLM_MODEL: z.string().default("gemini-2.5-flash"),
   LLM_FALLBACK_MODEL: z.string().default("gemini-2.5-pro"),
