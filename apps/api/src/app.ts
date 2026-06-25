@@ -2,6 +2,8 @@ import type { Database } from "@okito/db";
 import { Hono } from "hono";
 import type { Env } from "./lib/env.js";
 import { HttpError } from "./lib/errors.js";
+import { logger } from "./lib/logger.js";
+import { captureException } from "./lib/sentry.js";
 import type { AppEnv } from "./lib/types.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import { chatRoute } from "./routes/chat.js";
