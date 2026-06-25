@@ -1,0 +1,15 @@
+{
+  "name": "@okito/widget",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'Widget Phase 2 — pas encore implémenté' && exit 0",
+    "build": "echo 'Widget Phase 2 — pas encore implémenté' && exit 0",
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'no tests yet' && exit 0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}
