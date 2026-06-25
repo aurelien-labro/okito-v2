@@ -9,13 +9,19 @@ import { DuplicateReservationError, type ReservationService } from "./reservatio
 import type { TenantService } from "./tenant.js";
 
 const MAX_HISTORY_MESSAGES = 20;
+const CHANNEL_TO_LLM: Record<ChatRequest["channel"], "web" | "whatsapp" | "voice"> = {
+  web_widget: "web",
+  manual: "web",
+  whatsapp: "whatsapp",
+  voice: "voice",
+};
 
 export interface ChatDeps {
   llm: LLMClient;
   conversation: ConversationService;
   reservation: ReservationService;
   tenant: TenantService;
-  capacity?: CapacityService;
+  capacity: CapacityService;
 }
 
 interface ToolOutcome {
@@ -28,12 +34,15 @@ export class ChatService {
   constructor(private readonly deps: ChatDeps) {}
 
   async handle(input: ChatRequest): Promise<ChatResponse> {
-    const tenant = await this.deps.tenant.getById(input.tenantId);
-    const conv = await this.deps.conversation.findOrCreate({
-      tenantId: input.tenantId,
-      channel: input.channel,
-      sessionKey: input.sessionKey,
-    });
+    // tenant lookup et findOrCreate sont indépendants → en parallèle.
+    const [tenant, conv] = await Promise.all([
+      this.deps.tenant.getById(input.tenantId),
+      this.deps.conversation.findOrCreate({
+        tenantId: input.tenantId,
+        channel: input.channel,
+        sessionKey: input.sessionKey,
+      }),
+    ]);
 
     const convAfterUser = await this.deps.conversation.appendMessage(conv.id, input.tenantId, {
       role: "user",
@@ -45,8 +54,7 @@ export class ChatService {
       .slice(-MAX_HISTORY_MESSAGES)
       .map((m) => ({ role: m.role, content: m.content }));
 
-    const llmChannel =
-      input.channel === "web_widget" ? "web" : input.channel === "manual" ? "web" : input.channel;
+    const llmChannel = CHANNEL_TO_LLM[input.channel];
 
     const llmResponse = await this.deps.llm.complete({
       system: buildOrchestratorPrompt({
@@ -97,9 +105,9 @@ export class ChatService {
   ): Promise<ToolOutcome> {
     switch (toolCall.name) {
       case "create_reservation":
-        return this.handleCreate(toolCall.arguments, tenant.id, channel);
+        return this.handleCreate(toolCall.arguments, tenant, channel);
       case "cancel_reservation":
-        return this.handleCancel(toolCall.arguments, tenant.id);
+        return this.handleCancel(toolCall.arguments, tenant);
       case "ask_field":
         return this.handleAskField(toolCall.arguments);
       case "check_availability":
@@ -114,13 +122,6 @@ export class ChatService {
     rawArgs: Record<string, unknown>,
     tenant: Tenant,
   ): Promise<ToolOutcome> {
-    if (!this.deps.capacity) {
-      return {
-        reply: "Je n'arrive pas à vérifier la disponibilité pour le moment.",
-        status: "in_progress",
-      };
-    }
-
     const date = typeof rawArgs.date === "string" ? rawArgs.date : null;
     const time = typeof rawArgs.time === "string" ? rawArgs.time : null;
     const couverts = typeof rawArgs.partySize === "number" ? rawArgs.partySize : null;
@@ -140,21 +141,17 @@ export class ChatService {
       capacityMax: tenant.capacityMax,
     });
 
-    if (check.available) {
-      return {
-        reply: `Oui, c'est dispo pour ${couverts} le ${formatDateFr(date)} à ${time.slice(0, 5)}. Je le note ?`,
-        status: "in_progress",
-      };
-    }
     return {
-      reply: `Désolé, plus de place pour ${couverts} à cette heure-là (${check.remaining} couverts restants). Un autre créneau ?`,
+      reply: check.available
+        ? `Oui, c'est dispo pour ${couverts} le ${formatDateFr(date)} à ${time.slice(0, 5)}. Je le note ?`
+        : `Désolé, plus de place pour ${couverts} à cette heure-là (${check.remaining} couverts restants). Un autre créneau ?`,
       status: "in_progress",
     };
   }
 
   private async handleCreate(
     rawArgs: Record<string, unknown>,
-    tenantId: string,
+    tenant: Tenant,
     channel: ChatRequest["channel"],
   ): Promise<ToolOutcome> {
     const parsed = reservationCoreSchema.safeParse(rawArgs);
@@ -167,7 +164,7 @@ export class ChatService {
 
     try {
       const row = await this.deps.reservation.create({
-        tenantId,
+        tenantId: tenant.id,
         data: { ...parsed.data, source: channel },
       });
       return {
@@ -188,7 +185,7 @@ export class ChatService {
 
   private async handleCancel(
     rawArgs: Record<string, unknown>,
-    tenantId: string,
+    tenant: Tenant,
   ): Promise<ToolOutcome> {
     const phone = typeof rawArgs.customerPhone === "string" ? rawArgs.customerPhone : null;
     const date = typeof rawArgs.date === "string" ? rawArgs.date : null;
@@ -200,7 +197,7 @@ export class ChatService {
     }
 
     const found = await this.deps.reservation.findActiveByPhoneAndDate({
-      tenantId,
+      tenantId: tenant.id,
       customerPhone: phone,
       dateReservation: date,
     });
@@ -221,7 +218,7 @@ export class ChatService {
     const target = found[0];
     if (!target) throw new Error("found.length === 1 mais target undefined");
 
-    const cancelled = await this.deps.reservation.cancel({ tenantId, id: target.id });
+    const cancelled = await this.deps.reservation.cancel({ tenantId: tenant.id, id: target.id });
     return {
       reply: `Réservation annulée. Si vous changez d'avis, on est là.`,
       status: "completed",

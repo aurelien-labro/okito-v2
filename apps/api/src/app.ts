@@ -27,12 +27,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     return c.json({ error: { code: "internal_error", message: "Erreur serveur" } }, 500);
   });
 
-  // Public.
-  app.route("/health", healthRoute(env, { db: services.db }));
+  app.route("/health", healthRoute(env, services.db));
 
-  // Routes authentifiées (préfixe /v1).
-  const hasAuthRoutes = services.reservation || services.chat;
-  if (hasAuthRoutes) {
+  if (services.reservation || services.chat) {
     const v1 = new Hono<AppEnv>();
     v1.use("*", createAuthMiddleware(env));
     if (services.reservation) v1.route("/reservations", reservationsRoute(services.reservation));
