@@ -21,6 +21,10 @@ const envSchema = z.object({
   TWILIO_AUTH_TOKEN: z.string().optional(),
   /** Numéro WhatsApp Twilio en E.164 (sans préfixe "whatsapp:"), ex: "+14155238886". */
   TWILIO_WHATSAPP_FROM: z.string().optional(),
+  /** Numéro SMS Twilio en E.164. Peut différer du numéro WhatsApp. */
+  TWILIO_SMS_FROM: z.string().optional(),
+  /** Si "true" et TWILIO_AUTH_TOKEN défini, valide la signature X-Twilio-Signature sur les webhooks. */
+  TWILIO_VALIDATE_WEBHOOK: z.enum(["true", "false"]).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -69,11 +69,18 @@ export function createApp(env: Env, services: AppServices = {}) {
     app.route("/vapi/llm", vapiLlmRoute(services.chat));
   }
 
-  // Webhook WhatsApp inbound (Twilio + 360dialog). Non-auth — sécurise par signature/IP en prod.
+  // Webhook WhatsApp inbound (Twilio + 360dialog).
+  // En prod, activer TWILIO_VALIDATE_WEBHOOK=true pour exiger X-Twilio-Signature.
   if (services.chat && services.db) {
+    const twilioAuthToken =
+      env.TWILIO_VALIDATE_WEBHOOK === "true" ? env.TWILIO_AUTH_TOKEN : undefined;
     app.route(
       "/v1/webhooks/whatsapp",
-      whatsappWebhookRoute({ chat: services.chat, db: services.db }),
+      whatsappWebhookRoute({
+        chat: services.chat,
+        db: services.db,
+        twilioAuthToken,
+      }),
     );
   }
 

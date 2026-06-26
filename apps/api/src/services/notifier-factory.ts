@@ -3,6 +3,7 @@ import { logger } from "../lib/logger.js";
 import { CompositeNotifier } from "./composite-notifier.js";
 import { LoggingNotifier, type NotificationChannel, type Notifier } from "./notifier.js";
 import { ResendNotifier } from "./resend-notifier.js";
+import { TwilioSmsNotifier } from "./twilio-sms-notifier.js";
 import { TwilioWhatsAppNotifier } from "./twilio-whatsapp-notifier.js";
 
 /**
@@ -11,6 +12,7 @@ import { TwilioWhatsAppNotifier } from "./twilio-whatsapp-notifier.js";
  * Chaque provider est mappé à un canal :
  *   - RESEND_API_KEY + RESEND_FROM_EMAIL → Resend pour `email`
  *   - TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_WHATSAPP_FROM → Twilio pour `whatsapp`
+ *   - TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_SMS_FROM → Twilio pour `sms`
  *
  * Si plusieurs canaux configurés → CompositeNotifier qui route.
  * Si un seul → on retourne le notifier directement (perf, lisibilité).
@@ -33,6 +35,15 @@ export function createNotifier(env: Env): Notifier {
       accountSid: env.TWILIO_ACCOUNT_SID,
       authToken: env.TWILIO_AUTH_TOKEN,
       from: env.TWILIO_WHATSAPP_FROM,
+    });
+  }
+
+  if (env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_SMS_FROM) {
+    logger.info({ from: env.TWILIO_SMS_FROM }, "Notifier: Twilio activé pour SMS");
+    byChannel.sms = new TwilioSmsNotifier({
+      accountSid: env.TWILIO_ACCOUNT_SID,
+      authToken: env.TWILIO_AUTH_TOKEN,
+      from: env.TWILIO_SMS_FROM,
     });
   }
 
