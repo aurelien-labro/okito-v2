@@ -66,3 +66,13 @@ export type Reservation = typeof reservations.$inferSelect;
 export type NewReservation = typeof reservations.$inferInsert;
 export type ReservationStatus = NonNullable<Reservation["status"]>;
 export type ReservationSource = NonNullable<Reservation["source"]>;
+
+/**
+ * Alias génériques "Booking" pointant sur la table reservations.
+ * Pour les futurs verticaux (hôtel, garage, etc.) qui parleront en "booking".
+ * La table physique reste `reservations` pour V2 — un éventuel rename DB
+ * sera fait avec une migration dédiée + alias SQL VIEW pour rétrocompat.
+ */
+export const bookings = reservations;
+export type Booking = Reservation;
+export type NewBooking = NewReservation;
