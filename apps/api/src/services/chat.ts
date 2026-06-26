@@ -1,5 +1,5 @@
 import type { Conversation, ConversationMessage, Tenant } from "@okito/db";
-import { ORCHESTRATOR_TOOLS, buildOrchestratorPrompt } from "@okito/prompts";
+import { ORCHESTRATOR_TOOLS, buildOrchestratorPrompt, getIndustryProfile } from "@okito/prompts";
 import { isCancellationIntent } from "@okito/shared/keywords";
 import type { LLMClient, LLMToolCall } from "@okito/shared/llm";
 import { type ChatRequest, type ChatResponse, reservationCoreSchema } from "@okito/shared/types";
@@ -92,6 +92,7 @@ export class ChatService {
     }
 
     const now = nowInTimezone(tenant.timezone);
+    const profile = getIndustryProfile(tenant.industry);
     const llmResponse = await this.deps.llm.complete({
       system: buildOrchestratorPrompt({
         restaurantName: tenant.name,
@@ -102,6 +103,7 @@ export class ChatService {
         nowHuman: now.human,
         channel: llmChannel,
         collectedFields: convAfterUser.collectedFields,
+        profile,
       }),
       messages: llmMessages,
       tools: ORCHESTRATOR_TOOLS,

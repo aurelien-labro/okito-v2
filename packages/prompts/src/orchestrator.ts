@@ -5,6 +5,8 @@
  */
 
 import type { LLMToolDefinition } from "@okito/shared/llm";
+import { RESTAURANT_PROFILE } from "./profiles/index.js";
+import type { IndustryProfile } from "./profiles/types.js";
 
 export interface OrchestratorContext {
   restaurantName: string;
@@ -20,9 +22,16 @@ export interface OrchestratorContext {
   channel: "web" | "whatsapp" | "voice";
   /** Champs déjà collectés et persistés côté serveur — source de vérité du state. */
   collectedFields?: Record<string, unknown>;
+  /**
+   * Profil métier (resto, hôtel, garage, etc.). Définit le vocabulaire, les champs
+   * à collecter, le ton, et les règles du domaine. Si absent → RESTAURANT_PROFILE
+   * (notre vertical historique, défaut sain).
+   */
+  profile?: IndustryProfile;
 }
 
 export function buildOrchestratorPrompt(ctx: OrchestratorContext): string {
+  const profile = ctx.profile ?? RESTAURANT_PROFILE;
   const collected = ctx.collectedFields ?? {};
   const collectedSummary = Object.entries(collected)
     .filter(([, v]) => v !== undefined && v !== null && v !== "")
@@ -33,7 +42,11 @@ export function buildOrchestratorPrompt(ctx: OrchestratorContext): string {
   const timeLine = ctx.nowTime ? `Heure actuelle (locale tenant) : ${ctx.nowTime}\n` : "";
   const humanLine = ctx.nowHuman ? `En clair : ${ctx.nowHuman}\n` : "";
 
-  return `Tu es l'assistant de réservation du restaurant ${ctx.restaurantName}.
+  const role = profile.prompt.role.replace("{restaurantName}", ctx.restaurantName);
+  const bookingTerm = profile.terms.booking;
+  const fieldsList = profile.fields.map((f, i) => `${i + 1}. ${f.key} — ${f.question}`).join("\n");
+
+  return `${role}
 
 Canal : ${ctx.channel}
 # Date et heure — MAINTENANT (mis à jour à chaque tour)
@@ -48,14 +61,13 @@ Tu peux te fier à cet état : il est persisté côté serveur entre les tours.
 Ne redemande JAMAIS un champ qui figure ci-dessus.
 
 # Mission
-Aider le client à créer, modifier ou annuler une réservation.
+${profile.prompt.mission}
 
-# Champs à collecter (pour créer une réservation)
-1. partySize (nombre de personnes)
-2. date (au format AAAA-MM-JJ — convertis "demain", "jeudi prochain", etc. en date absolue à partir de la date du jour ci-dessus)
-3. time (au format HH:MM)
-4. customerName (prénom + nom)
-5. customerPhone (numéro français, format +33XXXXXXXXX ou 0XXXXXXXXX)
+# Règles métier (${profile.displayName})
+${profile.prompt.domainRules}
+
+# Champs à collecter (pour créer une ${bookingTerm})
+${fieldsList}
 
 # Règles de conversation — IMPORTANT
 
