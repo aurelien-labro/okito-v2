@@ -9,6 +9,8 @@ import { CapacityService } from "./services/capacity.js";
 import { ChatService } from "./services/chat.js";
 import { ConversationService } from "./services/conversation.js";
 import { createLLMClient } from "./services/llm/index.js";
+import { LoggingNotifier } from "./services/notifier.js";
+import { ReminderService } from "./services/reminder.js";
 import { ReservationService } from "./services/reservation.js";
 import { TenantService } from "./services/tenant.js";
 
@@ -32,9 +34,19 @@ if (env.DATABASE_URL) {
     if (env.VAPI_ASSISTANT_ID) services.vapiAssistantId = env.VAPI_ASSISTANT_ID;
   }
 
+  const notifier = new LoggingNotifier();
+  services.reminder = new ReminderService(db, notifier);
+
   if (env.GEMINI_API_KEY) {
     const llm = createLLMClient(env);
-    services.chat = new ChatService({ llm, conversation, reservation, tenant, capacity });
+    services.chat = new ChatService({
+      llm,
+      conversation,
+      reservation,
+      tenant,
+      capacity,
+      notifier,
+    });
   } else {
     logger.warn("GEMINI_API_KEY absent — moteur conversationnel désactivé");
   }

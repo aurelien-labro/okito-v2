@@ -58,6 +58,21 @@ function makeStubs() {
         createdAt: new Date(),
       }),
     ),
+    clearCollectedFields: vi.fn().mockImplementation(() =>
+      Promise.resolve({
+        id: CONV_ID,
+        tenantId: TENANT_ID,
+        channel: "web_widget",
+        sessionKey: "sess-1",
+        step: "idle",
+        collectedFields: {},
+        messages: [],
+        status: "active",
+        reservationId: null,
+        lastMessageAt: new Date(),
+        createdAt: new Date(),
+      }),
+    ),
   };
   const reservation = {
     create: vi.fn(),
@@ -71,6 +86,10 @@ function makeStubs() {
       slug: "okito",
       timezone: "Europe/Paris",
       capacityMax: 50,
+      serviceLunchStart: "12:00",
+      serviceLunchEnd: "14:30",
+      serviceDinnerStart: "19:00",
+      serviceDinnerEnd: "22:00",
     }),
   };
   const capacity = { check: vi.fn() };
