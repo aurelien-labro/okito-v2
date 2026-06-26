@@ -116,7 +116,7 @@ export class ChatService {
       case "ask_field":
         return this.handleAskField(toolCall.arguments, tenant.id, ctx);
       case "check_availability":
-        return this.handleCheckAvailability(toolCall.arguments, tenant, ctx);
+        return this.handleCheckAvailability(toolCall.arguments, tenant, channel, ctx);
       default:
         logger.warn({ toolName: toolCall.name }, "tool inconnu retourné par le LLM");
         return { reply: "Désolé, je n'ai pas pu traiter cette action.", status: "error" };
@@ -140,6 +140,7 @@ export class ChatService {
   private async handleCheckAvailability(
     rawArgs: Record<string, unknown>,
     tenant: Tenant,
+    channel: ChatRequest["channel"],
     ctx: { conversationId: string; collectedFields: Record<string, unknown> },
   ): Promise<ToolOutcome> {
     const date = pickString(rawArgs.date) ?? pickString(ctx.collectedFields.date);
@@ -163,10 +164,14 @@ export class ChatService {
       capacityMax: tenant.capacityMax,
     });
 
+    const isVoice = channel === "voice";
+    const dateStr = isVoice ? formatDateVoice(date) : formatDateFr(date);
+    const timeStr = isVoice ? formatTimeVoice(time) : time.slice(0, 5);
+
     return {
       reply: check.available
-        ? `Oui, c'est dispo pour ${couverts} le ${formatDateFr(date)} à ${time.slice(0, 5)}. Je le note ?`
-        : `Désolé, plus de place pour ${couverts} à cette heure-là (${check.remaining} couverts restants). Un autre créneau ?`,
+        ? `C'est dispo pour ${couverts} ${dateStr} à ${timeStr}. Je vous le note ?`
+        : `Désolé, plus de place pour ${couverts} à ce créneau (${check.remaining} couverts restants). Un autre horaire ?`,
       status: "in_progress",
     };
   }
@@ -212,8 +217,16 @@ export class ChatService {
         tenantId: tenant.id,
         data: { ...parsed.data, source: channel },
       });
+      const isVoice = channel === "voice";
+      const dateStr = isVoice
+        ? formatDateVoice(row.dateReservation)
+        : formatDateFr(row.dateReservation);
+      const timeStr = isVoice ? formatTimeVoice(row.heure) : row.heure.slice(0, 5);
+      const firstName = row.customerName.split(" ")[0] ?? row.customerName;
       return {
-        reply: `C'est confirmé, ${row.customerName} ! Réservation pour ${row.couverts} personnes le ${formatDateFr(row.dateReservation)} à ${row.heure.slice(0, 5)}. À très vite.`,
+        reply: isVoice
+          ? `C'est noté ${firstName}, on vous attend ${dateStr} à ${timeStr} pour ${row.couverts} personnes. À bientôt !`
+          : `C'est confirmé, ${row.customerName} ! Réservation pour ${row.couverts} personnes le ${dateStr} à ${timeStr}. À très vite.`,
         status: "completed",
         reservationId: row.id,
       };
@@ -339,6 +352,58 @@ function formatDateFr(iso: string): string {
   const [y, m, d] = iso.split("-");
   if (!y || !m || !d) return iso;
   return `${d}/${m}/${y}`;
+}
+
+const JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+const MOIS = [
+  "janvier",
+  "février",
+  "mars",
+  "avril",
+  "mai",
+  "juin",
+  "juillet",
+  "août",
+  "septembre",
+  "octobre",
+  "novembre",
+  "décembre",
+];
+
+/** Date "AAAA-MM-JJ" → expression naturelle pour TTS FR. */
+function formatDateVoice(iso: string): string {
+  const [yStr, mStr, dStr] = iso.split("-");
+  if (!yStr || !mStr || !dStr) return iso;
+  const y = Number(yStr);
+  const m = Number(mStr);
+  const d = Number(dStr);
+  if (Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d)) return iso;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(y, m - 1, d);
+  const diffDays = Math.round((target.getTime() - today.getTime()) / 86_400_000);
+
+  if (diffDays === 0) return "aujourd'hui";
+  if (diffDays === 1) return "demain";
+  if (diffDays === 2) return "après-demain";
+  if (diffDays > 2 && diffDays <= 7) return JOURS[target.getDay()] ?? iso;
+  if (diffDays > 7 && diffDays <= 14) return `${JOURS[target.getDay()] ?? ""} prochain`.trim();
+  return `le ${d} ${MOIS[m - 1] ?? ""}`.trim();
+}
+
+/** "HH:MM" → "vingt heures trente" pour TTS FR. Approximation simple. */
+function formatTimeVoice(hhmm: string): string {
+  const [hStr, minStr] = hhmm.split(":");
+  const h = Number(hStr);
+  const min = Number(minStr ?? "0");
+  if (Number.isNaN(h)) return hhmm;
+  const heures = `${h} heure${h > 1 ? "s" : ""}`;
+  if (!min || Number.isNaN(min)) return heures;
+  if (min === 15) return `${heures} et quart`;
+  if (min === 30) return `${heures} et demie`;
+  if (min === 45) return `${heures} quarante-cinq`;
+  return `${heures} ${min}`;
 }
 
 export type { Conversation, ConversationMessage };
