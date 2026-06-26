@@ -21,6 +21,10 @@ export interface AppServices {
   db?: Database;
   /** Tenant pré-rempli dans la page de playground (dev). */
   defaultTenantId?: string;
+  /** Clé publique Vapi pour le SDK Web (sûre côté client). */
+  vapiPublicKey?: string;
+  /** ID assistant Vapi à appeler depuis le widget vocal. */
+  vapiAssistantId?: string;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -36,7 +40,14 @@ export function createApp(env: Env, services: AppServices = {}) {
   app.route("/health", healthRoute(env, services.db));
 
   if (env.NODE_ENV !== "production") {
-    app.route("/", playgroundRoute(services.defaultTenantId));
+    app.route(
+      "/",
+      playgroundRoute({
+        defaultTenantId: services.defaultTenantId,
+        vapiPublicKey: services.vapiPublicKey,
+        vapiAssistantId: services.vapiAssistantId,
+      }),
+    );
   }
 
   if (services.reservation || services.chat) {

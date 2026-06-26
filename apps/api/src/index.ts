@@ -28,6 +28,8 @@ if (env.DATABASE_URL) {
   if (env.NODE_ENV !== "production") {
     const okito = await db.query.tenants.findFirst({ where: (t, { eq }) => eq(t.slug, "okito") });
     if (okito) services.defaultTenantId = okito.id;
+    if (env.VAPI_PUBLIC_KEY) services.vapiPublicKey = env.VAPI_PUBLIC_KEY;
+    if (env.VAPI_ASSISTANT_ID) services.vapiAssistantId = env.VAPI_ASSISTANT_ID;
   }
 
   if (env.GEMINI_API_KEY) {

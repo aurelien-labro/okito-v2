@@ -1,5 +1,11 @@
 import { Hono } from "hono";
 
+export interface PlaygroundConfig {
+  defaultTenantId?: string;
+  vapiPublicKey?: string;
+  vapiAssistantId?: string;
+}
+
 const PLAYGROUND_HTML = `<!doctype html>
 <html lang="fr">
 <head>
@@ -24,6 +30,18 @@ const PLAYGROUND_HTML = `<!doctype html>
   .msg.bot { background: #f1f1f4; color: #111; align-self: flex-start; border-bottom-left-radius: 4px; }
   .msg.error { background: #fee2e2; color: #991b1b; align-self: stretch; font-size: 12px; }
   .meta { font-size: 11px; color: #888; margin-top: 2px; }
+  .voice-bar { background: #fff; border: 1px solid #e3e3e6; border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+  .voice-btn { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border: 0; border-radius: 999px; font: inherit; cursor: pointer; transition: background 0.2s, transform 0.05s; }
+  .voice-btn.idle { background: #111; color: #fff; }
+  .voice-btn.idle:hover { background: #333; }
+  .voice-btn.connecting { background: #f59e0b; color: #fff; cursor: wait; }
+  .voice-btn.active { background: #dc2626; color: #fff; }
+  .voice-btn.active::before { content: ""; display: inline-block; width: 8px; height: 8px; background: #fff; border-radius: 50%; animation: pulse 1.2s ease-in-out infinite; }
+  .voice-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .voice-icon { font-size: 16px; line-height: 1; }
+  .voice-status { font-size: 12px; color: #666; flex: 1; text-align: right; }
+  .voice-status.error { color: #dc2626; }
+  @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
   form { display: flex; gap: 8px; padding: 12px 0 0; }
   textarea { flex: 1; padding: 10px 12px; border: 1px solid #d4d4d8; border-radius: 10px; font: inherit; resize: none; min-height: 44px; max-height: 120px; }
   button { padding: 10px 16px; background: #111; color: #fff; border: 0; border-radius: 10px; font: inherit; cursor: pointer; }
@@ -34,9 +52,17 @@ const PLAYGROUND_HTML = `<!doctype html>
 <body>
 <main>
   <header>
-    <h1>OKITO chat — playground</h1>
-    <span class="tag">POST /v1/chat</span>
+    <h1>OKITO playground</h1>
+    <span class="tag">chat /v1/chat &nbsp;·&nbsp; voix Vapi</span>
   </header>
+
+  <div class="voice-bar" id="voiceBar">
+    <button id="voiceBtn" class="voice-btn idle" type="button">
+      <span class="voice-icon">🎙️</span>
+      <span class="voice-label" id="voiceLabel">Parler au bot</span>
+    </button>
+    <span id="voiceStatus" class="voice-status">prêt</span>
+  </div>
 
   <div class="config">
     <div class="config-row">
@@ -61,7 +87,81 @@ const PLAYGROUND_HTML = `<!doctype html>
   </form>
 </main>
 
-<script>
+<script type="module">
+  const VAPI_PUBLIC_KEY = "__VAPI_PUBLIC_KEY__";
+  const VAPI_ASSISTANT_ID = "__VAPI_ASSISTANT_ID__";
+
+  const voiceBtn = document.getElementById("voiceBtn");
+  const voiceLabel = document.getElementById("voiceLabel");
+  const voiceStatus = document.getElementById("voiceStatus");
+
+  function setVoiceState(state, label, status, isError) {
+    voiceBtn.className = "voice-btn " + state;
+    voiceLabel.textContent = label;
+    voiceStatus.textContent = status;
+    voiceStatus.className = "voice-status" + (isError ? " error" : "");
+  }
+
+  if (!VAPI_PUBLIC_KEY || VAPI_PUBLIC_KEY.startsWith("__")) {
+    voiceBtn.disabled = true;
+    setVoiceState("idle", "Voix indispo", "VAPI_PUBLIC_KEY manquante dans .env", true);
+  } else if (!VAPI_ASSISTANT_ID || VAPI_ASSISTANT_ID.startsWith("__")) {
+    voiceBtn.disabled = true;
+    setVoiceState("idle", "Voix indispo", "VAPI_ASSISTANT_ID manquant dans .env", true);
+  } else {
+    let vapi = null;
+    let active = false;
+
+    async function startVoice() {
+      try {
+        setVoiceState("connecting", "Connexion…", "init Vapi");
+        if (!vapi) {
+          const mod = await import("https://esm.sh/@vapi-ai/web");
+          const Vapi = mod.default;
+          vapi = new Vapi(VAPI_PUBLIC_KEY);
+
+          vapi.on("call-start", () => {
+            active = true;
+            setVoiceState("active", "Raccrocher", "en appel — parle dans le micro");
+          });
+          vapi.on("call-end", () => {
+            active = false;
+            setVoiceState("idle", "Parler au bot", "appel terminé");
+          });
+          vapi.on("speech-start", () => {
+            voiceStatus.textContent = "bot parle…";
+          });
+          vapi.on("speech-end", () => {
+            voiceStatus.textContent = "ton tour";
+          });
+          vapi.on("error", (e) => {
+            console.error("vapi error:", e);
+            active = false;
+            const msg = (e && (e.errorMsg || e.message)) ? (e.errorMsg || e.message) : "erreur Vapi";
+            setVoiceState("idle", "Parler au bot", msg, true);
+          });
+          vapi.on("message", (m) => {
+            if (m.type === "transcript" && m.transcriptType === "final") {
+              addMsg(m.role === "user" ? "user" : "bot", "🎙️ " + m.transcript);
+            }
+          });
+        }
+        await vapi.start(VAPI_ASSISTANT_ID);
+      } catch (e) {
+        console.error(e);
+        setVoiceState("idle", "Parler au bot", String(e?.message || e), true);
+      }
+    }
+
+    function stopVoice() {
+      try { vapi?.stop(); } catch (e) { console.error(e); }
+    }
+
+    voiceBtn.addEventListener("click", () => {
+      if (active) stopVoice(); else startVoice();
+    });
+  }
+
   const DEFAULT_TENANT = "__TENANT_ID__";
   const tenantInput = document.getElementById("tenantId");
   const sessionInput = document.getElementById("sessionKey");
@@ -150,9 +250,13 @@ const PLAYGROUND_HTML = `<!doctype html>
 </body>
 </html>`;
 
-export function playgroundRoute(defaultTenantId: string | undefined) {
+export function playgroundRoute(config: PlaygroundConfig | string | undefined) {
+  const cfg: PlaygroundConfig =
+    typeof config === "string" ? { defaultTenantId: config } : (config ?? {});
   const app = new Hono();
-  const html = PLAYGROUND_HTML.replace("__TENANT_ID__", defaultTenantId ?? "");
+  const html = PLAYGROUND_HTML.replace("__TENANT_ID__", cfg.defaultTenantId ?? "")
+    .replace("__VAPI_PUBLIC_KEY__", cfg.vapiPublicKey ?? "")
+    .replace("__VAPI_ASSISTANT_ID__", cfg.vapiAssistantId ?? "");
   app.get("/", (c) => c.html(html));
   return app;
 }
