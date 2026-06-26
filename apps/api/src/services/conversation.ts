@@ -64,6 +64,39 @@ export class ConversationService {
     return row;
   }
 
+  async mergeCollectedFields(
+    conversationId: string,
+    tenantId: string,
+    fields: Record<string, unknown>,
+  ): Promise<Conversation> {
+    const filtered: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(fields)) {
+      if (v !== undefined && v !== null && v !== "") filtered[k] = v;
+    }
+    if (Object.keys(filtered).length === 0) {
+      const existing = await this.db.query.conversations.findFirst({
+        where: (c, { and: a, eq: e }) => a(e(c.id, conversationId), e(c.tenantId, tenantId)),
+      });
+      if (!existing) throw new Error("Conversation introuvable lors du merge");
+      return existing;
+    }
+    const [row] = await this.db
+      .update(schema.conversations)
+      .set({
+        collectedFields: sql`coalesce(${schema.conversations.collectedFields}, '{}'::jsonb) || ${JSON.stringify(filtered)}::jsonb`,
+        lastMessageAt: new Date(),
+      })
+      .where(
+        and(
+          eq(schema.conversations.id, conversationId),
+          eq(schema.conversations.tenantId, tenantId),
+        ),
+      )
+      .returning();
+    if (!row) throw new Error("Conversation introuvable lors du merge");
+    return row;
+  }
+
   async setStatus(
     conversationId: string,
     tenantId: string,
