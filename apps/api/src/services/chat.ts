@@ -56,11 +56,15 @@ export class ChatService {
 
     const llmChannel = CHANNEL_TO_LLM[input.channel];
 
+    const now = nowInTimezone(tenant.timezone);
     const llmResponse = await this.deps.llm.complete({
       system: buildOrchestratorPrompt({
         restaurantName: tenant.name,
         timezone: tenant.timezone,
-        todayIso: new Date().toISOString().slice(0, 10),
+        todayIso: now.dateIso,
+        nowTime: now.timeHm,
+        dayOfWeek: now.dayOfWeek,
+        nowHuman: now.human,
         channel: llmChannel,
         collectedFields: convAfterUser.collectedFields,
       }),
@@ -390,6 +394,36 @@ function formatDateVoice(iso: string): string {
   if (diffDays > 2 && diffDays <= 7) return JOURS[target.getDay()] ?? iso;
   if (diffDays > 7 && diffDays <= 14) return `${JOURS[target.getDay()] ?? ""} prochain`.trim();
   return `le ${d} ${MOIS[m - 1] ?? ""}`.trim();
+}
+
+/**
+ * Date/heure courante exprimées dans le fuseau du tenant (ex: "Europe/Paris").
+ * Évite la dérive UTC qui décale les nuits/matins de plus ou moins 2 heures.
+ */
+function nowInTimezone(timezone: string): {
+  dateIso: string;
+  timeHm: string;
+  dayOfWeek: string;
+  human: string;
+} {
+  const d = new Date();
+  const fmt = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    weekday: "long",
+    hour12: false,
+  });
+  const parts = Object.fromEntries(fmt.formatToParts(d).map((p) => [p.type, p.value]));
+  const dateIso = `${parts.year}-${parts.month}-${parts.day}`;
+  const timeHm = `${parts.hour}:${parts.minute}`;
+  const dayOfWeek = (parts.weekday ?? "").toLowerCase();
+  const monthName = MOIS[Number(parts.month) - 1] ?? parts.month;
+  const human = `${dayOfWeek} ${Number(parts.day)} ${monthName} ${parts.year} à ${parts.hour}h${parts.minute}`;
+  return { dateIso, timeHm, dayOfWeek, human };
 }
 
 /** "HH:MM" → "vingt heures trente" pour TTS FR. Approximation simple. */

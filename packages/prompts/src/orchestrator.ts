@@ -9,7 +9,14 @@ import type { LLMToolDefinition } from "@okito/shared/llm";
 export interface OrchestratorContext {
   restaurantName: string;
   timezone: string;
+  /** Date courante locale du tenant — format AAAA-MM-JJ. */
   todayIso: string;
+  /** Heure courante locale du tenant — format HH:MM. */
+  nowTime?: string;
+  /** Jour de la semaine en FR (lundi, mardi, ...) au moment du tour. */
+  dayOfWeek?: string;
+  /** Description naturelle de "maintenant" (ex: "jeudi 26 juin 2026 à 13h42"). */
+  nowHuman?: string;
   channel: "web" | "whatsapp" | "voice";
   /** Champs déjà collectés et persistés côté serveur — source de vérité du state. */
   collectedFields?: Record<string, unknown>;
@@ -22,11 +29,18 @@ export function buildOrchestratorPrompt(ctx: OrchestratorContext): string {
     .map(([k, v]) => `  - ${k} = ${JSON.stringify(v)}`)
     .join("\n");
 
+  const dowLine = ctx.dayOfWeek ? `Jour de la semaine : ${ctx.dayOfWeek}\n` : "";
+  const timeLine = ctx.nowTime ? `Heure actuelle (locale tenant) : ${ctx.nowTime}\n` : "";
+  const humanLine = ctx.nowHuman ? `En clair : ${ctx.nowHuman}\n` : "";
+
   return `Tu es l'assistant de réservation du restaurant ${ctx.restaurantName}.
 
 Canal : ${ctx.channel}
-Date du jour (Europe/Paris) : ${ctx.todayIso}
-Fuseau : ${ctx.timezone}
+# Date et heure — MAINTENANT (mis à jour à chaque tour)
+Date du jour : ${ctx.todayIso}
+${dowLine}${timeLine}${humanLine}Fuseau : ${ctx.timezone}
+→ Ces valeurs changent à chaque message du client. Pour interpréter "demain", "ce soir", "tout à l'heure", "dans 1 heure", utilise ces valeurs et JAMAIS une date que tu aurais inventée.
+→ Si le client dit "ce soir à 20h" et qu'il est déjà 21h, signale-lui poliment qu'on est passé et propose un autre créneau.
 
 # État serveur — champs déjà mémorisés (FIABLE)
 ${collectedSummary || "  (rien collecté pour l'instant)"}
