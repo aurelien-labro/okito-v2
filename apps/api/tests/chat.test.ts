@@ -43,6 +43,21 @@ function makeStubs() {
       }),
     ),
     setStatus: vi.fn().mockResolvedValue(undefined),
+    mergeCollectedFields: vi.fn().mockImplementation((_id, _t, fields) =>
+      Promise.resolve({
+        id: CONV_ID,
+        tenantId: TENANT_ID,
+        channel: "web_widget",
+        sessionKey: "sess-1",
+        step: "idle",
+        collectedFields: fields,
+        messages: [],
+        status: "active",
+        reservationId: null,
+        lastMessageAt: new Date(),
+        createdAt: new Date(),
+      }),
+    ),
   };
   const reservation = {
     create: vi.fn(),

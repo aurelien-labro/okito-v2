@@ -62,6 +62,7 @@ export class ChatService {
         timezone: tenant.timezone,
         todayIso: new Date().toISOString().slice(0, 10),
         channel: llmChannel,
+        collectedFields: convAfterUser.collectedFields,
       }),
       messages: llmMessages,
       tools: ORCHESTRATOR_TOOLS,
@@ -70,7 +71,10 @@ export class ChatService {
     });
 
     const outcome: ToolOutcome = llmResponse.toolCalls[0]
-      ? await this.executeTool(llmResponse.toolCalls[0], tenant, input.channel)
+      ? await this.executeTool(llmResponse.toolCalls[0], tenant, input.channel, {
+          conversationId: conv.id,
+          collectedFields: convAfterUser.collectedFields ?? {},
+        })
       : {
           reply: llmResponse.text?.trim() ?? "Désolé, je n'ai pas compris.",
           status: "in_progress",
@@ -102,29 +106,45 @@ export class ChatService {
     toolCall: LLMToolCall,
     tenant: Tenant,
     channel: ChatRequest["channel"],
+    ctx: { conversationId: string; collectedFields: Record<string, unknown> },
   ): Promise<ToolOutcome> {
     switch (toolCall.name) {
       case "create_reservation":
-        return this.handleCreate(toolCall.arguments, tenant, channel);
+        return this.handleCreate(toolCall.arguments, tenant, channel, ctx);
       case "cancel_reservation":
         return this.handleCancel(toolCall.arguments, tenant);
       case "ask_field":
-        return this.handleAskField(toolCall.arguments);
+        return this.handleAskField(toolCall.arguments, tenant.id, ctx);
       case "check_availability":
-        return this.handleCheckAvailability(toolCall.arguments, tenant);
+        return this.handleCheckAvailability(toolCall.arguments, tenant, ctx);
       default:
         logger.warn({ toolName: toolCall.name }, "tool inconnu retourné par le LLM");
         return { reply: "Désolé, je n'ai pas pu traiter cette action.", status: "error" };
     }
   }
 
+  private async mergeFields(
+    conversationId: string,
+    tenantId: string,
+    fields: Record<string, unknown>,
+    ctx: { collectedFields: Record<string, unknown> },
+  ): Promise<void> {
+    const updated = await this.deps.conversation.mergeCollectedFields(
+      conversationId,
+      tenantId,
+      fields,
+    );
+    ctx.collectedFields = updated.collectedFields ?? {};
+  }
+
   private async handleCheckAvailability(
     rawArgs: Record<string, unknown>,
     tenant: Tenant,
+    ctx: { conversationId: string; collectedFields: Record<string, unknown> },
   ): Promise<ToolOutcome> {
-    const date = typeof rawArgs.date === "string" ? rawArgs.date : null;
-    const time = typeof rawArgs.time === "string" ? rawArgs.time : null;
-    const couverts = typeof rawArgs.partySize === "number" ? rawArgs.partySize : null;
+    const date = pickString(rawArgs.date) ?? pickString(ctx.collectedFields.date);
+    const time = pickString(rawArgs.time) ?? pickString(ctx.collectedFields.time);
+    const couverts = pickInt(rawArgs.partySize) ?? pickInt(ctx.collectedFields.partySize);
 
     if (!date || !time || !couverts) {
       return {
@@ -132,6 +152,8 @@ export class ChatService {
         status: "in_progress",
       };
     }
+
+    await this.mergeFields(ctx.conversationId, tenant.id, { date, time, partySize: couverts }, ctx);
 
     const check = await this.deps.capacity.check({
       tenantId: tenant.id,
@@ -153,11 +175,34 @@ export class ChatService {
     rawArgs: Record<string, unknown>,
     tenant: Tenant,
     channel: ChatRequest["channel"],
+    ctx: { conversationId: string; collectedFields: Record<string, unknown> },
   ): Promise<ToolOutcome> {
-    const parsed = reservationCoreSchema.safeParse(rawArgs);
+    // Fusionner l'état serveur avec ce que le LLM a passé. Les args du LLM gagnent sur les conflits.
+    const merged: Record<string, unknown> = { ...ctx.collectedFields };
+    for (const [k, v] of Object.entries(rawArgs)) {
+      if (v !== undefined && v !== null && v !== "") merged[k] = v;
+    }
+    await this.mergeFields(ctx.conversationId, tenant.id, merged, ctx);
+
+    // Mapping des noms LLM (tool schema) vers les noms DB (reservationCoreSchema).
+    const dbShape = {
+      customerName: merged.customerName,
+      customerPhone: merged.customerPhone,
+      couverts: merged.couverts ?? merged.partySize,
+      dateReservation: merged.dateReservation ?? merged.date,
+      heure: merged.heure ?? merged.time,
+      ...(merged.notes ? { notes: merged.notes } : {}),
+    };
+    const parsed = reservationCoreSchema.safeParse(dbShape);
     if (!parsed.success) {
+      const missing = parsed.error.issues
+        .map((i) => i.path[0])
+        .filter((p): p is string => typeof p === "string");
+      const friendly = humanField(missing[0]);
       return {
-        reply: "Il me manque une info pour finaliser, pouvez-vous préciser ?",
+        reply: friendly
+          ? `Il me manque ${friendly} pour finaliser. Tu peux me le donner ?`
+          : "Il me manque une info pour finaliser, peux-tu préciser ?",
         status: "in_progress",
       };
     }
@@ -226,8 +271,26 @@ export class ChatService {
     };
   }
 
-  private handleAskField(rawArgs: Record<string, unknown>): ToolOutcome {
+  private async handleAskField(
+    rawArgs: Record<string, unknown>,
+    tenantId: string,
+    ctx: { conversationId: string; collectedFields: Record<string, unknown> },
+  ): Promise<ToolOutcome> {
+    if (rawArgs.learned && typeof rawArgs.learned === "object") {
+      await this.mergeFields(
+        ctx.conversationId,
+        tenantId,
+        rawArgs.learned as Record<string, unknown>,
+        ctx,
+      );
+    }
     const field = typeof rawArgs.field === "string" ? rawArgs.field : "";
+    if (field && ctx.collectedFields[field] !== undefined && ctx.collectedFields[field] !== "") {
+      return {
+        reply: `J'ai bien noté. Et la suite ?`,
+        status: "in_progress",
+      };
+    }
     const questions: Record<string, string> = {
       customerName: "À quel nom ?",
       customerPhone: "Votre numéro de téléphone ?",
@@ -236,9 +299,39 @@ export class ChatService {
       time: "À quelle heure ?",
     };
     return {
-      reply: questions[field] ?? "Pouvez-vous préciser un peu plus ?",
+      reply: questions[field] ?? "Peux-tu préciser un peu plus ?",
       status: "in_progress",
     };
+  }
+}
+
+function pickString(v: unknown): string | null {
+  return typeof v === "string" && v.length > 0 ? v : null;
+}
+
+function pickInt(v: unknown): number | null {
+  if (typeof v === "number" && Number.isInteger(v)) return v;
+  if (typeof v === "string" && /^\d+$/.test(v)) return Number.parseInt(v, 10);
+  return null;
+}
+
+function humanField(field: string | undefined): string | null {
+  switch (field) {
+    case "customerName":
+      return "le nom";
+    case "customerPhone":
+      return "le numéro de téléphone";
+    case "partySize":
+    case "couverts":
+      return "le nombre de personnes";
+    case "date":
+    case "dateReservation":
+      return "la date";
+    case "time":
+    case "heure":
+      return "l'heure";
+    default:
+      return null;
   }
 }
 
