@@ -1,15 +1,17 @@
+import { HOTEL_PROFILE } from "./hotel.js";
 import { RESTAURANT_PROFILE } from "./restaurant.js";
 import type { Industry, IndustryProfile } from "./types.js";
 
 export * from "./types.js";
-export { RESTAURANT_PROFILE };
+export { HOTEL_PROFILE, RESTAURANT_PROFILE };
 
 /**
  * Registry des profils. Ajouter ici chaque vertical au fur et à mesure
- * (hotel.ts, garage.ts, beauty.ts, …).
+ * (garage.ts, beauty.ts, …).
  */
 const PROFILES: Partial<Record<Industry, IndustryProfile>> = {
   restaurant: RESTAURANT_PROFILE,
+  hotel: HOTEL_PROFILE,
 };
 
 /**
