@@ -12,6 +12,8 @@ const envSchema = z.object({
   LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
   LLM_RETRY_MAX: z.coerce.number().int().min(0).max(10).default(3),
   SENTRY_DSN: z.string().url().optional(),
+  VAPI_PUBLIC_KEY: z.string().optional(),
+  VAPI_ASSISTANT_ID: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

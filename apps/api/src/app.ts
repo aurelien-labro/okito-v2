@@ -10,6 +10,7 @@ import { chatRoute } from "./routes/chat.js";
 import { healthRoute } from "./routes/health.js";
 import { playgroundRoute } from "./routes/playground.js";
 import { reservationsRoute } from "./routes/reservations.js";
+import { vapiLlmRoute } from "./routes/vapi-llm.js";
 import type { ChatService } from "./services/chat.js";
 import type { ReservationService } from "./services/reservation.js";
 
@@ -20,6 +21,10 @@ export interface AppServices {
   db?: Database;
   /** Tenant pré-rempli dans la page de playground (dev). */
   defaultTenantId?: string;
+  /** Clé publique Vapi pour le SDK Web (sûre côté client). */
+  vapiPublicKey?: string;
+  /** ID assistant Vapi à appeler depuis le widget vocal. */
+  vapiAssistantId?: string;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -35,7 +40,14 @@ export function createApp(env: Env, services: AppServices = {}) {
   app.route("/health", healthRoute(env, services.db));
 
   if (env.NODE_ENV !== "production") {
-    app.route("/", playgroundRoute(services.defaultTenantId));
+    app.route(
+      "/",
+      playgroundRoute({
+        defaultTenantId: services.defaultTenantId,
+        vapiPublicKey: services.vapiPublicKey,
+        vapiAssistantId: services.vapiAssistantId,
+      }),
+    );
   }
 
   if (services.reservation || services.chat) {
@@ -44,6 +56,12 @@ export function createApp(env: Env, services: AppServices = {}) {
     if (services.reservation) v1.route("/reservations", reservationsRoute(services.reservation));
     if (services.chat) v1.route("/chat", chatRoute(services.chat));
     app.route("/v1", v1);
+  }
+
+  // Vapi custom LLM webhook — non-auth (Vapi n'envoie pas de JWT Supabase).
+  // En prod, ajouter un middleware qui vérifie un X-Vapi-Secret partagé avec l'assistant.
+  if (services.chat) {
+    app.route("/vapi/llm", vapiLlmRoute(services.chat));
   }
 
   app.notFound((c) => c.json({ error: { code: "not_found", message: "Route inconnue" } }, 404));

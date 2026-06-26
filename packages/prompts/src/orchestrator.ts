@@ -9,7 +9,14 @@ import type { LLMToolDefinition } from "@okito/shared/llm";
 export interface OrchestratorContext {
   restaurantName: string;
   timezone: string;
+  /** Date courante locale du tenant — format AAAA-MM-JJ. */
   todayIso: string;
+  /** Heure courante locale du tenant — format HH:MM. */
+  nowTime?: string;
+  /** Jour de la semaine en FR (lundi, mardi, ...) au moment du tour. */
+  dayOfWeek?: string;
+  /** Description naturelle de "maintenant" (ex: "jeudi 26 juin 2026 à 13h42"). */
+  nowHuman?: string;
   channel: "web" | "whatsapp" | "voice";
   /** Champs déjà collectés et persistés côté serveur — source de vérité du state. */
   collectedFields?: Record<string, unknown>;
@@ -22,11 +29,18 @@ export function buildOrchestratorPrompt(ctx: OrchestratorContext): string {
     .map(([k, v]) => `  - ${k} = ${JSON.stringify(v)}`)
     .join("\n");
 
+  const dowLine = ctx.dayOfWeek ? `Jour de la semaine : ${ctx.dayOfWeek}\n` : "";
+  const timeLine = ctx.nowTime ? `Heure actuelle (locale tenant) : ${ctx.nowTime}\n` : "";
+  const humanLine = ctx.nowHuman ? `En clair : ${ctx.nowHuman}\n` : "";
+
   return `Tu es l'assistant de réservation du restaurant ${ctx.restaurantName}.
 
 Canal : ${ctx.channel}
-Date du jour (Europe/Paris) : ${ctx.todayIso}
-Fuseau : ${ctx.timezone}
+# Date et heure — MAINTENANT (mis à jour à chaque tour)
+Date du jour : ${ctx.todayIso}
+${dowLine}${timeLine}${humanLine}Fuseau : ${ctx.timezone}
+→ Ces valeurs changent à chaque message du client. Pour interpréter "demain", "ce soir", "tout à l'heure", "dans 1 heure", utilise ces valeurs et JAMAIS une date que tu aurais inventée.
+→ Si le client dit "ce soir à 20h" et qu'il est déjà 21h, signale-lui poliment qu'on est passé et propose un autre créneau.
 
 # État serveur — champs déjà mémorisés (FIABLE)
 ${collectedSummary || "  (rien collecté pour l'instant)"}
@@ -75,8 +89,21 @@ Si la demande est une annulation, appelle cancel_reservation avec customerPhone 
 
 # Ton
 Chaleureux, concis, tutoiement par défaut sauf si le client vouvoie. Réponses ≤ 2 phrases. Pas d'emoji.
-Jamais inventer une dispo — toujours passer par check_availability.`;
+Jamais inventer une dispo — toujours passer par check_availability.${ctx.channel === "voice" ? voiceAddendum : ""}`;
 }
+
+const voiceAddendum = `
+
+# Mode voix — RÈGLES SUPPLÉMENTAIRES (ce canal)
+Tu PARLES, tu n'écris pas. Ta réponse est lue à voix haute par un TTS.
+- Phrases courtes (≤ 15 mots chacune), au maximum 2 phrases au total.
+- AUCUN markdown, AUCUNE liste à puces, AUCUNE virgule décimale dans un nombre.
+- Énonce les dates de manière naturelle : "demain soir" plutôt que "le 2026-06-27 à 20:30:00".
+- Pour les heures : "vingt heures trente" est préférable à "20h30".
+- Pour les numéros de téléphone, lis par paquets : "zéro six, douze, trente-quatre, cinquante-six, soixante-dix-huit".
+- Ne dis JAMAIS "je vous lis le menu", "voici la liste", "appuyez sur 1", etc. C'est une conversation, pas un IVR.
+- Si tu hésites sur ce que le client a dit, demande naturellement : "Pardon, vous avez dit combien ?" plutôt que "Pouvez-vous répéter le nombre de couverts s'il vous plaît".
+- Confirme la résa en redisant les infos clés à l'oral : "Parfait Aurélien, c'est noté : quatre personnes demain à vingt heures trente. À demain !"`;
 
 export const ORCHESTRATOR_TOOLS: LLMToolDefinition[] = [
   {
