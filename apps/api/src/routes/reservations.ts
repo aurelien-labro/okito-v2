@@ -2,6 +2,7 @@ import { reservationCoreSchema, reservationSourceSchema } from "@okito/shared/ty
 import { Hono } from "hono";
 import { z } from "zod";
 import { BadRequestError } from "../lib/errors.js";
+import { IdempotencyCache } from "../lib/idempotency.js";
 import type { AppEnv } from "../lib/types.js";
 import type { ReservationService } from "../services/reservation.js";
 
@@ -11,6 +12,9 @@ const createBodySchema = reservationCoreSchema.extend({
   source: reservationSourceSchema.optional(),
 });
 const updateBodySchema = reservationCoreSchema.partial();
+
+/** Cache global idempotency partagé entre toutes les routes /v1/reservations. */
+const idempotency = new IdempotencyCache();
 
 export function reservationsRoute(service: ReservationService) {
   const app = new Hono<AppEnv>();
@@ -33,12 +37,29 @@ export function reservationsRoute(service: ReservationService) {
   });
 
   // POST /v1/reservations
+  // Supporte `Idempotency-Key: <token>` — si la même clé est rejouée par le
+  // même tenant dans les 24h, on renvoie la réponse cachée au lieu de
+  // re-créer. Indispensable pour Vapi/WhatsApp où les retries arrivent.
   app.post("/", async (c) => {
     const tenantId = c.get("tenantId");
+    const idemKey = c.req.header("idempotency-key")?.trim();
+
+    if (idemKey) {
+      const cached = idempotency.get(tenantId, idemKey);
+      if (cached) {
+        return c.json(cached.body as object, cached.status as 200);
+      }
+    }
+
     const body = await readJson(c);
     const data = parseOrThrow(createBodySchema, body, "body");
     const row = await service.create({ tenantId, data });
-    return c.json({ data: row }, 201);
+    const responseBody = { data: row };
+
+    if (idemKey) {
+      idempotency.set(tenantId, idemKey, { status: 201, body: responseBody });
+    }
+    return c.json(responseBody, 201);
   });
 
   // PATCH /v1/reservations/:id
