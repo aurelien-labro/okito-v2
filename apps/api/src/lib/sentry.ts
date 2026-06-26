@@ -37,9 +37,12 @@ export function captureException(err: unknown, context?: Record<string, unknown>
 
 export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
   if (event.request?.headers) {
-    event.request.headers.authorization = undefined;
-    event.request.headers.cookie = undefined;
-    event.request.headers["x-tenant-id"] = undefined;
+    // biome-ignore lint/performance/noDelete: header type interdit l'affectation à undefined
+    delete event.request.headers.authorization;
+    // biome-ignore lint/performance/noDelete: header type interdit l'affectation à undefined
+    delete event.request.headers.cookie;
+    // biome-ignore lint/performance/noDelete: header type interdit l'affectation à undefined
+    delete event.request.headers["x-tenant-id"];
   }
   // On ne capture jamais le body d'une requête → mais filet de sécurité.
   if (event.request) event.request.data = undefined;
