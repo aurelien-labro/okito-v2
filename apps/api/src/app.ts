@@ -8,6 +8,7 @@ import type { AppEnv } from "./lib/types.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import { chatRoute } from "./routes/chat.js";
 import { healthRoute } from "./routes/health.js";
+import { playgroundRoute } from "./routes/playground.js";
 import { reservationsRoute } from "./routes/reservations.js";
 import type { ChatService } from "./services/chat.js";
 import type { ReservationService } from "./services/reservation.js";
@@ -17,6 +18,8 @@ export interface AppServices {
   chat?: ChatService;
   /** Si fourni, /health ping la DB. Sinon /health remonte db.status="not_configured". */
   db?: Database;
+  /** Tenant pré-rempli dans la page de playground (dev). */
+  defaultTenantId?: string;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -30,6 +33,10 @@ export function createApp(env: Env, services: AppServices = {}) {
   });
 
   app.route("/health", healthRoute(env, services.db));
+
+  if (env.NODE_ENV !== "production") {
+    app.route("/", playgroundRoute(services.defaultTenantId));
+  }
 
   if (services.reservation || services.chat) {
     const v1 = new Hono<AppEnv>();

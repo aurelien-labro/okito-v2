@@ -25,6 +25,11 @@ if (env.DATABASE_URL) {
   services.reservation = reservation;
   services.db = db;
 
+  if (env.NODE_ENV !== "production") {
+    const okito = await db.query.tenants.findFirst({ where: (t, { eq }) => eq(t.slug, "okito") });
+    if (okito) services.defaultTenantId = okito.id;
+  }
+
   if (env.GEMINI_API_KEY) {
     const llm = createLLMClient(env);
     services.chat = new ChatService({ llm, conversation, reservation, tenant, capacity });
