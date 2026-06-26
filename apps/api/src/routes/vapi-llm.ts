@@ -1,7 +1,13 @@
 import { type Context, Hono } from "hono";
 import { BadRequestError, HttpError } from "../lib/errors.js";
 import { logger } from "../lib/logger.js";
+import { RateLimiter } from "../lib/rate-limit.js";
 import type { ChatService } from "../services/chat.js";
+
+/** 120 requêtes/minute par tenant — Vapi peut faire ~1 req par 500ms en streaming. */
+const vapiLimiter = new RateLimiter();
+const VAPI_LIMIT = 120;
+const VAPI_WINDOW_MS = 60_000;
 
 /**
  * Endpoint OpenAI-compatible que Vapi appelle comme "custom LLM".
@@ -30,13 +36,39 @@ interface VapiCustomLLMBody {
   metadata?: Record<string, unknown>;
 }
 
-export function vapiLlmRoute(service: ChatService) {
+export function vapiLlmRoute(
+  service: ChatService,
+  opts?: {
+    /** Secret partagé : si fourni, exigé dans le header X-Vapi-Secret. */
+    secret?: string;
+  },
+) {
   const app = new Hono();
+  const expectedSecret = opts?.secret;
 
   app.post("/:tenantId/chat/completions", async (c) => {
+    // Authent secret partagé (à configurer dans Vapi : Headers custom).
+    if (expectedSecret) {
+      const provided = c.req.header("x-vapi-secret") ?? "";
+      if (provided !== expectedSecret) {
+        logger.warn({ providedLen: provided.length }, "vapi-llm: secret manquant ou invalide");
+        throw new HttpError(401, "invalid_vapi_secret", "Secret Vapi invalide");
+      }
+    }
+
     const tenantId = c.req.param("tenantId");
     if (!tenantId || !/^[0-9a-f-]{36}$/i.test(tenantId)) {
       throw new BadRequestError("tenantId invalide dans le path", "invalid_tenant");
+    }
+
+    // Rate limit par tenant — protège contre une boucle infinie côté assistant
+    // ou un attaquant qui aurait le secret.
+    const rate = vapiLimiter.hit(`vapi:${tenantId}`, VAPI_LIMIT, VAPI_WINDOW_MS);
+    if (!rate.allowed) {
+      logger.warn({ tenantId, retryAfterMs: rate.retryAfterMs }, "vapi-llm: rate limit dépassé");
+      return c.json({ error: { code: "rate_limited", message: "Trop de requêtes" } }, 429, {
+        "Retry-After": String(Math.ceil(rate.retryAfterMs / 1000)),
+      });
     }
 
     let body: VapiCustomLLMBody;

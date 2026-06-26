@@ -14,6 +14,8 @@ const envSchema = z.object({
   SENTRY_DSN: z.string().url().optional(),
   VAPI_PUBLIC_KEY: z.string().optional(),
   VAPI_ASSISTANT_ID: z.string().optional(),
+  /** Secret partagé envoyé par Vapi dans le header X-Vapi-Secret (config "Headers" de l'assistant). */
+  VAPI_WEBHOOK_SECRET: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   /** Adresse expéditeur autorisée chez Resend, ex: "OKITO <bot@okito.app>". */
   RESEND_FROM_EMAIL: z.string().optional(),

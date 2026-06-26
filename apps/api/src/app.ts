@@ -63,10 +63,11 @@ export function createApp(env: Env, services: AppServices = {}) {
     app.route("/v1", v1);
   }
 
-  // Vapi custom LLM webhook — non-auth (Vapi n'envoie pas de JWT Supabase).
-  // En prod, ajouter un middleware qui vérifie un X-Vapi-Secret partagé avec l'assistant.
+  // Vapi custom LLM webhook — Vapi n'envoie pas de JWT Supabase. On valide
+  // via X-Vapi-Secret (à configurer côté Vapi dans "Custom Headers") + rate
+  // limit par tenant.
   if (services.chat) {
-    app.route("/vapi/llm", vapiLlmRoute(services.chat));
+    app.route("/vapi/llm", vapiLlmRoute(services.chat, { secret: env.VAPI_WEBHOOK_SECRET }));
   }
 
   // Webhook WhatsApp inbound (Twilio + 360dialog).
