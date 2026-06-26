@@ -20,3 +20,13 @@ export const CANCELLATION_KEYWORDS = [
 ] as const;
 
 export type CancellationKeyword = (typeof CANCELLATION_KEYWORDS)[number];
+
+/**
+ * Regex de détection rapide d'une intention d'annulation dans un message libre.
+ * Insensible à la casse, gère les variantes courantes en raccourci avant un appel LLM.
+ */
+export const CANCELLATION_REGEX = /annul|cancel|supprim|enl[eè]v|retir/i;
+
+export function isCancellationIntent(message: string): boolean {
+  return CANCELLATION_REGEX.test(message);
+}

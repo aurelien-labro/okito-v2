@@ -6,12 +6,15 @@ import { logger } from "./lib/logger.js";
 import { captureException } from "./lib/sentry.js";
 import type { AppEnv } from "./lib/types.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
+import { adminRemindersRoute } from "./routes/admin-reminders.js";
 import { chatRoute } from "./routes/chat.js";
 import { healthRoute } from "./routes/health.js";
 import { playgroundRoute } from "./routes/playground.js";
 import { reservationsRoute } from "./routes/reservations.js";
 import { vapiLlmRoute } from "./routes/vapi-llm.js";
+import { whatsappWebhookRoute } from "./routes/whatsapp-webhook.js";
 import type { ChatService } from "./services/chat.js";
+import type { ReminderService } from "./services/reminder.js";
 import type { ReservationService } from "./services/reservation.js";
 
 export interface AppServices {
@@ -25,6 +28,8 @@ export interface AppServices {
   vapiPublicKey?: string;
   /** ID assistant Vapi à appeler depuis le widget vocal. */
   vapiAssistantId?: string;
+  /** Service de rappels J-1, monté sur /v1/admin/reminders en dev. */
+  reminder?: ReminderService;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -62,6 +67,19 @@ export function createApp(env: Env, services: AppServices = {}) {
   // En prod, ajouter un middleware qui vérifie un X-Vapi-Secret partagé avec l'assistant.
   if (services.chat) {
     app.route("/vapi/llm", vapiLlmRoute(services.chat));
+  }
+
+  // Webhook WhatsApp inbound (Twilio + 360dialog). Non-auth — sécurise par signature/IP en prod.
+  if (services.chat && services.db) {
+    app.route(
+      "/v1/webhooks/whatsapp",
+      whatsappWebhookRoute({ chat: services.chat, db: services.db }),
+    );
+  }
+
+  // Endpoint admin pour trigger les rappels J-1 manuellement (dev). En prod : Inngest.
+  if (services.reminder && env.NODE_ENV !== "production") {
+    app.route("/admin/reminders", adminRemindersRoute(services.reminder));
   }
 
   app.notFound((c) => c.json({ error: { code: "not_found", message: "Route inconnue" } }, 404));

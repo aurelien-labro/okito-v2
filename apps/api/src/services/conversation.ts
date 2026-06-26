@@ -97,6 +97,39 @@ export class ConversationService {
     return row;
   }
 
+  async clearCollectedFields(
+    conversationId: string,
+    tenantId: string,
+    keys: string[],
+  ): Promise<Conversation> {
+    if (keys.length === 0) {
+      const existing = await this.db.query.conversations.findFirst({
+        where: (c, { and: a, eq: e }) => a(e(c.id, conversationId), e(c.tenantId, tenantId)),
+      });
+      if (!existing) throw new Error("Conversation introuvable lors du clear");
+      return existing;
+    }
+    const keysSql = sql.join(
+      keys.map((k) => sql`${k}`),
+      sql`, `,
+    );
+    const [row] = await this.db
+      .update(schema.conversations)
+      .set({
+        collectedFields: sql`coalesce(${schema.conversations.collectedFields}, '{}'::jsonb) - array[${keysSql}]::text[]`,
+        lastMessageAt: new Date(),
+      })
+      .where(
+        and(
+          eq(schema.conversations.id, conversationId),
+          eq(schema.conversations.tenantId, tenantId),
+        ),
+      )
+      .returning();
+    if (!row) throw new Error("Conversation introuvable lors du clear");
+    return row;
+  }
+
   async setStatus(
     conversationId: string,
     tenantId: string,

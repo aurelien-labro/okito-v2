@@ -1,10 +1,12 @@
 import type { Conversation, ConversationMessage, Tenant } from "@okito/db";
 import { ORCHESTRATOR_TOOLS, buildOrchestratorPrompt } from "@okito/prompts";
+import { isCancellationIntent } from "@okito/shared/keywords";
 import type { LLMClient, LLMToolCall } from "@okito/shared/llm";
 import { type ChatRequest, type ChatResponse, reservationCoreSchema } from "@okito/shared/types";
 import { logger } from "../lib/logger.js";
-import type { CapacityService } from "./capacity.js";
+import { type CapacityService, checkServiceWindow } from "./capacity.js";
 import type { ConversationService } from "./conversation.js";
+import type { Notifier } from "./notifier.js";
 import { DuplicateReservationError, type ReservationService } from "./reservation.js";
 import type { TenantService } from "./tenant.js";
 
@@ -22,6 +24,8 @@ export interface ChatDeps {
   reservation: ReservationService;
   tenant: TenantService;
   capacity: CapacityService;
+  /** Optionnel — si absent, aucune notification n'est envoyée (les résas sont quand même créées). */
+  notifier?: Notifier;
 }
 
 interface ToolOutcome {
@@ -55,6 +59,37 @@ export class ChatService {
       .map((m) => ({ role: m.role, content: m.content }));
 
     const llmChannel = CHANNEL_TO_LLM[input.channel];
+
+    // Raccourci annulation : si c'est le premier message user et qu'il contient un mot-clé
+    // d'annulation, on évite l'appel LLM et on appelle directement handleCancel
+    // (qui demandera téléphone + date si manquants ou trouvera la résa sinon).
+    const userTurns = convAfterUser.messages.filter((m) => m.role === "user").length;
+    if (userTurns === 1 && isCancellationIntent(input.message)) {
+      logger.info(
+        { tenantId: input.tenantId, sessionKey: input.sessionKey },
+        "cancellation shortcut",
+      );
+      const ctxShortcut = {
+        conversationId: conv.id,
+        collectedFields: convAfterUser.collectedFields ?? {},
+      };
+      await this.mergeFields(conv.id, input.tenantId, { intent: "cancel" }, ctxShortcut);
+      const outcome = await this.handleCancel({}, tenant);
+      await this.deps.conversation.appendMessage(conv.id, input.tenantId, {
+        role: "model",
+        content: outcome.reply,
+        at: new Date().toISOString(),
+      });
+      if (outcome.status !== "in_progress") {
+        await this.deps.conversation.setStatus(
+          conv.id,
+          input.tenantId,
+          outcome.status === "error" ? "abandoned" : "completed",
+          { reservationId: outcome.reservationId, step: "completed" },
+        );
+      }
+      return { reply: outcome.reply, conversationId: conv.id, status: outcome.status };
+    }
 
     const now = nowInTimezone(tenant.timezone);
     const llmResponse = await this.deps.llm.complete({
@@ -141,6 +176,20 @@ export class ChatService {
     ctx.collectedFields = updated.collectedFields ?? {};
   }
 
+  private async clearFields(
+    conversationId: string,
+    tenantId: string,
+    keys: string[],
+    ctx: { collectedFields: Record<string, unknown> },
+  ): Promise<void> {
+    const updated = await this.deps.conversation.clearCollectedFields(
+      conversationId,
+      tenantId,
+      keys,
+    );
+    ctx.collectedFields = updated.collectedFields ?? {};
+  }
+
   private async handleCheckAvailability(
     rawArgs: Record<string, unknown>,
     tenant: Tenant,
@@ -160,6 +209,20 @@ export class ChatService {
 
     await this.mergeFields(ctx.conversationId, tenant.id, { date, time, partySize: couverts }, ctx);
 
+    const window = checkServiceWindow(tenant, time);
+    const isVoice = channel === "voice";
+
+    if (!window.inService) {
+      // Heure hors service : on libère time pour que le user puisse re-proposer.
+      await this.clearFields(ctx.conversationId, tenant.id, ["time"], ctx);
+      return {
+        reply: isVoice
+          ? `On n'est pas ouvert à cette heure-là, désolé. Plutôt vers ${window.suggestion ?? "midi ou 19h30"} ?`
+          : `Désolé, on n'est pas ouvert à cette heure-là. Essayez ${window.suggestion ?? "12h30 ou 19h30"}.`,
+        status: "in_progress",
+      };
+    }
+
     const check = await this.deps.capacity.check({
       tenantId: tenant.id,
       date,
@@ -168,14 +231,22 @@ export class ChatService {
       capacityMax: tenant.capacityMax,
     });
 
-    const isVoice = channel === "voice";
     const dateStr = isVoice ? formatDateVoice(date) : formatDateFr(date);
     const timeStr = isVoice ? formatTimeVoice(time) : time.slice(0, 5);
 
+    if (!check.available) {
+      // Slot plein : reset des champs date/time/partySize pour que le user propose un autre créneau.
+      await this.clearFields(ctx.conversationId, tenant.id, ["date", "time", "partySize"], ctx);
+      return {
+        reply: isVoice
+          ? `Désolé, plus de place pour ${couverts} ${dateStr} à ${timeStr}. Un autre créneau ?`
+          : `Désolé, plus de place pour ${couverts} à ce créneau (${check.remaining} couverts restants). Un autre horaire ?`,
+        status: "in_progress",
+      };
+    }
+
     return {
-      reply: check.available
-        ? `C'est dispo pour ${couverts} ${dateStr} à ${timeStr}. Je vous le note ?`
-        : `Désolé, plus de place pour ${couverts} à ce créneau (${check.remaining} couverts restants). Un autre horaire ?`,
+      reply: `C'est dispo pour ${couverts} ${dateStr} à ${timeStr}. Je vous le note ?`,
       status: "in_progress",
     };
   }
@@ -221,6 +292,14 @@ export class ChatService {
         tenantId: tenant.id,
         data: { ...parsed.data, source: channel },
       });
+      // Notifs en fire-and-forget : ne pas bloquer la réponse au client.
+      if (this.deps.notifier) {
+        void this.deps.notifier
+          .notifyReservationCreated(tenant, row)
+          .catch((err) =>
+            logger.error({ err, reservationId: row.id }, "notifyReservationCreated failed"),
+          );
+      }
       const isVoice = channel === "voice";
       const dateStr = isVoice
         ? formatDateVoice(row.dateReservation)
@@ -281,6 +360,13 @@ export class ChatService {
     if (!target) throw new Error("found.length === 1 mais target undefined");
 
     const cancelled = await this.deps.reservation.cancel({ tenantId: tenant.id, id: target.id });
+    if (this.deps.notifier) {
+      void this.deps.notifier
+        .notifyReservationCancelled(tenant, cancelled)
+        .catch((err) =>
+          logger.error({ err, reservationId: cancelled.id }, "notifyReservationCancelled failed"),
+        );
+    }
     return {
       reply: `Réservation annulée. Si vous changez d'avis, on est là.`,
       status: "completed",
