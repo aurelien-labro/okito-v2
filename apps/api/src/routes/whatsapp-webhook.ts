@@ -1,7 +1,8 @@
 import type { Database } from "@okito/db";
 import { Hono } from "hono";
-import { BadRequestError } from "../lib/errors.js";
+import { BadRequestError, HttpError } from "../lib/errors.js";
 import { logger } from "../lib/logger.js";
+import { validateTwilioSignature } from "../lib/twilio-signature.js";
 import type { ChatService } from "../services/chat.js";
 
 /**
@@ -28,12 +29,18 @@ interface ParsedInbound {
   provider: "twilio" | "360dialog";
 }
 
-export function whatsappWebhookRoute(deps: { chat: ChatService; db: Database }) {
+export function whatsappWebhookRoute(deps: {
+  chat: ChatService;
+  db: Database;
+  /** Si fourni, valide la signature X-Twilio-Signature des webhooks Twilio inbound. */
+  twilioAuthToken?: string;
+}) {
   const app = new Hono();
 
   app.post("/", async (c) => {
     const contentType = c.req.header("content-type") ?? "";
     let parsed: ParsedInbound;
+    let twilioForm: Record<string, string> | null = null;
 
     if (contentType.includes("application/json")) {
       const body = await c.req.json().catch(() => null);
@@ -48,6 +55,25 @@ export function whatsappWebhookRoute(deps: { chat: ChatService; db: Database }) 
       const extracted = parseTwilio(form);
       if (!extracted) throw new BadRequestError("Format webhook inconnu", "unknown_format");
       parsed = extracted;
+      twilioForm = stringifyForm(form);
+    }
+
+    // Validation signature Twilio si activée (TWILIO_VALIDATE_WEBHOOK=true en prod).
+    if (deps.twilioAuthToken && parsed.provider === "twilio" && twilioForm) {
+      const signature = c.req.header("x-twilio-signature") ?? "";
+      const ok = validateTwilioSignature({
+        authToken: deps.twilioAuthToken,
+        url: c.req.url,
+        params: twilioForm,
+        signature,
+      });
+      if (!ok) {
+        logger.warn(
+          { from: parsed.fromNumber, to: parsed.toNumber },
+          "whatsapp inbound: signature Twilio invalide — requête rejetée",
+        );
+        throw new HttpError(401, "invalid_signature", "Signature invalide");
+      }
     }
 
     const tenantRoute = await deps.db.query.tenantPhoneRoutes.findFirst({
@@ -91,6 +117,15 @@ export function whatsappWebhookRoute(deps: { chat: ChatService; db: Database }) 
   });
 
   return app;
+}
+
+function stringifyForm(form: Record<string, unknown> | null): Record<string, string> {
+  if (!form) return {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(form)) {
+    if (typeof v === "string") out[k] = v;
+  }
+  return out;
 }
 
 function parseTwilio(form: Record<string, unknown> | null): ParsedInbound | null {
