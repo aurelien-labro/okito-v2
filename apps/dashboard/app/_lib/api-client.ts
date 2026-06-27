@@ -97,3 +97,59 @@ export async function getHealth(): Promise<HealthStatus> {
   const res = await fetch(`${API_URL}/health`);
   return (await res.json()) as HealthStatus;
 }
+
+// --- Tenants admin -----------------------------------------------------------
+
+export interface Tenant {
+  id: string;
+  slug: string;
+  name: string;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  timezone: string;
+  industry: string;
+  features: Record<string, boolean | undefined>;
+  capacityMax: number;
+  status: "active" | "suspended" | "trial";
+  remindersEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TenantCreate {
+  slug: string;
+  name: string;
+  industry?: string;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  timezone?: string;
+  capacityMax?: number;
+  features?: Record<string, boolean>;
+  status?: "active" | "suspended" | "trial";
+}
+
+export type TenantUpdate = Partial<Omit<TenantCreate, "slug">>;
+
+export async function listTenants(): Promise<{ data: Tenant[] }> {
+  return request("/v1/admin/tenants");
+}
+
+export async function getTenant(id: string): Promise<{ data: Tenant }> {
+  return request(`/v1/admin/tenants/${id}`);
+}
+
+export async function createTenant(input: TenantCreate): Promise<{ data: Tenant }> {
+  return request("/v1/admin/tenants", { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function updateTenant(id: string, patch: TenantUpdate): Promise<{ data: Tenant }> {
+  return request(`/v1/admin/tenants/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+}
+
+export async function suspendTenant(id: string): Promise<{ data: Tenant }> {
+  return request(`/v1/admin/tenants/${id}/suspend`, { method: "POST" });
+}
+
+export async function activateTenant(id: string): Promise<{ data: Tenant }> {
+  return request(`/v1/admin/tenants/${id}/activate`, { method: "POST" });
+}

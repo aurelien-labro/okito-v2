@@ -5,9 +5,11 @@ import { HttpError } from "./lib/errors.js";
 import { logger } from "./lib/logger.js";
 import { captureException } from "./lib/sentry.js";
 import type { AppEnv } from "./lib/types.js";
+import { createAdminMiddleware } from "./middleware/admin.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import { metricsMiddleware } from "./middleware/metrics.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
+import { adminTenantsRoute } from "./routes/admin-tenants.js";
 import { chatRoute } from "./routes/chat.js";
 import { healthRoute } from "./routes/health.js";
 import { inngestRoute } from "./routes/inngest.js";
@@ -20,6 +22,7 @@ import { widgetRoute } from "./routes/widget.js";
 import type { ChatService } from "./services/chat.js";
 import type { ReminderService } from "./services/reminder.js";
 import type { ReservationService } from "./services/reservation.js";
+import type { TenantService } from "./services/tenant.js";
 
 export interface AppServices {
   reservation?: ReservationService;
@@ -34,6 +37,8 @@ export interface AppServices {
   vapiAssistantId?: string;
   /** Service de rappels J-1, monté sur /v1/admin/reminders en dev. */
   reminder?: ReminderService;
+  /** Service de gestion tenants, monté sur /v1/admin/tenants si ADMIN_USER_IDS configuré. */
+  tenant?: TenantService;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -104,6 +109,16 @@ export function createApp(env: Env, services: AppServices = {}) {
   // Endpoint admin pour trigger les rappels J-1 manuellement (dev).
   if (services.reminder && env.NODE_ENV !== "production") {
     app.route("/admin/reminders", adminRemindersRoute(services.reminder));
+  }
+
+  // CRUD admin tenants — JWT requis + whitelist ADMIN_USER_IDS.
+  if (services.tenant && env.ADMIN_USER_IDS) {
+    const adminIds = env.ADMIN_USER_IDS.split(",");
+    const v1Admin = new Hono<AppEnv>();
+    v1Admin.use("*", createAuthMiddleware(env));
+    v1Admin.use("*", createAdminMiddleware(adminIds));
+    v1Admin.route("/tenants", adminTenantsRoute(services.tenant));
+    app.route("/v1/admin", v1Admin);
   }
 
   // Inngest : endpoint scrape par le dashboard pour découvrir + invoquer
