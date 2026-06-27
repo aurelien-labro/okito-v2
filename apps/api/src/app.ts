@@ -9,6 +9,7 @@ import { createAuthMiddleware } from "./middleware/auth.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
 import { chatRoute } from "./routes/chat.js";
 import { healthRoute } from "./routes/health.js";
+import { inngestRoute } from "./routes/inngest.js";
 import { playgroundRoute } from "./routes/playground.js";
 import { reservationsRoute } from "./routes/reservations.js";
 import { vapiLlmRoute } from "./routes/vapi-llm.js";
@@ -77,9 +78,15 @@ export function createApp(env: Env, services: AppServices = {}) {
     );
   }
 
-  // Endpoint admin pour trigger les rappels J-1 manuellement (dev). En prod : Inngest.
+  // Endpoint admin pour trigger les rappels J-1 manuellement (dev).
   if (services.reminder && env.NODE_ENV !== "production") {
     app.route("/admin/reminders", adminRemindersRoute(services.reminder));
+  }
+
+  // Inngest : endpoint scrape par le dashboard pour découvrir + invoquer
+  // les functions (cron rappels J-1, future events).
+  if (services.reminder) {
+    app.route("/api/inngest", inngestRoute(services.reminder));
   }
 
   app.notFound((c) => c.json({ error: { code: "not_found", message: "Route inconnue" } }, 404));
