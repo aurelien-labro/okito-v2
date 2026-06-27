@@ -6,10 +6,12 @@ import { logger } from "./lib/logger.js";
 import { captureException } from "./lib/sentry.js";
 import type { AppEnv } from "./lib/types.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
+import { metricsMiddleware } from "./middleware/metrics.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
 import { chatRoute } from "./routes/chat.js";
 import { healthRoute } from "./routes/health.js";
 import { inngestRoute } from "./routes/inngest.js";
+import { metricsRoute } from "./routes/metrics.js";
 import { playgroundRoute } from "./routes/playground.js";
 import { reservationsRoute } from "./routes/reservations.js";
 import { vapiLlmRoute } from "./routes/vapi-llm.js";
@@ -43,6 +45,13 @@ export function createApp(env: Env, services: AppServices = {}) {
     return c.json({ error: { code: "internal_error", message: "Erreur serveur" } }, 500);
   });
 
+  // Métriques Prometheus : middleware sur tout sauf /metrics (on ne se mesure pas soi-même).
+  app.use("*", async (c, next) => {
+    if (c.req.path === "/metrics") return next();
+    return metricsMiddleware(c, next);
+  });
+
+  app.route("/metrics", metricsRoute());
   app.route("/health", healthRoute(env, services.db));
 
   if (env.NODE_ENV !== "production") {
