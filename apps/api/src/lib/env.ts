@@ -17,6 +17,10 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   /** Adresse expéditeur autorisée chez Resend, ex: "OKITO <bot@okito.app>". */
   RESEND_FROM_EMAIL: z.string().optional(),
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  /** Numéro WhatsApp Twilio en E.164 (sans préfixe "whatsapp:"), ex: "+14155238886". */
+  TWILIO_WHATSAPP_FROM: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
