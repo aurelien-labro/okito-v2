@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { LoginGate } from "../_components/login-gate";
 import {
@@ -121,13 +122,21 @@ function TenantsList() {
                   </td>
                   <td className="px-4 py-3">{t.capacityMax}</td>
                   <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => toggleStatus(t)}
-                      className="text-xs text-stone-700 hover:underline"
-                    >
-                      {t.status === "active" ? "Suspendre" : "Activer"}
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href={`/tenants/${t.id}`}
+                        className="text-xs text-stone-700 hover:underline"
+                      >
+                        Éditer
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => toggleStatus(t)}
+                        className="text-xs text-stone-700 hover:underline"
+                      >
+                        {t.status === "active" ? "Suspendre" : "Activer"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

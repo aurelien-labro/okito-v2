@@ -128,7 +128,9 @@ export interface TenantCreate {
   status?: "active" | "suspended" | "trial";
 }
 
-export type TenantUpdate = Partial<Omit<TenantCreate, "slug">>;
+export type TenantUpdate = Partial<Omit<TenantCreate, "slug">> & {
+  remindersEnabled?: boolean;
+};
 
 export async function listTenants(): Promise<{ data: Tenant[] }> {
   return request("/v1/admin/tenants");
