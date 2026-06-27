@@ -1,4 +1,4 @@
-import type { Database, Tenant } from "@okito/db";
+import type { Database, ServiceWindow, Tenant } from "@okito/db";
 import { sql } from "drizzle-orm";
 
 export interface AvailabilityCheck {
@@ -9,35 +9,50 @@ export interface AvailabilityCheck {
 }
 
 export interface ServiceWindowCheck {
-  /** L'heure tombe dans un service (déjeuner ou dîner) du tenant. */
+  /** L'heure tombe dans un service du tenant. */
   inService: boolean;
-  /** Nom du service si inService=true ("déjeuner" / "dîner"). */
-  service?: "déjeuner" | "dîner";
+  /** Label du service si inService=true (ex: "déjeuner", "Check-in"). */
+  service?: string;
   /** Suggestion d'horaire valide si inService=false. */
   suggestion?: string;
 }
 
 /**
- * Vérifie qu'une heure HH:MM tombe dans une des deux plages de service du tenant.
- * Si hors-service, renvoie une suggestion ("essayez 12h30 (déjeuner) ou 19h30 (dîner)").
+ * Vérifie qu'une heure HH:MM tombe dans une des plages de service du tenant.
+ *
+ * Source de vérité : tenant.services (JSONB) si non-vide.
+ * Sinon fallback sur les 4 colonnes legacy lunch/dinner (resto historique).
  */
 export function checkServiceWindow(tenant: Tenant, heure: string): ServiceWindowCheck {
   const t = normalizeTime(heure);
   if (!t) return { inService: false };
-  const lunchStart = normalizeTime(tenant.serviceLunchStart);
-  const lunchEnd = normalizeTime(tenant.serviceLunchEnd);
-  const dinnerStart = normalizeTime(tenant.serviceDinnerStart);
-  const dinnerEnd = normalizeTime(tenant.serviceDinnerEnd);
 
-  if (lunchStart && lunchEnd && t >= lunchStart && t <= lunchEnd) {
-    return { inService: true, service: "déjeuner" };
-  }
-  if (dinnerStart && dinnerEnd && t >= dinnerStart && t <= dinnerEnd) {
-    return { inService: true, service: "dîner" };
+  const windows = effectiveServices(tenant);
+  if (windows.length === 0) return { inService: false };
+
+  for (const w of windows) {
+    const start = normalizeTime(w.start);
+    const end = normalizeTime(w.end);
+    if (start && end && t >= start && t <= end) {
+      return { inService: true, service: w.label };
+    }
   }
 
-  const suggestion = `${formatHm(lunchStart)} (déjeuner) ou ${formatHm(dinnerStart)} (dîner)`;
+  const suggestion = windows
+    .map((w) => `${formatHm(normalizeTime(w.start))} (${w.label})`)
+    .join(" ou ");
   return { inService: false, suggestion };
+}
+
+/** Retourne les plages effectives — services JSONB en priorité, sinon legacy lunch/dinner. */
+export function effectiveServices(tenant: Tenant): ServiceWindow[] {
+  if (Array.isArray(tenant.services) && tenant.services.length > 0) {
+    return tenant.services;
+  }
+  return [
+    { label: "déjeuner", start: tenant.serviceLunchStart, end: tenant.serviceLunchEnd },
+    { label: "dîner", start: tenant.serviceDinnerStart, end: tenant.serviceDinnerEnd },
+  ];
 }
 
 function normalizeTime(t: string | null | undefined): string | null {
