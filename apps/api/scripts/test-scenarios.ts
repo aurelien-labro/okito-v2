@@ -4,11 +4,18 @@
  * d'un coup d'œil les comportements absurdes / perroquet / blocages.
  *
  * Usage : pnpm --filter @okito/api exec tsx scripts/test-scenarios.ts
+ *
+ * Flags :
+ *   --no-clean : ne pas wiper les résas du tenant test avant le run
+ *                (utile pour reproduire un bug dépendant d'un état précis)
  */
 import "dotenv/config";
+import { getDb, schema } from "@okito/db";
+import { and, eq, inArray } from "drizzle-orm";
 
 const API_URL = process.env.OKITO_API_URL ?? "http://localhost:3001";
 const TENANT_ID = process.env.OKITO_TEST_TENANT_ID ?? "2853f3bc-cc57-46c1-959e-a07354feb505";
+const NO_CLEAN = process.argv.includes("--no-clean");
 
 interface Scenario {
   name: string;
@@ -227,10 +234,41 @@ function color(s: string, code: number): string {
   return `[${code}m${s}[0m`;
 }
 
+/**
+ * Wipe les résas créées par les scénarios précédents pour éviter les artéfacts
+ * (faux "capacité pleine" sur les créneaux 20:00 / 20:30 saturés par runs
+ * antérieurs). Cible uniquement les sources non-manual du tenant test.
+ */
+async function cleanupTestReservations(): Promise<number> {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    console.log(color("  (pas de DATABASE_URL → cleanup skipped)", 90));
+    return 0;
+  }
+  const db = getDb(dbUrl);
+  const deleted = await db
+    .delete(schema.reservations)
+    .where(
+      and(
+        eq(schema.reservations.tenantId, TENANT_ID),
+        inArray(schema.reservations.source, ["voice", "whatsapp", "web_widget"]),
+      ),
+    )
+    .returning({ id: schema.reservations.id });
+  return deleted.length;
+}
+
 async function main() {
   console.log(
     color(`\n🤖 Test scénarios bot — ${SCENARIOS.length} scénarios contre ${API_URL}\n`, 1),
   );
+
+  if (!NO_CLEAN) {
+    const n = await cleanupTestReservations();
+    console.log(color(`  🧹 cleanup : ${n} résas de test supprimées\n`, 90));
+  } else {
+    console.log(color("  --no-clean : état DB conservé\n", 90));
+  }
 
   let okCount = 0;
   let warnCount = 0;
