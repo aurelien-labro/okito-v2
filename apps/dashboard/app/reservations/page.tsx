@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { LoginGate } from "../_components/login-gate";
 import { type Reservation, cancelReservation, listReservations } from "../_lib/api-client";
@@ -121,15 +122,23 @@ function ReservationsList() {
                     <StatusBadge status={r.status} />
                   </Td>
                   <Td>
-                    {r.status !== "cancelled" && (
-                      <button
-                        type="button"
-                        onClick={() => handleCancel(r.id)}
-                        className="text-xs text-red-700 hover:underline"
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href={`/reservations/${r.id}`}
+                        className="text-xs text-stone-700 hover:underline"
                       >
-                        Annuler
-                      </button>
-                    )}
+                        Éditer
+                      </Link>
+                      {r.status !== "cancelled" && (
+                        <button
+                          type="button"
+                          onClick={() => handleCancel(r.id)}
+                          className="text-xs text-red-700 hover:underline"
+                        >
+                          Annuler
+                        </button>
+                      )}
+                    </div>
                   </Td>
                 </tr>
               ))}
