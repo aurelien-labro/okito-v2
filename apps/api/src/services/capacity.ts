@@ -1,4 +1,4 @@
-import type { Database } from "@okito/db";
+import type { Database, Tenant } from "@okito/db";
 import { sql } from "drizzle-orm";
 
 export interface AvailabilityCheck {
@@ -6,6 +6,49 @@ export interface AvailabilityCheck {
   occupied: number;
   capacityMax: number;
   remaining: number;
+}
+
+export interface ServiceWindowCheck {
+  /** L'heure tombe dans un service (déjeuner ou dîner) du tenant. */
+  inService: boolean;
+  /** Nom du service si inService=true ("déjeuner" / "dîner"). */
+  service?: "déjeuner" | "dîner";
+  /** Suggestion d'horaire valide si inService=false. */
+  suggestion?: string;
+}
+
+/**
+ * Vérifie qu'une heure HH:MM tombe dans une des deux plages de service du tenant.
+ * Si hors-service, renvoie une suggestion ("essayez 12h30 (déjeuner) ou 19h30 (dîner)").
+ */
+export function checkServiceWindow(tenant: Tenant, heure: string): ServiceWindowCheck {
+  const t = normalizeTime(heure);
+  if (!t) return { inService: false };
+  const lunchStart = normalizeTime(tenant.serviceLunchStart);
+  const lunchEnd = normalizeTime(tenant.serviceLunchEnd);
+  const dinnerStart = normalizeTime(tenant.serviceDinnerStart);
+  const dinnerEnd = normalizeTime(tenant.serviceDinnerEnd);
+
+  if (lunchStart && lunchEnd && t >= lunchStart && t <= lunchEnd) {
+    return { inService: true, service: "déjeuner" };
+  }
+  if (dinnerStart && dinnerEnd && t >= dinnerStart && t <= dinnerEnd) {
+    return { inService: true, service: "dîner" };
+  }
+
+  const suggestion = `${formatHm(lunchStart)} (déjeuner) ou ${formatHm(dinnerStart)} (dîner)`;
+  return { inService: false, suggestion };
+}
+
+function normalizeTime(t: string | null | undefined): string | null {
+  if (!t) return null;
+  const m = /^(\d{2}):(\d{2})/.exec(t);
+  return m ? `${m[1]}:${m[2]}` : null;
+}
+
+function formatHm(t: string | null): string {
+  if (!t) return "—";
+  return t.replace(":", "h");
 }
 
 export class CapacityService {
