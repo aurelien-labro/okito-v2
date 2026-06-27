@@ -3,6 +3,8 @@ import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import type { Env } from "../lib/env.js";
 
+type ProviderStatus = "configured" | "not_configured";
+
 export function healthRoute(env: Env, db?: Database) {
   const app = new Hono();
 
@@ -20,6 +22,9 @@ export function healthRoute(env: Env, db?: Database) {
           model: env.LLM_MODEL,
         },
         db: dbStatus,
+        notifiers: notifierStatus(env),
+        voice: voiceStatus(env),
+        observability: observabilityStatus(env),
         timestamp: new Date().toISOString(),
       },
       overall === "ok" ? 200 : 503,
@@ -39,4 +44,57 @@ async function pingDb(
   } catch (err) {
     return { status: "error", error: err instanceof Error ? err.message : String(err) };
   }
+}
+
+/**
+ * Statut des providers de notification — basé uniquement sur la présence
+ * des env vars (pas de ping réseau pour éviter de cramer du quota à chaque
+ * appel /health).
+ */
+function notifierStatus(env: Env): {
+  email: { provider: "resend" | "none"; status: ProviderStatus };
+  whatsapp: { provider: "twilio" | "none"; status: ProviderStatus };
+  sms: { provider: "twilio" | "none"; status: ProviderStatus };
+  webhookSignatureValidation: boolean;
+} {
+  const resend = !!(env.RESEND_API_KEY && env.RESEND_FROM_EMAIL);
+  const twilioBase = !!(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN);
+  const twilioWa = twilioBase && !!env.TWILIO_WHATSAPP_FROM;
+  const twilioSms = twilioBase && !!env.TWILIO_SMS_FROM;
+
+  return {
+    email: {
+      provider: resend ? "resend" : "none",
+      status: resend ? "configured" : "not_configured",
+    },
+    whatsapp: {
+      provider: twilioWa ? "twilio" : "none",
+      status: twilioWa ? "configured" : "not_configured",
+    },
+    sms: {
+      provider: twilioSms ? "twilio" : "none",
+      status: twilioSms ? "configured" : "not_configured",
+    },
+    webhookSignatureValidation: env.TWILIO_VALIDATE_WEBHOOK === "true" && !!env.TWILIO_AUTH_TOKEN,
+  };
+}
+
+function voiceStatus(env: Env): {
+  vapi: { status: ProviderStatus; assistantId?: string };
+} {
+  const configured = !!env.VAPI_PUBLIC_KEY && !!env.VAPI_ASSISTANT_ID;
+  return {
+    vapi: {
+      status: configured ? "configured" : "not_configured",
+      ...(env.VAPI_ASSISTANT_ID ? { assistantId: env.VAPI_ASSISTANT_ID } : {}),
+    },
+  };
+}
+
+function observabilityStatus(env: Env): {
+  sentry: { status: ProviderStatus };
+} {
+  return {
+    sentry: { status: env.SENTRY_DSN ? "configured" : "not_configured" },
+  };
 }

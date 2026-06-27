@@ -62,4 +62,40 @@ describe("GET /health", () => {
     const res = await app.request("/inexistant");
     expect(res.status).toBe(404);
   });
+
+  it("remonte le statut des providers (notifiers, voice, observability)", async () => {
+    const env = loadEnv({
+      ...baseEnv,
+      RESEND_API_KEY: "re_xxx",
+      RESEND_FROM_EMAIL: "bot@okito.test",
+      TWILIO_ACCOUNT_SID: "ACxxx",
+      TWILIO_AUTH_TOKEN: "tok",
+      TWILIO_WHATSAPP_FROM: "+14155238886",
+      TWILIO_VALIDATE_WEBHOOK: "true",
+      VAPI_PUBLIC_KEY: "vapi_pub",
+      VAPI_ASSISTANT_ID: "asst_xyz",
+      SENTRY_DSN: "https://x@sentry.io/1",
+    });
+    const app = createApp(env);
+    const res = await app.request("/health");
+    const body = (await res.json()) as {
+      notifiers: {
+        email: { provider: string; status: string };
+        whatsapp: { provider: string; status: string };
+        sms: { provider: string; status: string };
+        webhookSignatureValidation: boolean;
+      };
+      voice: { vapi: { status: string; assistantId?: string } };
+      observability: { sentry: { status: string } };
+    };
+
+    expect(body.notifiers.email.provider).toBe("resend");
+    expect(body.notifiers.email.status).toBe("configured");
+    expect(body.notifiers.whatsapp.provider).toBe("twilio");
+    expect(body.notifiers.sms.status).toBe("not_configured"); // pas de TWILIO_SMS_FROM
+    expect(body.notifiers.webhookSignatureValidation).toBe(true);
+    expect(body.voice.vapi.status).toBe("configured");
+    expect(body.voice.vapi.assistantId).toBe("asst_xyz");
+    expect(body.observability.sentry.status).toBe("configured");
+  });
 });
