@@ -1,0 +1,99 @@
+/**
+ * Client HTTP léger vers l'API OKITO.
+ *
+ * Lit le JWT depuis localStorage (`okito_token`) côté navigateur. Si pas
+ * de token, retourne 401 et la page de login s'affiche.
+ *
+ * NEXT_PUBLIC_OKITO_API_URL contrôle la base ; défaut : http://localhost:3001.
+ */
+
+const API_URL =
+  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_OKITO_API_URL) ||
+  "http://localhost:3001";
+
+export function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem("okito_token");
+}
+
+export function setToken(token: string): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem("okito_token", token);
+}
+
+export function clearToken(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem("okito_token");
+}
+
+export interface ApiError {
+  status: number;
+  code: string;
+  message: string;
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getToken();
+  const res = await fetch(`${API_URL}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init?.headers ?? {}),
+    },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    const err: ApiError = {
+      status: res.status,
+      code: body?.error?.code ?? "unknown",
+      message: body?.error?.message ?? `HTTP ${res.status}`,
+    };
+    throw err;
+  }
+  return (await res.json()) as T;
+}
+
+export interface Reservation {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string | null;
+  couverts: number;
+  dateReservation: string;
+  heure: string;
+  status: string;
+  source: string;
+  notes: string | null;
+  createdAt: string;
+}
+
+export async function listReservations(date?: string): Promise<{ data: Reservation[] }> {
+  const q = date ? `?date=${encodeURIComponent(date)}` : "";
+  return request(`/v1/reservations${q}`);
+}
+
+export async function cancelReservation(id: string): Promise<{ data: Reservation }> {
+  return request(`/v1/reservations/${id}/cancel`, { method: "POST" });
+}
+
+export interface HealthStatus {
+  status: string;
+  service: string;
+  env: string;
+  llm: { status: string; model: string };
+  db: { status: string; latencyMs?: number; error?: string };
+  notifiers?: {
+    email: { provider: string; status: string };
+    whatsapp: { provider: string; status: string };
+    sms: { provider: string; status: string };
+    webhookSignatureValidation: boolean;
+  };
+  voice?: { vapi: { status: string; assistantId?: string } };
+  observability?: { sentry: { status: string } };
+}
+
+export async function getHealth(): Promise<HealthStatus> {
+  const res = await fetch(`${API_URL}/health`);
+  return (await res.json()) as HealthStatus;
+}
