@@ -2,8 +2,14 @@ import type { Database } from "@okito/db";
 import { Hono } from "hono";
 import { BadRequestError, HttpError } from "../lib/errors.js";
 import { logger } from "../lib/logger.js";
+import { RateLimiter } from "../lib/rate-limit.js";
 import { validateTwilioSignature } from "../lib/twilio-signature.js";
 import type { ChatService } from "../services/chat.js";
+
+/** 20 messages/minute par expéditeur — au-delà = spam évident. */
+const inboundLimiter = new RateLimiter();
+const INBOUND_LIMIT = 20;
+const INBOUND_WINDOW_MS = 60_000;
 
 /**
  * Webhook entrant WhatsApp.
@@ -74,6 +80,22 @@ export function whatsappWebhookRoute(deps: {
         );
         throw new HttpError(401, "invalid_signature", "Signature invalide");
       }
+    }
+
+    // Rate limit par expéditeur : bloque le spam évident. Au-delà de
+    // INBOUND_LIMIT msg/min depuis un même From, on tape 429 sans appeler
+    // ChatService (économise du quota Gemini).
+    const rate = inboundLimiter.hit(`wa:${parsed.fromNumber}`, INBOUND_LIMIT, INBOUND_WINDOW_MS);
+    if (!rate.allowed) {
+      logger.warn(
+        { from: parsed.fromNumber, retryAfterMs: rate.retryAfterMs },
+        "whatsapp inbound: rate limit dépassé",
+      );
+      return c.json(
+        { error: { code: "rate_limited", message: "Trop de messages, ralentissez" } },
+        429,
+        { "Retry-After": String(Math.ceil(rate.retryAfterMs / 1000)) },
+      );
     }
 
     const tenantRoute = await deps.db.query.tenantPhoneRoutes.findFirst({
