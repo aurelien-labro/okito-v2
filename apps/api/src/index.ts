@@ -25,6 +25,7 @@ if (env.DATABASE_URL) {
   const tenant = new TenantService(db);
   const capacity = new CapacityService(db);
   services.reservation = reservation;
+  services.tenant = tenant;
   services.db = db;
 
   if (env.NODE_ENV !== "production") {

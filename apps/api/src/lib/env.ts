@@ -25,6 +25,8 @@ const envSchema = z.object({
   TWILIO_SMS_FROM: z.string().optional(),
   /** Si "true" et TWILIO_AUTH_TOKEN défini, valide la signature X-Twilio-Signature sur les webhooks. */
   TWILIO_VALIDATE_WEBHOOK: z.enum(["true", "false"]).optional(),
+  /** UUIDs Supabase Auth des utilisateurs admin (CRUD tenants), séparés par virgule. */
+  ADMIN_USER_IDS: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
