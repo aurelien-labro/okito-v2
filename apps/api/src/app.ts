@@ -18,6 +18,7 @@ import { inngestRoute } from "./routes/inngest.js";
 import { metricsRoute } from "./routes/metrics.js";
 import { playgroundRoute } from "./routes/playground.js";
 import { reservationsRoute } from "./routes/reservations.js";
+import { stripeWebhookRoute } from "./routes/stripe-webhook.js";
 import { vapiLlmRoute } from "./routes/vapi-llm.js";
 import { whatsappWebhookRoute } from "./routes/whatsapp-webhook.js";
 import { widgetRoute } from "./routes/widget.js";
@@ -25,6 +26,7 @@ import type { AuditLogService } from "./services/audit-log.js";
 import type { ChatService } from "./services/chat.js";
 import type { ReminderService } from "./services/reminder.js";
 import type { ReservationService } from "./services/reservation.js";
+import type { SubscriptionService } from "./services/subscription.js";
 import type { TenantService } from "./services/tenant.js";
 
 export interface AppServices {
@@ -44,6 +46,8 @@ export interface AppServices {
   tenant?: TenantService;
   /** Service de journal d'audit, monté sur /v1/admin/audit si fourni. */
   audit?: AuditLogService;
+  /** Service abonnements Stripe — monte /v1/webhooks/stripe si STRIPE_WEBHOOK_SECRET set. */
+  subscription?: SubscriptionService;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -152,6 +156,19 @@ export function createApp(env: Env, services: AppServices = {}) {
   // les functions (cron rappels J-1, future events).
   if (services.reminder) {
     app.route("/api/inngest", inngestRoute(services.reminder));
+  }
+
+  // Webhook Stripe — signature vérifiée via STRIPE_WEBHOOK_SECRET.
+  // Source de vérité = Stripe ; on cache localement le status pour
+  // pouvoir filtrer les features sans round-trip.
+  if (services.subscription && env.STRIPE_WEBHOOK_SECRET) {
+    app.route(
+      "/v1/webhooks/stripe",
+      stripeWebhookRoute({
+        webhookSecret: env.STRIPE_WEBHOOK_SECRET,
+        subscription: services.subscription,
+      }),
+    );
   }
 
   app.notFound((c) => c.json({ error: { code: "not_found", message: "Route inconnue" } }, 404));
