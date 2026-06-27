@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Démo widget OKITO</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, sans-serif; max-width: 720px; margin: 60px auto; padding: 0 20px; color: #1c1917; }
+    h1 { font-size: 2rem; }
+    code { background: #f5f5f4; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    pre { background: #f5f5f4; padding: 16px; border-radius: 8px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>Démo widget OKITO</h1>
+  <p>Cette page simule un site marchand qui embarque le widget de réservation OKITO en bas à droite.</p>
+
+  <h2>Intégration</h2>
+  <pre><code>&lt;script
+  src="https://widget.okito.app/v1/widget.js"
+  data-tenant-id="2853f3bc-cc57-46c1-959e-a07354feb505"
+  data-api-url="https://api.okito.app"
+  data-title="Réserver une table"
+  data-greeting="Bienvenue ! Pour quelle date souhaitez-vous réserver ?"&gt;
+&lt;/script&gt;</code></pre>
+
+  <h2>Test local</h2>
+  <p>Le widget pointe sur <code>http://localhost:3001</code> et utilise le tenant test OKITO. L'API doit tourner.</p>
+
+  <script
+    src="./dist/widget.js"
+    data-tenant-id="2853f3bc-cc57-46c1-959e-a07354feb505"
+    data-api-url="http://localhost:3001"
+    data-title="Réserver — Démo OKITO"
+    data-greeting="Bonjour ! Pour combien de personnes et quel jour ?"
+  ></script>
+</body>
+</html>

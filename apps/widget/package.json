@@ -1,15 +1,17 @@
 {
   "name": "@okito/widget",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "echo 'Widget Phase 2 — pas encore implémenté' && exit 0",
-    "build": "echo 'Widget Phase 2 — pas encore implémenté' && exit 0",
+    "dev": "tsx build.ts && python -m http.server --directory dist 8080",
+    "build": "tsx build.ts",
     "typecheck": "tsc --noEmit",
     "test": "echo 'no tests yet' && exit 0"
   },
   "devDependencies": {
+    "esbuild": "^0.24.2",
+    "tsx": "^4.22.4",
     "typescript": "^5.7.2"
   }
 }

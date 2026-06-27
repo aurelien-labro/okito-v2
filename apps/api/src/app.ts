@@ -16,6 +16,7 @@ import { playgroundRoute } from "./routes/playground.js";
 import { reservationsRoute } from "./routes/reservations.js";
 import { vapiLlmRoute } from "./routes/vapi-llm.js";
 import { whatsappWebhookRoute } from "./routes/whatsapp-webhook.js";
+import { widgetRoute } from "./routes/widget.js";
 import type { ChatService } from "./services/chat.js";
 import type { ReminderService } from "./services/reminder.js";
 import type { ReservationService } from "./services/reservation.js";
@@ -77,6 +78,12 @@ export function createApp(env: Env, services: AppServices = {}) {
   // En prod, ajouter un middleware qui vérifie un X-Vapi-Secret partagé avec l'assistant.
   if (services.chat) {
     app.route("/vapi/llm", vapiLlmRoute(services.chat));
+  }
+
+  // Widget JS embarquable — endpoint public CORS-permissif (à durcir avec
+  // whitelist d'origines par tenant en prod).
+  if (services.chat) {
+    app.route("/v1/widget", widgetRoute(services.chat));
   }
 
   // Webhook WhatsApp inbound (Twilio + 360dialog).
