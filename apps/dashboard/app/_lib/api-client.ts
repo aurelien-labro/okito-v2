@@ -121,6 +121,12 @@ export async function getHealth(): Promise<HealthStatus> {
 
 // --- Tenants admin -----------------------------------------------------------
 
+export interface ServiceWindow {
+  label: string;
+  start: string;
+  end: string;
+}
+
 export interface Tenant {
   id: string;
   slug: string;
@@ -130,6 +136,7 @@ export interface Tenant {
   timezone: string;
   industry: string;
   features: Record<string, boolean | undefined>;
+  services: ServiceWindow[];
   capacityMax: number;
   status: "active" | "suspended" | "trial";
   remindersEnabled: boolean;
@@ -146,6 +153,7 @@ export interface TenantCreate {
   timezone?: string;
   capacityMax?: number;
   features?: Record<string, boolean>;
+  services?: ServiceWindow[];
   status?: "active" | "suspended" | "trial";
 }
 

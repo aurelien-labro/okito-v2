@@ -3,6 +3,7 @@ import {
   type Database,
   type Industry,
   type NewTenant,
+  type ServiceWindow,
   type Tenant,
   type TenantFeatures,
   schema,
@@ -18,6 +19,7 @@ export interface TenantUpdate {
   timezone?: string;
   industry?: Industry;
   features?: TenantFeatures;
+  services?: ServiceWindow[];
   capacityMax?: number;
   status?: "active" | "suspended" | "trial";
   remindersEnabled?: boolean;

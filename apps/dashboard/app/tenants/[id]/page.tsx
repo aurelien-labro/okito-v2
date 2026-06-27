@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LoginGate } from "../../_components/login-gate";
-import { type Tenant, type TenantUpdate, getTenant, updateTenant } from "../../_lib/api-client";
+import {
+  type ServiceWindow,
+  type Tenant,
+  type TenantUpdate,
+  getTenant,
+  updateTenant,
+} from "../../_lib/api-client";
 
 const INDUSTRIES = [
   "restaurant",
@@ -269,6 +275,18 @@ function TenantDetail() {
           </div>
         </Section>
 
+        <Section title="Horaires de service">
+          <p className="-mt-2 mb-4 text-xs text-stone-500">
+            Plages d'ouverture pendant lesquelles les réservations sont acceptées. Tant que cette
+            liste est vide, OKITO retombe sur les créneaux historiques (déjeuner 12h-14h30, dîner
+            19h-22h). Ajoute des plages pour les surcharger.
+          </p>
+          <ServicesEditor
+            services={form.services}
+            onChange={(services) => patchForm({ services })}
+          />
+        </Section>
+
         {err && (
           <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
             {err}
@@ -315,6 +333,7 @@ interface FormState {
   status: "active" | "suspended" | "trial";
   remindersEnabled: boolean;
   features: Record<FeatureKey, boolean>;
+  services: ServiceWindow[];
 }
 
 function toForm(t: Tenant): FormState {
@@ -332,6 +351,7 @@ function toForm(t: Tenant): FormState {
     status: t.status,
     remindersEnabled: t.remindersEnabled,
     features,
+    services: (t.services ?? []).map((s) => ({ ...s })),
   };
 }
 
@@ -348,6 +368,8 @@ function diffPatch(prev: FormState, next: FormState): TenantUpdate {
     patch.remindersEnabled = next.remindersEnabled;
   if (JSON.stringify(prev.features) !== JSON.stringify(next.features))
     patch.features = next.features;
+  if (JSON.stringify(prev.services) !== JSON.stringify(next.services))
+    patch.services = next.services;
   return patch;
 }
 
@@ -399,6 +421,93 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div className="block">
       <span className="mb-1 block text-xs font-medium text-stone-700">{label}</span>
       {children}
+    </div>
+  );
+}
+
+function ServicesEditor({
+  services,
+  onChange,
+}: {
+  services: ServiceWindow[];
+  onChange: (next: ServiceWindow[]) => void;
+}) {
+  function update(i: number, patch: Partial<ServiceWindow>) {
+    onChange(services.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+  }
+  function remove(i: number) {
+    onChange(services.filter((_, idx) => idx !== i));
+  }
+  function add() {
+    onChange([...services, { label: "", start: "09:00", end: "12:00" }]);
+  }
+
+  return (
+    <div className="space-y-3">
+      {services.length === 0 ? (
+        <div className="rounded border border-dashed border-stone-300 px-4 py-6 text-center text-sm text-stone-500">
+          Aucune plage personnalisée.
+        </div>
+      ) : (
+        services.map((s, i) => {
+          const invalid = s.start >= s.end;
+          return (
+            <div
+              key={`${i}-${s.label}`}
+              className="grid items-end gap-3 rounded border border-stone-200 p-3 md:grid-cols-[2fr_1fr_1fr_auto]"
+            >
+              <Field label="Nom">
+                <input
+                  value={s.label}
+                  onChange={(e) => update(i, { label: e.target.value })}
+                  maxLength={40}
+                  placeholder="Déjeuner, Check-in, Atelier matin…"
+                  className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                />
+              </Field>
+              <Field label="Début">
+                <input
+                  type="time"
+                  value={s.start}
+                  onChange={(e) => update(i, { start: e.target.value })}
+                  className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                />
+              </Field>
+              <Field label="Fin">
+                <input
+                  type="time"
+                  value={s.end}
+                  onChange={(e) => update(i, { end: e.target.value })}
+                  className={`w-full rounded border px-3 py-2 text-sm ${
+                    invalid ? "border-red-300 bg-red-50" : "border-stone-300"
+                  }`}
+                />
+              </Field>
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                className="rounded border border-stone-300 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50"
+                aria-label="Supprimer cette plage"
+              >
+                Retirer
+              </button>
+            </div>
+          );
+        })
+      )}
+      <div>
+        <button
+          type="button"
+          onClick={add}
+          disabled={services.length >= 10}
+          className="rounded border border-stone-300 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 disabled:opacity-50"
+        >
+          + Ajouter une plage
+        </button>
+        {services.length >= 10 && (
+          <span className="ml-3 text-xs text-stone-500">Maximum 10 plages.</span>
+        )}
+      </div>
     </div>
   );
 }

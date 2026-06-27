@@ -20,6 +20,16 @@ const featuresSchema = z
   })
   .strict();
 
+const hhmm = z.string().regex(/^\d{2}:\d{2}$/, "format HH:MM");
+const serviceWindowSchema = z
+  .object({
+    label: z.string().trim().min(1).max(40),
+    start: hhmm,
+    end: hhmm,
+  })
+  .refine((w) => w.start < w.end, { message: "start doit être < end", path: ["end"] });
+const servicesSchema = z.array(serviceWindowSchema).max(10);
+
 const createSchema = z.object({
   slug: z
     .string()
@@ -33,6 +43,7 @@ const createSchema = z.object({
   timezone: z.string().default("Europe/Paris"),
   capacityMax: z.number().int().positive().max(10_000).default(50),
   features: featuresSchema.optional(),
+  services: servicesSchema.optional(),
   status: statusEnum.default("trial"),
 });
 
@@ -45,6 +56,7 @@ const updateSchema = z
     timezone: z.string(),
     capacityMax: z.number().int().positive().max(10_000),
     features: featuresSchema,
+    services: servicesSchema,
     status: statusEnum,
     remindersEnabled: z.boolean(),
   })
