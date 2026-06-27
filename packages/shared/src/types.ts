@@ -29,6 +29,21 @@ export const reservationCoreSchema = z.object({
 });
 export type ReservationCore = z.infer<typeof reservationCoreSchema>;
 
+/**
+ * Aliases génériques "Booking" — sémantiquement équivalents à Reservation pour l'instant.
+ *
+ * Permet d'écrire le code pour les futurs verticaux (hôtel, garage, etc.) en utilisant
+ * un vocabulaire métier-neutre, sans casser la couche DB qui parle toujours
+ * "reservations". Le jour où on aura besoin de différencier (modèle hôtel ≠ resto),
+ * Booking deviendra son propre type et chaque vertical aura sa shape.
+ */
+export const bookingCoreSchema = reservationCoreSchema;
+export type BookingCore = ReservationCore;
+export const bookingSourceSchema = reservationSourceSchema;
+export type BookingSource = ReservationSource;
+export const bookingStatusSchema = reservationStatusSchema;
+export type BookingStatus = ReservationStatus;
+
 export const chatRequestSchema = z.object({
   tenantId: z.string().uuid(),
   channel: channelSchema,
