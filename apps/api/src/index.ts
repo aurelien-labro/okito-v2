@@ -5,6 +5,7 @@ import { type AppServices, createApp } from "./app.js";
 import { loadEnv } from "./lib/env.js";
 import { logger } from "./lib/logger.js";
 import { initSentry } from "./lib/sentry.js";
+import { AuditLogService } from "./services/audit-log.js";
 import { CapacityService } from "./services/capacity.js";
 import { ChatService } from "./services/chat.js";
 import { ConversationService } from "./services/conversation.js";
@@ -26,6 +27,7 @@ if (env.DATABASE_URL) {
   const capacity = new CapacityService(db);
   services.reservation = reservation;
   services.tenant = tenant;
+  services.audit = new AuditLogService(db);
   services.db = db;
 
   if (env.NODE_ENV !== "production") {

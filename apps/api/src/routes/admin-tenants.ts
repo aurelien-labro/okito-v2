@@ -1,8 +1,10 @@
 import { INDUSTRY_VALUES } from "@okito/db";
+import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
 import { BadRequestError } from "../lib/errors.js";
 import type { AppEnv } from "../lib/types.js";
+import type { AuditLogService } from "../services/audit-log.js";
 import type { TenantService } from "../services/tenant.js";
 
 const industryEnum = z.enum(INDUSTRY_VALUES);
@@ -50,7 +52,7 @@ const updateSchema = z
 
 const uuidParam = z.string().uuid();
 
-export function adminTenantsRoute(service: TenantService) {
+export function adminTenantsRoute(service: TenantService, audit?: AuditLogService) {
   const app = new Hono<AppEnv>();
 
   app.get("/", async (c) => {
@@ -68,6 +70,13 @@ export function adminTenantsRoute(service: TenantService) {
     const body = await readJson(c);
     const data = parseOrThrow(createSchema, body, "body");
     const row = await service.create(data);
+    await safeAudit(audit, c, {
+      action: "tenant.create",
+      entityType: "tenant",
+      entityId: row.id,
+      tenantId: row.id,
+      after: row,
+    });
     return c.json({ data: row }, 201);
   });
 
@@ -75,23 +84,72 @@ export function adminTenantsRoute(service: TenantService) {
     const id = parseOrThrow(uuidParam, c.req.param("id"), "id");
     const body = await readJson(c);
     const patch = parseOrThrow(updateSchema, body, "body");
+    const before = await service.getById(id);
     const row = await service.update(id, patch);
+    await safeAudit(audit, c, {
+      action: "tenant.update",
+      entityType: "tenant",
+      entityId: id,
+      tenantId: id,
+      before,
+      after: row,
+    });
     return c.json({ data: row });
   });
 
   app.post("/:id/suspend", async (c) => {
     const id = parseOrThrow(uuidParam, c.req.param("id"), "id");
+    const before = await service.getById(id);
     const row = await service.setStatus(id, "suspended");
+    await safeAudit(audit, c, {
+      action: "tenant.suspend",
+      entityType: "tenant",
+      entityId: id,
+      tenantId: id,
+      before,
+      after: row,
+    });
     return c.json({ data: row });
   });
 
   app.post("/:id/activate", async (c) => {
     const id = parseOrThrow(uuidParam, c.req.param("id"), "id");
+    const before = await service.getById(id);
     const row = await service.setStatus(id, "active");
+    await safeAudit(audit, c, {
+      action: "tenant.activate",
+      entityType: "tenant",
+      entityId: id,
+      tenantId: id,
+      before,
+      after: row,
+    });
     return c.json({ data: row });
   });
 
   return app;
+}
+
+/**
+ * Audit fire-and-log : on ne fait jamais planter une mutation parce que
+ * l'écriture du log échoue. On loggue l'erreur côté logger Hono et on continue.
+ */
+async function safeAudit(
+  audit: AuditLogService | undefined,
+  c: Context<AppEnv>,
+  input: Omit<Parameters<AuditLogService["log"]>[0], "actorUserId" | "ip" | "userAgent">,
+): Promise<void> {
+  if (!audit) return;
+  try {
+    await audit.log({
+      ...input,
+      actorUserId: c.get("userId") ?? null,
+      ip: c.req.header("x-forwarded-for") ?? null,
+      userAgent: c.req.header("user-agent") ?? null,
+    });
+  } catch (err) {
+    console.error("[audit_log] échec d'écriture :", err);
+  }
 }
 
 async function readJson(c: { req: { json: () => Promise<unknown> } }): Promise<unknown> {

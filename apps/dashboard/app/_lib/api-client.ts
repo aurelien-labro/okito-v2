@@ -153,3 +153,39 @@ export async function suspendTenant(id: string): Promise<{ data: Tenant }> {
 export async function activateTenant(id: string): Promise<{ data: Tenant }> {
   return request(`/v1/admin/tenants/${id}/activate`, { method: "POST" });
 }
+
+// --- Audit log ---------------------------------------------------------------
+
+export interface AuditLogEntry {
+  id: string;
+  tenantId: string | null;
+  actorUserId: string | null;
+  actorLabel: string | null;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  before: unknown;
+  after: unknown;
+  ip: string | null;
+  userAgent: string | null;
+  createdAt: string;
+}
+
+export interface AuditLogFilters {
+  tenantId?: string;
+  entityType?: string;
+  entityId?: string;
+  limit?: number;
+}
+
+export async function listAuditLog(filters: AuditLogFilters = {}): Promise<{
+  data: AuditLogEntry[];
+}> {
+  const params = new URLSearchParams();
+  if (filters.tenantId) params.set("tenantId", filters.tenantId);
+  if (filters.entityType) params.set("entityType", filters.entityType);
+  if (filters.entityId) params.set("entityId", filters.entityId);
+  if (filters.limit) params.set("limit", String(filters.limit));
+  const q = params.toString();
+  return request(`/v1/admin/audit${q ? `?${q}` : ""}`);
+}
