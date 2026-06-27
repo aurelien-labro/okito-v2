@@ -1,3 +1,4 @@
+import type { InngestFunction } from "inngest";
 import { inngest } from "../lib/inngest.js";
 import { logger } from "../lib/logger.js";
 import type { ReminderService } from "../services/reminder.js";
@@ -15,7 +16,7 @@ import type { ReminderService } from "../services/reminder.js";
  * "demain" calculé proprement. Sera affiné si on cible des tenants
  * géographiquement très éloignés.
  */
-export function createInngestFunctions(reminder: ReminderService) {
+export function createInngestFunctions(reminder: ReminderService): InngestFunction.Any[] {
   const dailyReminders = inngest.createFunction(
     {
       id: "daily-reminders-j1",

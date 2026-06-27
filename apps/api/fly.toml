@@ -1,0 +1,55 @@
+# fly.toml — apps/api OKITO V2
+#
+# Déploiement initial :
+#   cd apps/api
+#   fly launch --no-deploy --copy-config            # crée l'app, lit ce fly.toml
+#   fly secrets set GEMINI_API_KEY=... DATABASE_URL=... SUPABASE_JWT_SECRET=... \
+#                   RESEND_API_KEY=... RESEND_FROM_EMAIL=... \
+#                   TWILIO_ACCOUNT_SID=... TWILIO_AUTH_TOKEN=... TWILIO_WHATSAPP_FROM=... \
+#                   VAPI_WEBHOOK_SECRET=... INNGEST_SIGNING_KEY=... SENTRY_DSN=...
+#   fly deploy
+#
+# Région CDG = Paris (proche Supabase EU Paris).
+
+app = "okito-api"
+primary_region = "cdg"
+kill_signal = "SIGINT"
+kill_timeout = "5s"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "8080"
+  APP_URL = "https://dashboard.okito.app"
+  LOG_LEVEL = "info"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 50
+    hard_limit = 100
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+# Métriques Prometheus exposées sur /metrics — Fly Grafana peut les scraper.
+[metrics]
+  port = 8080
+  path = "/metrics"
