@@ -42,6 +42,32 @@ const brandingSchema = z
   })
   .strict();
 
+const channelsSetSchema = z
+  .object({
+    email: z.boolean().optional(),
+    whatsapp: z.boolean().optional(),
+    sms: z.boolean().optional(),
+  })
+  .strict();
+const notificationPreferencesSchema = z
+  .object({
+    manager: z
+      .object({
+        onCreate: channelsSetSchema.optional(),
+        onCancel: channelsSetSchema.optional(),
+      })
+      .strict()
+      .optional(),
+    client: z
+      .object({
+        onCreate: channelsSetSchema.optional(),
+        onReminder: channelsSetSchema.optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
 const createSchema = z.object({
   slug: z
     .string()
@@ -60,6 +86,7 @@ const createSchema = z.object({
   depositAmountCents: z.number().int().min(0).max(100_000).optional(),
   depositRequiredAboveParty: z.number().int().min(0).max(50).optional(),
   depositCurrency: z.enum(["EUR", "USD", "GBP", "CHF"]).optional(),
+  notificationPreferences: notificationPreferencesSchema.optional(),
   status: statusEnum.default("trial"),
 });
 
@@ -77,6 +104,7 @@ const updateSchema = z
     depositAmountCents: z.number().int().min(0).max(100_000),
     depositRequiredAboveParty: z.number().int().min(0).max(50),
     depositCurrency: z.enum(["EUR", "USD", "GBP", "CHF"]),
+    notificationPreferences: notificationPreferencesSchema,
     status: statusEnum,
     remindersEnabled: z.boolean(),
   })

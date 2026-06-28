@@ -7,6 +7,7 @@ import {
   type Tenant,
   type TenantBranding,
   type TenantFeatures,
+  type TenantNotificationPreferences,
   schema,
 } from "@okito/db";
 import { desc, eq } from "drizzle-orm";
@@ -22,6 +23,7 @@ export interface TenantUpdate {
   features?: TenantFeatures;
   services?: ServiceWindow[];
   branding?: TenantBranding;
+  notificationPreferences?: TenantNotificationPreferences;
   capacityMax?: number;
   depositAmountCents?: number;
   depositRequiredAboveParty?: number;
