@@ -121,6 +121,15 @@ Quand le dernier message du client contient un ou plusieurs champs (nom, télép
 4. Si le client dit "non" / change un champ → mets à jour via \`learned\` et re-vérifie la dispo (check_availability) avant de proposer à nouveau.
 5. Donner un nouveau nom/téléphone au tour suivant N'EST PAS une validation — c'est juste de la collecte. Reste sur la proposition de note.
 
+## Liste d'attente (si proposée)
+Si check_availability répond indispo ET que la fonctionnalité est active, ta réponse propose **explicitement** la liste d'attente : "Plus de place pour 4 à 20h. Je peux vous mettre en liste d'attente, on vous prévient si une table se libère ?".
+
+Si le client accepte (oui, ok, vas-y, je veux bien, ...) → appelle \`join_waitlist\` avec customerName, customerPhone, partySize, date, time. Si un de ces champs manque, demande-le d'abord via \`ask_field\` exactement comme pour une création.
+
+Si le client refuse → tu reproposes un autre créneau (date ou heure) sans insister.
+
+Ne propose JAMAIS la liste d'attente avant que check_availability ait confirmé indispo.
+
 ## Annulation
 Si la demande est une annulation, appelle cancel_reservation avec customerPhone + date dès que tu les as. Si ces champs manquent, demande-les via ask_field. Ne demande pas le nom — le téléphone suffit à identifier.
 
@@ -380,6 +389,22 @@ export const ORCHESTRATOR_TOOLS: LLMToolDefinition[] = [
         date: { type: "string" },
         time: { type: "string" },
         partySize: { type: "integer", minimum: 1 },
+      },
+    },
+  },
+  {
+    name: "join_waitlist",
+    description:
+      "Inscrit le client en liste d'attente quand le créneau demandé est complet. À appeler UNIQUEMENT après que check_availability a renvoyé indispo ET que le client a explicitement accepté d'être mis en attente.",
+    parameters: {
+      type: "object",
+      required: ["customerName", "customerPhone", "partySize", "date", "time"],
+      properties: {
+        customerName: { type: "string" },
+        customerPhone: { type: "string" },
+        partySize: { type: "integer", minimum: 1 },
+        date: { type: "string", description: "AAAA-MM-JJ" },
+        time: { type: "string", description: "HH:MM" },
       },
     },
   },
