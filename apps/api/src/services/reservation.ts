@@ -57,7 +57,11 @@ export class ReservationService {
     return row;
   }
 
-  async create(args: { tenantId: string; data: ReservationCore & { source?: ReservationSource } }) {
+  async create(args: {
+    tenantId: string;
+    data: ReservationCore & { source?: ReservationSource };
+    tableId?: string | null;
+  }) {
     const parsed = createInputSchema.parse(args.data);
     try {
       const [row] = await this.db
@@ -73,6 +77,7 @@ export class ReservationService {
           notes: parsed.notes,
           source: parsed.source,
           status: "confirmed",
+          tableId: args.tableId ?? null,
         })
         .returning();
       if (!row) throw new Error("insert n'a rien retourné");

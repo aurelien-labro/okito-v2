@@ -58,6 +58,9 @@ export const reservations = pgTable(
     /** Snapshot du montant au moment de la création (immune aux futurs changements de prix). */
     depositAmountCents: integer("deposit_amount_cents"),
     depositPaymentIntentId: text("deposit_payment_intent_id"),
+
+    /** Table assignée si le tenant est en mode table-based capacity. Sinon null. */
+    tableId: uuid("table_id"),
   },
   (table) => ({
     uniqActiveReservation: uniqueIndex("uniq_active_reservation").on(

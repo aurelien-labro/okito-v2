@@ -353,3 +353,47 @@ export async function expireWaitlistEntry(id: string): Promise<void> {
 export async function cancelWaitlistEntry(id: string): Promise<void> {
   await request(`/v1/admin/waitlist/${id}`, { method: "DELETE" });
 }
+
+// --- Tables (capacité par table) -------------------------------------------
+
+export interface TenantTable {
+  id: string;
+  tenantId: string;
+  label: string;
+  capacity: number;
+  active: boolean;
+  createdAt: string;
+}
+
+export async function listTables(
+  tenantId: string,
+  includeInactive = false,
+): Promise<{ data: TenantTable[] }> {
+  const q = includeInactive ? "?includeInactive=true" : "";
+  return request(`/v1/admin/tables/${tenantId}${q}`);
+}
+
+export async function createTable(input: {
+  tenantId: string;
+  label: string;
+  capacity: number;
+}): Promise<{ data: TenantTable }> {
+  return request(`/v1/admin/tables/${input.tenantId}`, {
+    method: "POST",
+    body: JSON.stringify({ label: input.label, capacity: input.capacity }),
+  });
+}
+
+export async function updateTable(
+  id: string,
+  patch: Partial<Pick<TenantTable, "label" | "capacity" | "active">>,
+): Promise<{ data: TenantTable }> {
+  return request(`/v1/admin/tables/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function deleteTable(id: string): Promise<void> {
+  await request(`/v1/admin/tables/${id}`, { method: "DELETE" });
+}

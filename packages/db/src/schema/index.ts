@@ -5,4 +5,5 @@ export * from "./tenant-phone-routes.js";
 export * from "./audit-log.js";
 export * from "./subscriptions.js";
 export * from "./tenant-members.js";
+export * from "./tenant-tables.js";
 export * from "./waitlist.js";

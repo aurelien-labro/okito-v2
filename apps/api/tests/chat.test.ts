@@ -92,7 +92,16 @@ function makeStubs() {
       serviceDinnerEnd: "22:00",
     }),
   };
-  const capacity = { check: vi.fn() };
+  const capacity = {
+    check: vi.fn().mockResolvedValue({
+      available: true,
+      occupied: 0,
+      capacityMax: 50,
+      remaining: 50,
+      tableId: null,
+      mode: "couverts",
+    }),
+  };
 
   const service = new ChatService({
     llm: llm as unknown as LLMClient,
