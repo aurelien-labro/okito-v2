@@ -307,3 +307,49 @@ export async function updateMemberRole(
 export async function removeMember(memberId: string): Promise<void> {
   await request(`/v1/admin/members/${memberId}`, { method: "DELETE" });
 }
+
+// --- Waitlist ---------------------------------------------------------------
+
+export type WaitlistStatus = "waiting" | "notified" | "converted" | "expired" | "cancelled";
+
+export interface WaitlistEntry {
+  id: string;
+  tenantId: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string | null;
+  couverts: number;
+  dateSouhaitee: string;
+  heureSouhaitee: string;
+  flexMinutes: number;
+  status: WaitlistStatus;
+  notifiedAt: string | null;
+  convertedAt: string | null;
+  expiredAt: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export async function listWaitlist(
+  tenantId: string,
+  status?: WaitlistStatus,
+): Promise<{ data: WaitlistEntry[] }> {
+  const q = status ? `?status=${status}` : "";
+  return request(`/v1/admin/waitlist/${tenantId}${q}`);
+}
+
+export async function notifyWaitlistEntry(id: string): Promise<void> {
+  await request(`/v1/admin/waitlist/${id}/notify`, { method: "POST" });
+}
+
+export async function convertWaitlistEntry(id: string): Promise<void> {
+  await request(`/v1/admin/waitlist/${id}/convert`, { method: "POST" });
+}
+
+export async function expireWaitlistEntry(id: string): Promise<void> {
+  await request(`/v1/admin/waitlist/${id}/expire`, { method: "POST" });
+}
+
+export async function cancelWaitlistEntry(id: string): Promise<void> {
+  await request(`/v1/admin/waitlist/${id}`, { method: "DELETE" });
+}
