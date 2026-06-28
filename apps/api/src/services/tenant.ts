@@ -23,6 +23,9 @@ export interface TenantUpdate {
   services?: ServiceWindow[];
   branding?: TenantBranding;
   capacityMax?: number;
+  depositAmountCents?: number;
+  depositRequiredAboveParty?: number;
+  depositCurrency?: "EUR" | "USD" | "GBP" | "CHF";
   status?: "active" | "suspended" | "trial";
   remindersEnabled?: boolean;
 }

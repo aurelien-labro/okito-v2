@@ -40,6 +40,24 @@ export const reservations = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+
+    /**
+     * Acompte anti-no-show. Workflow :
+     *   none → pas d'acompte demandé pour cette résa
+     *   required → demandé mais pas encore initié (lien envoyé au client)
+     *   pending → Payment Intent créé, client n'a pas encore payé
+     *   paid → carte chargée, résa garantie
+     *   refunded → remboursé après annulation valide
+     *   failed → 3DS échoué, retry possible
+     */
+    depositStatus: text("deposit_status", {
+      enum: ["none", "required", "pending", "paid", "refunded", "failed"],
+    })
+      .notNull()
+      .default("none"),
+    /** Snapshot du montant au moment de la création (immune aux futurs changements de prix). */
+    depositAmountCents: integer("deposit_amount_cents"),
+    depositPaymentIntentId: text("deposit_payment_intent_id"),
   },
   (table) => ({
     uniqActiveReservation: uniqueIndex("uniq_active_reservation").on(

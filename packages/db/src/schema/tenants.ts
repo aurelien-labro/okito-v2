@@ -104,6 +104,17 @@ export const tenants = pgTable("tenants", {
    */
   services: jsonb("services").$type<ServiceWindow[]>().notNull().default([]),
 
+  /**
+   * Acomptes anti-no-show (Stripe). 0 = feature désactivée.
+   * Montant en centimes pour la précision (1000 = 10€).
+   */
+  depositAmountCents: integer("deposit_amount_cents").notNull().default(0),
+  /** Seuil de couverts à partir duquel l'acompte est demandé. 0 = jamais. */
+  depositRequiredAboveParty: integer("deposit_required_above_party").notNull().default(0),
+  depositCurrency: text("deposit_currency", { enum: ["EUR", "USD", "GBP", "CHF"] })
+    .notNull()
+    .default("EUR"),
+
   serviceLunchStart: time("service_lunch_start").notNull().default(sql`'12:00'`),
   serviceLunchEnd: time("service_lunch_end").notNull().default(sql`'14:30'`),
   serviceDinnerStart: time("service_dinner_start").notNull().default(sql`'19:00'`),
