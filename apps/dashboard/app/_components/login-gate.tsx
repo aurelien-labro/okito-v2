@@ -67,14 +67,16 @@ function SupabaseGate({ children }: { children: ReactNode }) {
 }
 
 function MagicLinkForm() {
+  const [mode, setMode] = useState<"magic" | "password">("magic");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  async function handle(e: FormEvent) {
+  async function handleMagic(e: FormEvent) {
     e.preventDefault();
-    setSending(true);
+    setBusy(true);
     setErr(null);
     try {
       const sb = getSupabase();
@@ -87,7 +89,26 @@ function MagicLinkForm() {
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Erreur envoi magic-link");
     } finally {
-      setSending(false);
+      setBusy(false);
+    }
+  }
+
+  async function handlePassword(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setErr(null);
+    try {
+      const sb = getSupabase();
+      const { error } = await sb.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (error) throw error;
+      // SupabaseGate.useEffect détecte le onAuthStateChange et re-render.
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Erreur connexion");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -99,6 +120,13 @@ function MagicLinkForm() {
           Vérifie ta boîte mail (<strong>{email}</strong>) et clique sur le lien pour te connecter.
           Tu peux fermer cet onglet en attendant.
         </p>
+        <button
+          type="button"
+          onClick={() => setSent(false)}
+          className="mt-4 text-xs text-stone-500 hover:underline"
+        >
+          ← Renvoyer / changer de méthode
+        </button>
       </div>
     );
   }
@@ -106,10 +134,35 @@ function MagicLinkForm() {
   return (
     <div className="mx-auto max-w-md py-12">
       <h2 className="text-xl font-semibold tracking-tight">Connexion</h2>
-      <p className="mt-2 text-sm text-stone-600">
-        Reçois un lien magique par email pour te connecter au dashboard OKITO.
+
+      <div className="mt-4 flex gap-1 rounded border border-stone-200 bg-stone-50 p-1 text-xs">
+        <button
+          type="button"
+          onClick={() => setMode("magic")}
+          className={`flex-1 rounded px-3 py-1.5 ${
+            mode === "magic" ? "bg-white font-medium shadow-sm" : "text-stone-500"
+          }`}
+        >
+          Magic link
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("password")}
+          className={`flex-1 rounded px-3 py-1.5 ${
+            mode === "password" ? "bg-white font-medium shadow-sm" : "text-stone-500"
+          }`}
+        >
+          Mot de passe
+        </button>
+      </div>
+
+      <p className="mt-4 text-sm text-stone-600">
+        {mode === "magic"
+          ? "Reçois un lien magique par email."
+          : "Connexion directe avec mot de passe (utile si le magic link bloque)."}
       </p>
-      <form onSubmit={handle} className="mt-6 space-y-3">
+
+      <form onSubmit={mode === "magic" ? handleMagic : handlePassword} className="mt-4 space-y-3">
         <input
           type="email"
           required
@@ -118,12 +171,22 @@ function MagicLinkForm() {
           placeholder="toi@exemple.com"
           className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
         />
+        {mode === "password" && (
+          <input
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+          />
+        )}
         <button
           type="submit"
-          disabled={sending}
+          disabled={busy}
           className="w-full rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
         >
-          {sending ? "Envoi…" : "Recevoir le lien"}
+          {busy ? "…" : mode === "magic" ? "Recevoir le lien" : "Se connecter"}
         </button>
         {err && <div className="text-sm text-red-700">{err}</div>}
       </form>
