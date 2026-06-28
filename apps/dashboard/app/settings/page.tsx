@@ -202,6 +202,19 @@ function SettingsView() {
             </Grid>
           </Section>
 
+          <Section title="Fonctionnalités">
+            <p className="-mt-2 mb-4 text-xs text-stone-500">
+              Active/désactive les modules. Les pages dashboard liées peuvent rester visibles mais
+              le bot ne propose plus les fonctionnalités décochées.
+            </p>
+            <FeaturesGrid
+              features={form.features}
+              onToggle={(k) =>
+                patchForm({ features: { ...form.features, [k]: !form.features[k] } })
+              }
+            />
+          </Section>
+
           <Section title="Notifications">
             <p className="-mt-2 mb-4 text-xs text-stone-500">
               Choisis qui reçoit quoi sur quel canal. Manager = toi/ton équipe ; Client = la
@@ -359,12 +372,22 @@ interface FormState {
   timezone: string;
   capacityMax: number;
   remindersEnabled: boolean;
+  features: Features;
   notificationPreferences: NotifPrefs;
   branding: Branding;
   depositAmountCents: number;
   depositRequiredAboveParty: number;
   depositCurrency: "EUR" | "USD" | "GBP" | "CHF";
 }
+
+type Features = {
+  voice?: boolean;
+  reminders?: boolean;
+  deposits?: boolean;
+  waitlist?: boolean;
+  loyalty?: boolean;
+  multi_resource?: boolean;
+};
 
 type NotifPrefs = {
   manager?: { onCreate?: ChannelsSet; onCancel?: ChannelsSet };
@@ -387,6 +410,7 @@ function toForm(t: Tenant): FormState {
     timezone: t.timezone,
     capacityMax: t.capacityMax,
     remindersEnabled: t.remindersEnabled,
+    features: (t.features ?? {}) as Features,
     notificationPreferences: (raw.notificationPreferences ?? {}) as NotifPrefs,
     branding: (raw.branding ?? {}) as Branding,
     depositAmountCents: raw.depositAmountCents ?? 0,
@@ -404,6 +428,8 @@ function diffPatch(prev: FormState, next: FormState): TenantUpdate {
   if (prev.capacityMax !== next.capacityMax) patch.capacityMax = next.capacityMax;
   if (prev.remindersEnabled !== next.remindersEnabled)
     patch.remindersEnabled = next.remindersEnabled;
+  if (JSON.stringify(prev.features) !== JSON.stringify(next.features))
+    patch.features = next.features;
   if (JSON.stringify(prev.notificationPreferences) !== JSON.stringify(next.notificationPreferences))
     patch.notificationPreferences = next.notificationPreferences;
   if (JSON.stringify(prev.branding) !== JSON.stringify(next.branding))
@@ -469,6 +495,64 @@ function NotifMatrix({
         })}
       </tbody>
     </table>
+  );
+}
+
+function FeaturesGrid({
+  features,
+  onToggle,
+}: {
+  features: Features;
+  onToggle: (key: keyof Features) => void;
+}) {
+  const items: Array<{
+    key: keyof Features;
+    title: string;
+    desc: string;
+  }> = [
+    { key: "voice", title: "Agent voix (Vapi)", desc: "Appels téléphoniques traités par le bot." },
+    { key: "reminders", title: "Rappels J-1", desc: "Cron matinal qui envoie le rappel." },
+    {
+      key: "waitlist",
+      title: "Liste d'attente",
+      desc: "Le bot propose la waitlist quand un créneau est plein.",
+    },
+    {
+      key: "deposits",
+      title: "Acomptes",
+      desc: "Carte demandée à la résa (config dans 'Acomptes' ci-dessous).",
+    },
+    {
+      key: "loyalty",
+      title: "Fidélité",
+      desc: "Le bot reconnaît les habitués et adapte son accueil.",
+    },
+    {
+      key: "multi_resource",
+      title: "Inventaire typé",
+      desc: "Pour vert. multi-ressource (chambres, baies, véhicules).",
+    },
+  ];
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      {items.map((it) => (
+        <label
+          key={it.key}
+          className="flex cursor-pointer items-start gap-3 rounded border border-stone-200 p-3 hover:bg-stone-50"
+        >
+          <input
+            type="checkbox"
+            checked={Boolean(features[it.key])}
+            onChange={() => onToggle(it.key)}
+            className="mt-0.5 h-4 w-4 accent-stone-900"
+          />
+          <div>
+            <div className="text-sm font-medium text-stone-900">{it.title}</div>
+            <div className="text-xs text-stone-500">{it.desc}</div>
+          </div>
+        </label>
+      ))}
+    </div>
   );
 }
 
