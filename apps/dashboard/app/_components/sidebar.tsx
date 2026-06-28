@@ -7,6 +7,7 @@ const NAV = [
   { href: "/", label: "Vue d'ensemble" },
   { href: "/reservations", label: "Réservations" },
   { href: "/tenants", label: "Tenants" },
+  { href: "/audit", label: "Audit" },
   { href: "/settings", label: "Paramètres" },
 ];
 

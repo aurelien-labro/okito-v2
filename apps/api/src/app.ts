@@ -9,6 +9,7 @@ import type { AppEnv } from "./lib/types.js";
 import { createAdminMiddleware } from "./middleware/admin.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import { metricsMiddleware } from "./middleware/metrics.js";
+import { adminAuditRoute } from "./routes/admin-audit.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
 import { adminTenantsRoute } from "./routes/admin-tenants.js";
 import { chatRoute } from "./routes/chat.js";
@@ -20,6 +21,7 @@ import { reservationsRoute } from "./routes/reservations.js";
 import { vapiLlmRoute } from "./routes/vapi-llm.js";
 import { whatsappWebhookRoute } from "./routes/whatsapp-webhook.js";
 import { widgetRoute } from "./routes/widget.js";
+import type { AuditLogService } from "./services/audit-log.js";
 import type { ChatService } from "./services/chat.js";
 import type { ReminderService } from "./services/reminder.js";
 import type { ReservationService } from "./services/reservation.js";
@@ -40,6 +42,8 @@ export interface AppServices {
   reminder?: ReminderService;
   /** Service de gestion tenants, monté sur /v1/admin/tenants si ADMIN_USER_IDS configuré. */
   tenant?: TenantService;
+  /** Service de journal d'audit, monté sur /v1/admin/audit si fourni. */
+  audit?: AuditLogService;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -137,7 +141,10 @@ export function createApp(env: Env, services: AppServices = {}) {
     const v1Admin = new Hono<AppEnv>();
     v1Admin.use("*", createAuthMiddleware(env));
     v1Admin.use("*", createAdminMiddleware(adminIds));
-    v1Admin.route("/tenants", adminTenantsRoute(services.tenant));
+    v1Admin.route("/tenants", adminTenantsRoute(services.tenant, services.audit));
+    if (services.audit) {
+      v1Admin.route("/audit", adminAuditRoute(services.audit));
+    }
     app.route("/v1/admin", v1Admin);
   }
 
