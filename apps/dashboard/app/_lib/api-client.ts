@@ -220,3 +220,29 @@ export async function listAuditLog(filters: AuditLogFilters = {}): Promise<{
   const q = params.toString();
   return request(`/v1/admin/audit${q ? `?${q}` : ""}`);
 }
+
+// --- Stats business ---------------------------------------------------------
+
+export interface StatsOverview {
+  range: { fromIso: string; toIso: string; days: number };
+  totals: {
+    reservations: number;
+    confirmed: number;
+    cancelled: number;
+    noShow: number;
+    completed: number;
+    couvertsTotal: number;
+    couvertsAvg: number;
+  };
+  noShowRate: number;
+  byDay: Array<{ date: string; total: number; confirmed: number; cancelled: number }>;
+  bySource: Array<{ source: string; count: number }>;
+  byHour: Array<{ hour: string; count: number }>;
+}
+
+export async function getStatsOverview(
+  tenantId: string,
+  days = 30,
+): Promise<{ data: StatsOverview }> {
+  return request(`/v1/admin/stats/${tenantId}/overview?days=${days}`);
+}
