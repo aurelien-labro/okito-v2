@@ -9,6 +9,7 @@ import type { ConversationService } from "./conversation.js";
 import type { Notifier } from "./notifier.js";
 import { DuplicateReservationError, type ReservationService } from "./reservation.js";
 import type { TenantService } from "./tenant.js";
+import type { WaitlistService } from "./waitlist.js";
 
 const MAX_HISTORY_MESSAGES = 20;
 const CHANNEL_TO_LLM: Record<ChatRequest["channel"], "web" | "whatsapp" | "voice"> = {
@@ -26,6 +27,8 @@ export interface ChatDeps {
   capacity: CapacityService;
   /** Optionnel — si absent, aucune notification n'est envoyée (les résas sont quand même créées). */
   notifier?: Notifier;
+  /** Optionnel — si absent, le bot ne propose pas la liste d'attente quand slot plein. */
+  waitlist?: WaitlistService;
 }
 
 interface ToolOutcome {
@@ -158,6 +161,8 @@ export class ChatService {
         return this.handleAskField(toolCall.arguments, tenant.id, ctx);
       case "check_availability":
         return this.handleCheckAvailability(toolCall.arguments, tenant, channel, ctx);
+      case "join_waitlist":
+        return this.handleJoinWaitlist(toolCall.arguments, tenant, channel, ctx);
       default:
         logger.warn({ toolName: toolCall.name }, "tool inconnu retourné par le LLM");
         return { reply: "Désolé, je n'ai pas pu traiter cette action.", status: "error" };
@@ -237,7 +242,18 @@ export class ChatService {
     const timeStr = isVoice ? formatTimeVoice(time) : time.slice(0, 5);
 
     if (!check.available) {
-      // Slot plein : reset des champs date/time/partySize pour que le user propose un autre créneau.
+      const waitlistEnabled = !!this.deps.waitlist && tenant.features?.waitlist !== false;
+      // Slot plein : si waitlist activée, proposer plutôt que rejeter sec.
+      // On garde date/time/partySize en collected pour que join_waitlist puisse les réutiliser.
+      if (waitlistEnabled) {
+        return {
+          reply: isVoice
+            ? `Pas de place pour ${couverts} ${dateStr} à ${timeStr}. Je peux vous mettre en liste d'attente, on vous prévient si une table se libère ?`
+            : `Plus de place pour ${couverts} à ce créneau. Je peux vous noter en liste d'attente — on vous prévient dès qu'une table se libère. Ça vous va ?`,
+          status: "in_progress",
+        };
+      }
+      // Pas de waitlist → reset pour reproposer un autre créneau.
       await this.clearFields(ctx.conversationId, tenant.id, ["date", "time", "partySize"], ctx);
       return {
         reply: isVoice
@@ -250,6 +266,78 @@ export class ChatService {
     return {
       reply: `C'est dispo pour ${couverts} ${dateStr} à ${timeStr}. Je vous le note ?`,
       status: "in_progress",
+    };
+  }
+
+  private async handleJoinWaitlist(
+    rawArgs: Record<string, unknown>,
+    tenant: Tenant,
+    channel: ChatRequest["channel"],
+    ctx: { conversationId: string; collectedFields: Record<string, unknown> },
+  ): Promise<ToolOutcome> {
+    if (!this.deps.waitlist) {
+      return {
+        reply: "La liste d'attente n'est pas activée pour ce restaurant.",
+        status: "error",
+      };
+    }
+
+    const merged: Record<string, unknown> = { ...ctx.collectedFields };
+    for (const [k, v] of Object.entries(rawArgs)) {
+      if (v !== undefined && v !== null && v !== "") merged[k] = v;
+    }
+    await this.mergeFields(ctx.conversationId, tenant.id, merged, ctx);
+
+    const customerName = pickString(merged.customerName);
+    const customerPhone = pickString(merged.customerPhone);
+    const couverts = pickInt(merged.couverts ?? merged.partySize);
+    const dateSouhaitee = pickString(merged.dateReservation ?? merged.date);
+    const heureSouhaitee = pickString(merged.heure ?? merged.time);
+
+    if (!customerName || !customerPhone || !couverts || !dateSouhaitee || !heureSouhaitee) {
+      const missing = !customerName
+        ? "customerName"
+        : !customerPhone
+          ? "customerPhone"
+          : !couverts
+            ? "partySize"
+            : !dateSouhaitee
+              ? "date"
+              : "time";
+      const friendly = humanField(missing);
+      return {
+        reply: friendly
+          ? `Pour vous mettre en liste d'attente, il me faut ${friendly}.`
+          : "Il me manque une info pour la liste d'attente.",
+        status: "in_progress",
+      };
+    }
+
+    try {
+      await this.deps.waitlist.join({
+        tenantId: tenant.id,
+        customerName,
+        customerPhone,
+        couverts,
+        dateSouhaitee,
+        heureSouhaitee,
+      });
+    } catch (err) {
+      logger.error({ err, tenantId: tenant.id }, "waitlist.join failed");
+      return {
+        reply: "Je n'ai pas réussi à vous noter en liste d'attente. Vous pouvez réessayer ?",
+        status: "error",
+      };
+    }
+
+    const isVoice = channel === "voice";
+    const dateStr = isVoice ? formatDateVoice(dateSouhaitee) : formatDateFr(dateSouhaitee);
+    const timeStr = isVoice ? formatTimeVoice(heureSouhaitee) : heureSouhaitee.slice(0, 5);
+    return {
+      reply: isVoice
+        ? `C'est noté, vous êtes en liste d'attente pour ${dateStr} à ${timeStr}. On vous prévient si une table se libère.`
+        : `C'est noté ${customerName.split(" ")[0] ?? customerName}, vous êtes en liste d'attente pour ${dateStr} à ${timeStr}. On vous prévient dès qu'une table se libère.`,
+      status: "completed",
     };
   }
 
