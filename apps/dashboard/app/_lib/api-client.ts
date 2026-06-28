@@ -26,6 +26,21 @@ export function clearToken(): void {
   window.localStorage.removeItem("okito_token");
 }
 
+/**
+ * Tenant courant utilisé par l'admin pour piloter un tenant donné depuis le
+ * dashboard. Passé en X-Tenant-Id à l'API ; le middleware admin l'accepte
+ * comme override quand le JWT n'a pas de claim tenant_id.
+ */
+export function getCurrentTenantId(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem("okito_current_tenant_id");
+}
+
+export function setCurrentTenantId(id: string): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem("okito_current_tenant_id", id);
+}
+
 export interface ApiError {
   status: number;
   code: string;
@@ -34,11 +49,13 @@ export interface ApiError {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken();
+  const tenantId = getCurrentTenantId();
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(tenantId ? { "X-Tenant-Id": tenantId } : {}),
       ...(init?.headers ?? {}),
     },
   });
