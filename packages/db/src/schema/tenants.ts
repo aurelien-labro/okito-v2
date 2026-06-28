@@ -82,6 +82,38 @@ export type TenantBranding = {
 
 export const DEFAULT_BRANDING: TenantBranding = {};
 
+/**
+ * Préférences de notification par tenant. Chaque event (création/annulation/
+ * rappel) peut être envoyé sur un ou plusieurs canaux pour le manager et/ou
+ * le client. Booléen par canal pour la simplicité d'édition UI.
+ */
+export type NotificationChannelsSet = {
+  email?: boolean;
+  whatsapp?: boolean;
+  sms?: boolean;
+};
+
+export type TenantNotificationPreferences = {
+  manager?: {
+    onCreate?: NotificationChannelsSet;
+    onCancel?: NotificationChannelsSet;
+  };
+  client?: {
+    onCreate?: NotificationChannelsSet;
+    onReminder?: NotificationChannelsSet;
+  };
+};
+
+export const DEFAULT_NOTIFICATION_PREFERENCES: TenantNotificationPreferences = {
+  manager: {
+    onCreate: { email: true, whatsapp: false, sms: false },
+    onCancel: { email: true, whatsapp: false, sms: false },
+  },
+  client: {
+    onCreate: { email: false, whatsapp: true, sms: false },
+    onReminder: { email: false, whatsapp: true, sms: false },
+  },
+};
 
 export const tenants = pgTable("tenants", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -95,6 +127,11 @@ export const tenants = pgTable("tenants", {
   features: jsonb("features").$type<TenantFeatures>().notNull().default(DEFAULT_FEATURES),
   /** Personnalisation du widget chat (couleurs, logo, greeting…). */
   branding: jsonb("branding").$type<TenantBranding>().notNull().default(DEFAULT_BRANDING),
+  /** Préférences notif par event/audience/canal — édité depuis le dashboard. */
+  notificationPreferences: jsonb("notification_preferences")
+    .$type<TenantNotificationPreferences>()
+    .notNull()
+    .default(DEFAULT_NOTIFICATION_PREFERENCES),
 
   capacityMax: integer("capacity_max").notNull().default(50),
 
