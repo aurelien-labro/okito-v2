@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { TenantSwitcher } from "./tenant-switcher";
 
 const NAV = [
   { href: "/", label: "Vue d'ensemble" },
@@ -20,9 +21,12 @@ export function Sidebar() {
   const pathname = usePathname();
   return (
     <aside className="w-56 border-r border-stone-200 bg-white px-4 py-6">
-      <div className="mb-8 px-2">
+      <div className="mb-6 px-2">
         <div className="text-sm font-semibold tracking-tight">OKITO</div>
         <div className="text-xs text-stone-500">Dashboard</div>
+      </div>
+      <div className="px-2">
+        <TenantSwitcher />
       </div>
       <nav className="space-y-1">
         {NAV.map((item) => {
