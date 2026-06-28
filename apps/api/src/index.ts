@@ -17,6 +17,7 @@ import { StatsService } from "./services/stats.js";
 import { SubscriptionService } from "./services/subscription.js";
 import { TenantMemberService } from "./services/tenant-member.js";
 import { TenantService } from "./services/tenant.js";
+import { WaitlistService } from "./services/waitlist.js";
 
 const env = loadEnv();
 initSentry(env);
@@ -34,6 +35,7 @@ if (env.DATABASE_URL) {
   services.subscription = new SubscriptionService(db);
   services.stats = new StatsService(db);
   services.tenantMember = new TenantMemberService(db);
+  services.waitlist = new WaitlistService(db);
   services.db = db;
 
   if (env.NODE_ENV !== "production") {
