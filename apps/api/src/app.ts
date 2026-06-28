@@ -1,5 +1,6 @@
 import type { Database } from "@okito/db";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import type { Env } from "./lib/env.js";
 import { HttpError } from "./lib/errors.js";
 import { logger } from "./lib/logger.js";
@@ -50,6 +51,25 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     return c.json({ error: { code: "internal_error", message: "Erreur serveur" } }, 500);
   });
+
+  // CORS : autorise le dashboard (APP_URL) à appeler l'API depuis le navigateur.
+  // En prod, APP_URL pointe sur le domaine du dashboard ; en dev, localhost:3000.
+  // Le widget JS embarquable (/v1/widget/*) reste ouvert (origin: *) car il
+  // doit fonctionner sur n'importe quel site client.
+  app.use(
+    "/v1/widget/*",
+    cors({ origin: "*", allowMethods: ["GET", "POST", "OPTIONS"], maxAge: 86400 }),
+  );
+  app.use(
+    "*",
+    cors({
+      origin: [env.APP_URL, "http://localhost:3000"],
+      allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+      allowHeaders: ["Content-Type", "Authorization", "Idempotency-Key", "X-Tenant-Id"],
+      credentials: true,
+      maxAge: 86400,
+    }),
+  );
 
   // Métriques Prometheus : middleware sur tout sauf /metrics (on ne se mesure pas soi-même).
   app.use("*", async (c, next) => {
