@@ -397,3 +397,28 @@ export async function updateTable(
 export async function deleteTable(id: string): Promise<void> {
   await request(`/v1/admin/tables/${id}`, { method: "DELETE" });
 }
+
+// --- Loyalty ----------------------------------------------------------------
+
+export interface CustomerStats {
+  customerPhone: string;
+  customerName: string;
+  visitCount: number;
+  firstVisit: string | null;
+  lastVisit: string | null;
+  isReturning: boolean;
+}
+
+export async function listTopCustomers(
+  tenantId: string,
+  limit = 20,
+): Promise<{ data: CustomerStats[] }> {
+  return request(`/v1/admin/loyalty/${tenantId}/top?limit=${limit}`);
+}
+
+export async function getCustomerStats(
+  tenantId: string,
+  phone: string,
+): Promise<{ data: CustomerStats | null }> {
+  return request(`/v1/admin/loyalty/${tenantId}/by-phone/${encodeURIComponent(phone)}`);
+}

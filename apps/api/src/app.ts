@@ -10,6 +10,7 @@ import { createAdminMiddleware } from "./middleware/admin.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import { metricsMiddleware } from "./middleware/metrics.js";
 import { adminAuditRoute } from "./routes/admin-audit.js";
+import { adminLoyaltyRoute } from "./routes/admin-loyalty.js";
 import { adminMembersRoute } from "./routes/admin-members.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
 import { adminStatsRoute } from "./routes/admin-stats.js";
@@ -28,6 +29,7 @@ import { whatsappWebhookRoute } from "./routes/whatsapp-webhook.js";
 import { widgetRoute } from "./routes/widget.js";
 import type { AuditLogService } from "./services/audit-log.js";
 import type { ChatService } from "./services/chat.js";
+import type { LoyaltyService } from "./services/loyalty.js";
 import type { ReminderService } from "./services/reminder.js";
 import type { ReservationService } from "./services/reservation.js";
 import type { StatsService } from "./services/stats.js";
@@ -64,6 +66,8 @@ export interface AppServices {
   waitlist?: WaitlistService;
   /** Service tables (inventaire) — monté sur /v1/admin/tables si fourni. */
   table?: TableService;
+  /** Service fidélité — monté sur /v1/admin/loyalty si fourni. */
+  loyalty?: LoyaltyService;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -178,6 +182,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.table) {
       v1Admin.route("/tables", adminTablesRoute(services.table));
+    }
+    if (services.loyalty) {
+      v1Admin.route("/loyalty", adminLoyaltyRoute(services.loyalty));
     }
     app.route("/v1/admin", v1Admin);
   }
