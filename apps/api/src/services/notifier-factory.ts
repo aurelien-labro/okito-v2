@@ -2,6 +2,7 @@ import type { Env } from "../lib/env.js";
 import { logger } from "../lib/logger.js";
 import { CompositeNotifier } from "./composite-notifier.js";
 import { LoggingNotifier, type NotificationChannel, type Notifier } from "./notifier.js";
+import { PolicyAwareNotifier } from "./policy-aware-notifier.js";
 import { ResendNotifier } from "./resend-notifier.js";
 import { Three60DialogNotifier } from "./three60-dialog-notifier.js";
 import { TwilioSmsNotifier } from "./twilio-sms-notifier.js";
@@ -53,11 +54,19 @@ export function createNotifier(env: Env): Notifier {
   }
 
   const configured = Object.keys(byChannel).length;
-  if (configured === 0) {
-    logger.warn(
-      "Notifier: aucun provider configuré — fallback LoggingNotifier (rien n'est envoyé)",
-    );
-    return new LoggingNotifier();
-  }
-  return new CompositeNotifier(byChannel);
+  const base: Notifier =
+    configured === 0
+      ? (() => {
+          logger.warn(
+            "Notifier: aucun provider configuré — fallback LoggingNotifier (rien n'est envoyé)",
+          );
+          return new LoggingNotifier();
+        })()
+      : new CompositeNotifier(byChannel);
+
+  // Wrap dans PolicyAwareNotifier : avant chaque envoi reservation.created/cancelled,
+  // consulte tenant.notificationPreferences et filtre destinataires + canaux.
+  // Cette couche est transparente pour ChatService — elle appelle toujours
+  // notifyReservationCreated/Cancelled, mais l'envoi réel respecte la policy.
+  return new PolicyAwareNotifier(base);
 }
