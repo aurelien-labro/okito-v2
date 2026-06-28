@@ -115,8 +115,9 @@ export function createApp(env: Env, services: AppServices = {}) {
 
   // Widget JS embarquable — endpoint public CORS-permissif (à durcir avec
   // whitelist d'origines par tenant en prod).
+  // tenantService fourni → route /config/:tenantId active (branding public).
   if (services.chat) {
-    app.route("/v1/widget", widgetRoute(services.chat));
+    app.route("/v1/widget", widgetRoute(services.chat, services.tenant));
   }
 
   // Webhook WhatsApp inbound (Twilio + 360dialog).

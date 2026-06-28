@@ -5,6 +5,7 @@ import {
   type NewTenant,
   type ServiceWindow,
   type Tenant,
+  type TenantBranding,
   type TenantFeatures,
   schema,
 } from "@okito/db";
@@ -20,6 +21,7 @@ export interface TenantUpdate {
   industry?: Industry;
   features?: TenantFeatures;
   services?: ServiceWindow[];
+  branding?: TenantBranding;
   capacityMax?: number;
   status?: "active" | "suspended" | "trial";
   remindersEnabled?: boolean;
