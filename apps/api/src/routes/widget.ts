@@ -1,8 +1,9 @@
 import { Hono } from "hono";
-import { BadRequestError } from "../lib/errors.js";
+import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import { logger } from "../lib/logger.js";
 import { RateLimiter } from "../lib/rate-limit.js";
 import type { ChatService } from "../services/chat.js";
+import type { TenantService } from "../services/tenant.js";
 
 /**
  * Endpoint public pour le widget JS embarquable.
@@ -22,12 +23,44 @@ const widgetLimiter = new RateLimiter();
 const WIDGET_LIMIT = 30;
 const WIDGET_WINDOW_MS = 60_000;
 
-export function widgetRoute(service: ChatService) {
+export function widgetRoute(service: ChatService, tenantService?: TenantService) {
   const app = new Hono();
 
-  app.options("/chat/:tenantId", (c) => {
-    return c.body(null, 204, corsHeaders(c.req.header("origin")));
-  });
+  // CORS preflight pour les 2 routes publiques.
+  app.options("/chat/:tenantId", (c) => c.body(null, 204, corsHeaders(c.req.header("origin"))));
+  app.options("/config/:tenantId", (c) => c.body(null, 204, corsHeaders(c.req.header("origin"))));
+
+  /**
+   * GET /v1/widget/config/:tenantId — config publique du widget.
+   * Lue par le script JS au chargement pour appliquer le branding du tenant.
+   * Ne retourne QUE des champs safe à exposer (pas d'API keys, pas d'admin).
+   */
+  if (tenantService) {
+    app.get("/config/:tenantId", async (c) => {
+      const origin = c.req.header("origin");
+      const tenantId = c.req.param("tenantId");
+      if (!/^[0-9a-f-]{36}$/i.test(tenantId)) {
+        throw new BadRequestError("tenantId invalide", "invalid_tenant");
+      }
+      let tenant: Awaited<ReturnType<typeof tenantService.getById>>;
+      try {
+        tenant = await tenantService.getById(tenantId);
+      } catch {
+        throw new NotFoundError("Tenant introuvable");
+      }
+      const config = {
+        tenantId: tenant.id,
+        name: tenant.name,
+        industry: tenant.industry,
+        branding: tenant.branding ?? {},
+      };
+      return c.json(config, 200, {
+        ...corsHeaders(origin),
+        // Cache 5 min côté browser pour éviter de hammerer l'API à chaque visite.
+        "Cache-Control": "public, max-age=300, s-maxage=300",
+      });
+    });
+  }
 
   app.post("/chat/:tenantId", async (c) => {
     const origin = c.req.header("origin");

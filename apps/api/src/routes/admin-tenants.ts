@@ -30,6 +30,18 @@ const serviceWindowSchema = z
   .refine((w) => w.start < w.end, { message: "start doit être < end", path: ["end"] });
 const servicesSchema = z.array(serviceWindowSchema).max(10);
 
+const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/, "couleur hex format #RRGGBB");
+const brandingSchema = z
+  .object({
+    primaryColor: hex.optional(),
+    accentTextColor: hex.optional(),
+    logoUrl: z.string().url().max(500).optional(),
+    greeting: z.string().max(200).optional(),
+    title: z.string().max(60).optional(),
+    position: z.enum(["bottom-right", "bottom-left"]).optional(),
+  })
+  .strict();
+
 const createSchema = z.object({
   slug: z
     .string()
@@ -44,6 +56,7 @@ const createSchema = z.object({
   capacityMax: z.number().int().positive().max(10_000).default(50),
   features: featuresSchema.optional(),
   services: servicesSchema.optional(),
+  branding: brandingSchema.optional(),
   status: statusEnum.default("trial"),
 });
 
@@ -57,6 +70,7 @@ const updateSchema = z
     capacityMax: z.number().int().positive().max(10_000),
     features: featuresSchema,
     services: servicesSchema,
+    branding: brandingSchema,
     status: statusEnum,
     remindersEnabled: z.boolean(),
   })

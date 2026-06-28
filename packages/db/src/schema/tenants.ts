@@ -59,6 +59,30 @@ export type ServiceWindow = {
   end: string;
 };
 
+/**
+ * Personnalisation du widget chat embarqué sur le site du tenant.
+ *
+ * Tous les champs sont optionnels — fallback sur les défauts OKITO si null.
+ * - primaryColor : couleur de l'accent (bulle, bouton envoyer, bulles user)
+ *   Format hexa "#RRGGBB". Validé côté Zod.
+ * - logoUrl : logo affiché dans le header du chat (URL HTTPS publique).
+ * - greeting : 1ère phrase du bot quand le client ouvre la bulle.
+ * - title : titre du header du chat (défaut "Réserver").
+ * - position : "bottom-right" (défaut) | "bottom-left".
+ * - accentTextColor : couleur du texte sur fond primary (défaut blanc).
+ */
+export type TenantBranding = {
+  primaryColor?: string;
+  logoUrl?: string;
+  greeting?: string;
+  title?: string;
+  position?: "bottom-right" | "bottom-left";
+  accentTextColor?: string;
+};
+
+export const DEFAULT_BRANDING: TenantBranding = {};
+
+
 export const tenants = pgTable("tenants", {
   id: uuid("id").primaryKey().defaultRandom(),
   slug: text("slug").notNull().unique(),
@@ -69,6 +93,8 @@ export const tenants = pgTable("tenants", {
 
   industry: text("industry", { enum: INDUSTRY_VALUES }).notNull().default("restaurant"),
   features: jsonb("features").$type<TenantFeatures>().notNull().default(DEFAULT_FEATURES),
+  /** Personnalisation du widget chat (couleurs, logo, greeting…). */
+  branding: jsonb("branding").$type<TenantBranding>().notNull().default(DEFAULT_BRANDING),
 
   capacityMax: integer("capacity_max").notNull().default(50),
 
