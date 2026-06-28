@@ -43,6 +43,22 @@ export const DEFAULT_FEATURES: TenantFeatures = {
   multi_resource: false,
 };
 
+/**
+ * Plage d'ouverture libre — multi-vertical (déjeuner, dîner, check-in, atelier matin…).
+ * Stockée dans tenants.services (JSONB array).
+ *
+ * Format heures : "HH:MM" 24h. La fenêtre est inclusive sur start, exclusive sur end :
+ * un client peut réserver à start mais pas à end. label sert uniquement à l'affichage.
+ *
+ * Quand le tableau est vide, le code fallback sur les 4 colonnes legacy
+ * service_lunch_start/end + service_dinner_start/end (path resto historique).
+ */
+export type ServiceWindow = {
+  label: string;
+  start: string;
+  end: string;
+};
+
 export const tenants = pgTable("tenants", {
   id: uuid("id").primaryKey().defaultRandom(),
   slug: text("slug").notNull().unique(),
@@ -55,6 +71,12 @@ export const tenants = pgTable("tenants", {
   features: jsonb("features").$type<TenantFeatures>().notNull().default(DEFAULT_FEATURES),
 
   capacityMax: integer("capacity_max").notNull().default(50),
+
+  /**
+   * Plages d'ouverture flexibles (multi-vertical). Si vide, fallback sur les
+   * 4 colonnes service_lunch_start/end et service_dinner_start/end (resto-only).
+   */
+  services: jsonb("services").$type<ServiceWindow[]>().notNull().default([]),
 
   serviceLunchStart: time("service_lunch_start").notNull().default(sql`'12:00'`),
   serviceLunchEnd: time("service_lunch_end").notNull().default(sql`'14:30'`),

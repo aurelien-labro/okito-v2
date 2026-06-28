@@ -1,6 +1,6 @@
-import type { Database } from "@okito/db";
+import type { Database, ServiceWindow, Tenant } from "@okito/db";
 import { describe, expect, it, vi } from "vitest";
-import { CapacityService } from "./capacity.js";
+import { CapacityService, checkServiceWindow } from "./capacity.js";
 
 function makeDb(executeResult: unknown) {
   const execute = vi.fn().mockResolvedValue(executeResult);
@@ -47,5 +47,43 @@ describe("CapacityService.check", () => {
     const result = await svc.check(baseArgs);
     expect(result.occupied).toBe(42);
     expect(result.remaining).toBe(8);
+  });
+});
+
+describe("checkServiceWindow", () => {
+  function tenantWithServices(services: ServiceWindow[]): Tenant {
+    return {
+      services,
+      serviceLunchStart: "12:00",
+      serviceLunchEnd: "14:30",
+      serviceDinnerStart: "19:00",
+      serviceDinnerEnd: "22:00",
+    } as Tenant;
+  }
+
+  it("services JSONB prioritaires sur les colonnes legacy", () => {
+    const tenant = tenantWithServices([{ label: "Check-in", start: "08:00", end: "11:00" }]);
+    const inService = checkServiceWindow(tenant, "09:00");
+    expect(inService).toEqual({ inService: true, service: "Check-in" });
+    const out = checkServiceWindow(tenant, "13:00");
+    expect(out.inService).toBe(false);
+    expect(out.suggestion).toContain("08h00");
+  });
+
+  it("services vide → fallback sur lunch/dinner legacy", () => {
+    const tenant = tenantWithServices([]);
+    expect(checkServiceWindow(tenant, "13:00")).toEqual({ inService: true, service: "déjeuner" });
+    expect(checkServiceWindow(tenant, "20:00")).toEqual({ inService: true, service: "dîner" });
+  });
+
+  it("plusieurs services JSONB, suggestion les liste tous", () => {
+    const tenant = tenantWithServices([
+      { label: "Matin", start: "09:00", end: "12:00" },
+      { label: "Aprèm", start: "14:00", end: "18:00" },
+    ]);
+    const out = checkServiceWindow(tenant, "13:00");
+    expect(out.inService).toBe(false);
+    expect(out.suggestion).toContain("09h00 (Matin)");
+    expect(out.suggestion).toContain("14h00 (Aprèm)");
   });
 });
