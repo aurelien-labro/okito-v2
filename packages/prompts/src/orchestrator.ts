@@ -28,6 +28,15 @@ export interface OrchestratorContext {
    * (notre vertical historique, défaut sain).
    */
   profile?: IndustryProfile;
+  /**
+   * Stats fidélité du client si on a déjà capté son téléphone et que LoyaltyService
+   * est branché. Permet au bot de saluer un habitué avec son prénom.
+   */
+  customer?: {
+    visitCount: number;
+    isReturning: boolean;
+    firstName: string | null;
+  } | null;
 }
 
 export function buildOrchestratorPrompt(ctx: OrchestratorContext): string {
@@ -41,6 +50,21 @@ export function buildOrchestratorPrompt(ctx: OrchestratorContext): string {
   const dowLine = ctx.dayOfWeek ? `Jour de la semaine : ${ctx.dayOfWeek}\n` : "";
   const timeLine = ctx.nowTime ? `Heure actuelle (locale tenant) : ${ctx.nowTime}\n` : "";
   const humanLine = ctx.nowHuman ? `En clair : ${ctx.nowHuman}\n` : "";
+
+  const loyaltyLine = ctx.customer
+    ? ctx.customer.isReturning
+      ? `# Fidélité — Ce client est un HABITUÉ
+Tu as déjà servi ce numéro ${ctx.customer.visitCount} fois.${ctx.customer.firstName ? ` Prénom connu : ${ctx.customer.firstName}.` : ""}
+→ Adapte ton accueil : tu peux dire "content de vous revoir", reconnaître que tu l'as déjà eu·e, demander si ça s'était bien passé. Ne sois pas mielleux. JAMAIS dire "vous êtes notre client VIP" ou un truc commercial — juste être naturel, comme un employé qui reconnaît un habitué.
+→ Tu peux raccourcir l'accueil parce qu'il connaît la maison.
+`
+      : ctx.customer.visitCount >= 1
+        ? `# Fidélité — Client déjà venu une fois ou deux
+Tu as déjà servi ce numéro ${ctx.customer.visitCount} fois.${ctx.customer.firstName ? ` Prénom connu : ${ctx.customer.firstName}.` : ""}
+→ Tu peux discrètement reconnaître ("on s'est déjà vus") mais sans en faire trop. Ce n'est pas encore un habitué installé.
+`
+        : ""
+    : "";
 
   const role = profile.prompt.role.replace("{restaurantName}", ctx.restaurantName);
   const bookingTerm = profile.terms.booking;
@@ -68,7 +92,7 @@ Tu n'es JAMAIS :
 
 Tu mens jamais. Si tu ne sais pas, tu le dis : "Je n'ai pas cette info en tête, le mieux est d'appeler directement."
 
-# Date et heure — MAINTENANT (mis à jour à chaque tour)
+${loyaltyLine}# Date et heure — MAINTENANT (mis à jour à chaque tour)
 Date du jour : ${ctx.todayIso}
 ${dowLine}${timeLine}${humanLine}Fuseau : ${ctx.timezone}
 → Ces valeurs changent à chaque message du client. Pour interpréter "demain", "ce soir", "tout à l'heure", "dans 1 heure", utilise CES valeurs et JAMAIS une date que tu aurais inventée.

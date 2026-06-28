@@ -423,6 +423,16 @@ export async function getCustomerStats(
   return request(`/v1/admin/loyalty/${tenantId}/by-phone/${encodeURIComponent(phone)}`);
 }
 
+export async function statsForPhones(
+  tenantId: string,
+  phones: string[],
+): Promise<{ data: CustomerStats[] }> {
+  return request(`/v1/admin/loyalty/${tenantId}/stats`, {
+    method: "POST",
+    body: JSON.stringify({ phones }),
+  });
+}
+
 // --- Reminders --------------------------------------------------------------
 
 export interface ReminderRunResult {

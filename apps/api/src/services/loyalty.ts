@@ -58,6 +58,37 @@ export class LoyaltyService {
     };
   }
 
+  /** Stats pour une liste de téléphones (utilisé par la page Réservations pour badge). */
+  async statsForPhones(tenantId: string, phones: string[]): Promise<CustomerStats[]> {
+    if (phones.length === 0) return [];
+    const rows = await this.db
+      .select({
+        customerPhone: schema.reservations.customerPhone,
+        customerName: sql<string>`max(${schema.reservations.customerName})`,
+        visitCount: sql<number>`count(*)::int`,
+        firstVisit: sql<string | null>`min(${schema.reservations.dateReservation})::text`,
+        lastVisit: sql<string | null>`max(${schema.reservations.dateReservation})::text`,
+      })
+      .from(schema.reservations)
+      .where(
+        and(
+          eq(schema.reservations.tenantId, tenantId),
+          inArray(schema.reservations.customerPhone, phones),
+          inArray(schema.reservations.status, [...LOYALTY_COUNT_STATUSES]),
+        ),
+      )
+      .groupBy(schema.reservations.customerPhone);
+
+    return rows.map((r) => ({
+      customerPhone: r.customerPhone,
+      customerName: r.customerName,
+      visitCount: r.visitCount,
+      firstVisit: r.firstVisit,
+      lastVisit: r.lastVisit,
+      isReturning: r.visitCount >= LOYALTY_RETURNING_THRESHOLD,
+    }));
+  }
+
   /** Top clients d'un tenant (par nombre de visites décroissant). */
   async listTopCustomers(tenantId: string, limit = 20): Promise<CustomerStats[]> {
     const rows = await this.db
