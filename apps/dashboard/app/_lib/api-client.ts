@@ -246,3 +246,47 @@ export async function getStatsOverview(
 ): Promise<{ data: StatsOverview }> {
   return request(`/v1/admin/stats/${tenantId}/overview?days=${days}`);
 }
+
+// --- Members ---------------------------------------------------------------
+
+export type TenantMemberRole = "owner" | "manager" | "staff";
+
+export interface TenantMember {
+  id: string;
+  tenantId: string;
+  userId: string | null;
+  invitedEmail: string | null;
+  role: TenantMemberRole;
+  invitedAt: string | null;
+  acceptedAt: string | null;
+  createdAt: string;
+}
+
+export async function listMembers(tenantId: string): Promise<{ data: TenantMember[] }> {
+  return request(`/v1/admin/members/${tenantId}`);
+}
+
+export async function inviteMember(input: {
+  tenantId: string;
+  email: string;
+  role: TenantMemberRole;
+}): Promise<{ data: TenantMember }> {
+  return request(`/v1/admin/members/${input.tenantId}/invite`, {
+    method: "POST",
+    body: JSON.stringify({ email: input.email, role: input.role }),
+  });
+}
+
+export async function updateMemberRole(
+  memberId: string,
+  role: TenantMemberRole,
+): Promise<{ data: TenantMember }> {
+  return request(`/v1/admin/members/${memberId}/role`, {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+  });
+}
+
+export async function removeMember(memberId: string): Promise<void> {
+  await request(`/v1/admin/members/${memberId}`, { method: "DELETE" });
+}
