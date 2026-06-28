@@ -62,6 +62,7 @@ if (env.DATABASE_URL) {
       capacity,
       notifier,
       waitlist: services.waitlist,
+      loyalty: services.loyalty,
     });
   } else {
     logger.warn("GEMINI_API_KEY absent — moteur conversationnel désactivé");

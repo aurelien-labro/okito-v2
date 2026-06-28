@@ -26,6 +26,17 @@ export function adminLoyaltyRoute(service: LoyaltyService) {
     return c.json({ data: row });
   });
 
+  // POST /v1/admin/loyalty/:tenantId/stats — batch stats par téléphones
+  app.post("/:tenantId/stats", async (c) => {
+    const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
+    const body = (await c.req.json().catch(() => null)) as { phones?: unknown } | null;
+    const phones = Array.isArray(body?.phones)
+      ? body.phones.filter((p): p is string => typeof p === "string").slice(0, 200)
+      : [];
+    const rows = await service.statsForPhones(tenantId, phones);
+    return c.json({ data: rows });
+  });
+
   return app;
 }
 

@@ -6,6 +6,7 @@ import { type ChatRequest, type ChatResponse, reservationCoreSchema } from "@oki
 import { logger } from "../lib/logger.js";
 import { type CapacityService, checkServiceWindow } from "./capacity.js";
 import type { ConversationService } from "./conversation.js";
+import type { LoyaltyService } from "./loyalty.js";
 import type { Notifier } from "./notifier.js";
 import { DuplicateReservationError, type ReservationService } from "./reservation.js";
 import type { TenantService } from "./tenant.js";
@@ -29,6 +30,8 @@ export interface ChatDeps {
   notifier?: Notifier;
   /** Optionnel — si absent, le bot ne propose pas la liste d'attente quand slot plein. */
   waitlist?: WaitlistService;
+  /** Optionnel — si présent, le bot reçoit les stats fidélité du client (habitué ?). */
+  loyalty?: LoyaltyService;
 }
 
 interface ToolOutcome {
@@ -96,6 +99,15 @@ export class ChatService {
 
     const now = nowInTimezone(tenant.timezone);
     const profile = getIndustryProfile(tenant.industry);
+
+    // Si on a déjà capté un téléphone, on regarde si c'est un client connu
+    // pour permettre au bot d'adapter son accueil ("Pierre, content de vous revoir !").
+    const phone = pickString(convAfterUser.collectedFields?.customerPhone);
+    const customerStats =
+      phone && this.deps.loyalty
+        ? await this.deps.loyalty.getByPhone(tenant.id, phone).catch(() => null)
+        : null;
+
     const llmResponse = await this.deps.llm.complete({
       system: buildOrchestratorPrompt({
         restaurantName: tenant.name,
@@ -107,6 +119,13 @@ export class ChatService {
         channel: llmChannel,
         collectedFields: convAfterUser.collectedFields,
         profile,
+        customer: customerStats
+          ? {
+              visitCount: customerStats.visitCount,
+              isReturning: customerStats.isReturning,
+              firstName: customerStats.customerName.split(" ")[0] ?? null,
+            }
+          : null,
       }),
       messages: llmMessages,
       tools: ORCHESTRATOR_TOOLS,

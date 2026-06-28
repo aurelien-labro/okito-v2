@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { LoginGate } from "../_components/login-gate";
-import { type Reservation, cancelReservation, listReservations } from "../_lib/api-client";
+import {
+  type CustomerStats,
+  type Reservation,
+  cancelReservation,
+  getCurrentTenantId,
+  listReservations,
+  statsForPhones,
+} from "../_lib/api-client";
 
 function todayISO(): string {
   const d = new Date();
@@ -24,6 +31,7 @@ export default function ReservationsPage() {
 function ReservationsList() {
   const [date, setDate] = useState(todayISO());
   const [rows, setRows] = useState<Reservation[]>([]);
+  const [loyalty, setLoyalty] = useState<Record<string, CustomerStats>>({});
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -33,6 +41,22 @@ function ReservationsList() {
     try {
       const res = await listReservations(date);
       setRows(res.data);
+
+      // Enrich avec stats fidélité (best-effort, n'empêche pas l'affichage si échoue).
+      const tenantId = getCurrentTenantId();
+      const phones = Array.from(new Set(res.data.map((r) => r.customerPhone))).filter(Boolean);
+      if (tenantId && phones.length > 0) {
+        try {
+          const stats = await statsForPhones(tenantId, phones);
+          const map: Record<string, CustomerStats> = {};
+          for (const s of stats.data) map[s.customerPhone] = s;
+          setLoyalty(map);
+        } catch {
+          setLoyalty({});
+        }
+      } else {
+        setLoyalty({});
+      }
     } catch (e) {
       const msg =
         e && typeof e === "object" && "message" in e ? String(e.message) : "Erreur inconnue";
@@ -107,41 +131,58 @@ function ReservationsList() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="border-t border-stone-100">
-                  <Td className="font-medium">{r.heure.slice(0, 5)}</Td>
-                  <Td>{r.customerName}</Td>
-                  <Td className="text-stone-600">{r.customerPhone}</Td>
-                  <Td>{r.couverts}</Td>
-                  <Td>
-                    <span className="rounded bg-stone-100 px-2 py-0.5 text-xs uppercase tracking-wide text-stone-600">
-                      {r.source}
-                    </span>
-                  </Td>
-                  <Td>
-                    <StatusBadge status={r.status} />
-                  </Td>
-                  <Td>
-                    <div className="flex items-center gap-3">
-                      <Link
-                        href={`/reservations/${r.id}`}
-                        className="text-xs text-stone-700 hover:underline"
-                      >
-                        Éditer
-                      </Link>
-                      {r.status !== "cancelled" && (
-                        <button
-                          type="button"
-                          onClick={() => handleCancel(r.id)}
-                          className="text-xs text-red-700 hover:underline"
+              {rows.map((r) => {
+                const stats = loyalty[r.customerPhone];
+                return (
+                  <tr key={r.id} className="border-t border-stone-100">
+                    <Td className="font-medium">{r.heure.slice(0, 5)}</Td>
+                    <Td>
+                      <div className="flex items-center gap-2">
+                        <span>{r.customerName}</span>
+                        {stats?.isReturning && (
+                          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-800">
+                            habitué · {stats.visitCount}
+                          </span>
+                        )}
+                        {stats && !stats.isReturning && stats.visitCount >= 2 && (
+                          <span className="text-[10px] text-stone-400">
+                            {stats.visitCount}× déjà vu
+                          </span>
+                        )}
+                      </div>
+                    </Td>
+                    <Td className="text-stone-600">{r.customerPhone}</Td>
+                    <Td>{r.couverts}</Td>
+                    <Td>
+                      <span className="rounded bg-stone-100 px-2 py-0.5 text-xs uppercase tracking-wide text-stone-600">
+                        {r.source}
+                      </span>
+                    </Td>
+                    <Td>
+                      <StatusBadge status={r.status} />
+                    </Td>
+                    <Td>
+                      <div className="flex items-center gap-3">
+                        <Link
+                          href={`/reservations/${r.id}`}
+                          className="text-xs text-stone-700 hover:underline"
                         >
-                          Annuler
-                        </button>
-                      )}
-                    </div>
-                  </Td>
-                </tr>
-              ))}
+                          Éditer
+                        </Link>
+                        {r.status !== "cancelled" && (
+                          <button
+                            type="button"
+                            onClick={() => handleCancel(r.id)}
+                            className="text-xs text-red-700 hover:underline"
+                          >
+                            Annuler
+                          </button>
+                        )}
+                      </div>
+                    </Td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
