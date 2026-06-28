@@ -10,6 +10,7 @@ import { createAdminMiddleware } from "./middleware/admin.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import { metricsMiddleware } from "./middleware/metrics.js";
 import { adminAuditRoute } from "./routes/admin-audit.js";
+import { adminMembersRoute } from "./routes/admin-members.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
 import { adminStatsRoute } from "./routes/admin-stats.js";
 import { adminTenantsRoute } from "./routes/admin-tenants.js";
@@ -29,6 +30,7 @@ import type { ReminderService } from "./services/reminder.js";
 import type { ReservationService } from "./services/reservation.js";
 import type { StatsService } from "./services/stats.js";
 import type { SubscriptionService } from "./services/subscription.js";
+import type { TenantMemberService } from "./services/tenant-member.js";
 import type { TenantService } from "./services/tenant.js";
 
 export interface AppServices {
@@ -52,6 +54,8 @@ export interface AppServices {
   subscription?: SubscriptionService;
   /** Service de stats business — monté sur /v1/admin/stats si fourni. */
   stats?: StatsService;
+  /** Service de gestion membres tenant — monté sur /v1/admin/members si fourni. */
+  tenantMember?: TenantMemberService;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -156,6 +160,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.stats) {
       v1Admin.route("/stats", adminStatsRoute(services.stats));
+    }
+    if (services.tenantMember) {
+      v1Admin.route("/members", adminMembersRoute(services.tenantMember));
     }
     app.route("/v1/admin", v1Admin);
   }
