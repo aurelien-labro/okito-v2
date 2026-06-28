@@ -15,6 +15,7 @@ import { ReminderService } from "./services/reminder.js";
 import { ReservationService } from "./services/reservation.js";
 import { StatsService } from "./services/stats.js";
 import { SubscriptionService } from "./services/subscription.js";
+import { TenantMemberService } from "./services/tenant-member.js";
 import { TenantService } from "./services/tenant.js";
 
 const env = loadEnv();
@@ -32,6 +33,7 @@ if (env.DATABASE_URL) {
   services.audit = new AuditLogService(db);
   services.subscription = new SubscriptionService(db);
   services.stats = new StatsService(db);
+  services.tenantMember = new TenantMemberService(db);
   services.db = db;
 
   if (env.NODE_ENV !== "production") {
