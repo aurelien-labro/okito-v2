@@ -143,6 +143,45 @@ describe("POST /v1/reservations", () => {
   });
 });
 
+describe("PATCH /v1/reservations/:id", () => {
+  it("200 sur mise à jour partielle", async () => {
+    const { app, calls, authHeader } = makeAppWithStub();
+    calls.update.mockResolvedValueOnce({ id: RES_ID, couverts: 6, heure: "21:00" });
+    const res = await app.request(`/v1/reservations/${RES_ID}`, {
+      method: "PATCH",
+      headers: { ...authHeader, "Content-Type": "application/json" },
+      body: JSON.stringify({ couverts: 6, heure: "21:00" }),
+    });
+    expect(res.status).toBe(200);
+    expect(calls.update).toHaveBeenCalledWith({
+      tenantId: TENANT_A,
+      id: RES_ID,
+      patch: { couverts: 6, heure: "21:00" },
+    });
+  });
+
+  it("400 si patch invalide (couverts hors borne)", async () => {
+    const { app, authHeader } = makeAppWithStub();
+    const res = await app.request(`/v1/reservations/${RES_ID}`, {
+      method: "PATCH",
+      headers: { ...authHeader, "Content-Type": "application/json" },
+      body: JSON.stringify({ couverts: 999 }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("404 si NotFoundError remonté par le service", async () => {
+    const { app, calls, authHeader } = makeAppWithStub();
+    calls.update.mockRejectedValueOnce(new NotFoundError());
+    const res = await app.request(`/v1/reservations/${RES_ID}`, {
+      method: "PATCH",
+      headers: { ...authHeader, "Content-Type": "application/json" },
+      body: JSON.stringify({ couverts: 6 }),
+    });
+    expect(res.status).toBe(404);
+  });
+});
+
 describe("POST /v1/reservations/:id/cancel", () => {
   it("200 sur annulation", async () => {
     const { app, calls, authHeader } = makeAppWithStub();

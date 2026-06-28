@@ -73,6 +73,27 @@ export async function listReservations(date?: string): Promise<{ data: Reservati
   return request(`/v1/reservations${q}`);
 }
 
+export async function getReservation(id: string): Promise<{ data: Reservation }> {
+  return request(`/v1/reservations/${id}`);
+}
+
+export interface ReservationUpdate {
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  couverts?: number;
+  dateReservation?: string;
+  heure?: string;
+  notes?: string;
+}
+
+export async function updateReservation(
+  id: string,
+  patch: ReservationUpdate,
+): Promise<{ data: Reservation }> {
+  return request(`/v1/reservations/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+}
+
 export async function cancelReservation(id: string): Promise<{ data: Reservation }> {
   return request(`/v1/reservations/${id}/cancel`, { method: "POST" });
 }
