@@ -186,6 +186,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     if (services.loyalty) {
       v1Admin.route("/loyalty", adminLoyaltyRoute(services.loyalty));
     }
+    if (services.reminder) {
+      v1Admin.route("/reminders", adminRemindersRoute(services.reminder));
+    }
     app.route("/v1/admin", v1Admin);
   }
 

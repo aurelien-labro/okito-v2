@@ -422,3 +422,18 @@ export async function getCustomerStats(
 ): Promise<{ data: CustomerStats | null }> {
   return request(`/v1/admin/loyalty/${tenantId}/by-phone/${encodeURIComponent(phone)}`);
 }
+
+// --- Reminders --------------------------------------------------------------
+
+export interface ReminderRunResult {
+  candidatesFound: number;
+  sent: number;
+  skipped: number;
+  failed: number;
+  dryRun?: boolean;
+}
+
+export async function runReminders(opts?: { dryRun?: boolean }): Promise<ReminderRunResult> {
+  const q = opts?.dryRun ? "?dryRun=true" : "";
+  return request(`/v1/admin/reminders/run${q}`, { method: "POST" });
+}
