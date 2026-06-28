@@ -33,6 +33,10 @@ const envSchema = z.object({
   THREE60DIALOG_API_KEY: z.string().optional(),
   /** UUIDs Supabase Auth des utilisateurs admin (CRUD tenants), séparés par virgule. */
   ADMIN_USER_IDS: z.string().optional(),
+  /** Clé secrète Stripe (sk_test_... ou sk_live_...). Active la route checkout + webhook. */
+  STRIPE_SECRET_KEY: z.string().optional(),
+  /** Secret du webhook endpoint (whsec_...) pour vérifier les signatures Stripe. */
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

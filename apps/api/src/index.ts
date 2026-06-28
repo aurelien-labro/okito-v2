@@ -13,6 +13,7 @@ import { createLLMClient } from "./services/llm/index.js";
 import { createNotifier } from "./services/notifier-factory.js";
 import { ReminderService } from "./services/reminder.js";
 import { ReservationService } from "./services/reservation.js";
+import { SubscriptionService } from "./services/subscription.js";
 import { TenantService } from "./services/tenant.js";
 
 const env = loadEnv();
@@ -28,6 +29,7 @@ if (env.DATABASE_URL) {
   services.reservation = reservation;
   services.tenant = tenant;
   services.audit = new AuditLogService(db);
+  services.subscription = new SubscriptionService(db);
   services.db = db;
 
   if (env.NODE_ENV !== "production") {
