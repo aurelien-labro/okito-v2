@@ -57,6 +57,9 @@ const createSchema = z.object({
   features: featuresSchema.optional(),
   services: servicesSchema.optional(),
   branding: brandingSchema.optional(),
+  depositAmountCents: z.number().int().min(0).max(100_000).optional(),
+  depositRequiredAboveParty: z.number().int().min(0).max(50).optional(),
+  depositCurrency: z.enum(["EUR", "USD", "GBP", "CHF"]).optional(),
   status: statusEnum.default("trial"),
 });
 
@@ -71,6 +74,9 @@ const updateSchema = z
     features: featuresSchema,
     services: servicesSchema,
     branding: brandingSchema,
+    depositAmountCents: z.number().int().min(0).max(100_000),
+    depositRequiredAboveParty: z.number().int().min(0).max(50),
+    depositCurrency: z.enum(["EUR", "USD", "GBP", "CHF"]),
     status: statusEnum,
     remindersEnabled: z.boolean(),
   })
