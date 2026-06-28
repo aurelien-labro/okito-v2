@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { type HealthStatus, getHealth } from "./_lib/api-client";
+import {
+  type HealthStatus,
+  type ReminderRunResult,
+  getHealth,
+  runReminders,
+} from "./_lib/api-client";
 
 export default function OverviewPage() {
   const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -56,7 +61,73 @@ export default function OverviewPage() {
           </div>
         </div>
       )}
+
+      <RemindersPanel />
     </div>
+  );
+}
+
+function RemindersPanel() {
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<ReminderRunResult | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function trigger(dryRun: boolean) {
+    setBusy(true);
+    setErr(null);
+    setResult(null);
+    try {
+      const out = await runReminders({ dryRun });
+      setResult({ ...out, dryRun });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Échec déclenchement rappels");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mt-10 rounded-lg border border-stone-200 bg-white px-5 py-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-semibold tracking-tight">Rappels J-1</h2>
+          <p className="mt-1 text-xs text-stone-500">
+            Cron prévu tous les matins. Tu peux déclencher manuellement pour tester (dry-run) ou
+            rattraper.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => trigger(true)}
+            disabled={busy}
+            className="rounded border border-stone-300 px-3 py-1.5 text-xs hover:bg-stone-100 disabled:opacity-50"
+          >
+            Dry-run
+          </button>
+          <button
+            type="button"
+            onClick={() => trigger(false)}
+            disabled={busy}
+            className="rounded bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+          >
+            {busy ? "…" : "Envoyer maintenant"}
+          </button>
+        </div>
+      </div>
+
+      {result && (
+        <div className="mt-3 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+          {result.dryRun ? "Dry-run" : "Run"} : {result.candidatesFound} candidats, {result.sent}{" "}
+          envoyés, {result.skipped} skip, {result.failed} échecs.
+        </div>
+      )}
+      {err && (
+        <div className="mt-3 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+          {err}
+        </div>
+      )}
+    </section>
   );
 }
 
