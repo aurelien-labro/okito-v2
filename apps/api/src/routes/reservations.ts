@@ -1,9 +1,11 @@
 import { reservationCoreSchema, reservationSourceSchema } from "@okito/shared/types";
+import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
 import { BadRequestError } from "../lib/errors.js";
 import { IdempotencyCache } from "../lib/idempotency.js";
 import type { AppEnv } from "../lib/types.js";
+import type { AuditLogService } from "../services/audit-log.js";
 import type { ReservationService } from "../services/reservation.js";
 
 const uuidParam = z.string().uuid();
@@ -16,7 +18,7 @@ const updateBodySchema = reservationCoreSchema.partial();
 /** Cache global idempotency partagé entre toutes les routes /v1/reservations. */
 const idempotency = new IdempotencyCache();
 
-export function reservationsRoute(service: ReservationService) {
+export function reservationsRoute(service: ReservationService, audit?: AuditLogService) {
   const app = new Hono<AppEnv>();
 
   // GET /v1/reservations?date=YYYY-MM-DD
@@ -37,9 +39,6 @@ export function reservationsRoute(service: ReservationService) {
   });
 
   // POST /v1/reservations
-  // Supporte `Idempotency-Key: <token>` — si la même clé est rejouée par le
-  // même tenant dans les 24h, on renvoie la réponse cachée au lieu de
-  // re-créer. Indispensable pour Vapi/WhatsApp où les retries arrivent.
   app.post("/", async (c) => {
     const tenantId = c.get("tenantId");
     const idemKey = c.req.header("idempotency-key")?.trim();
@@ -59,6 +58,13 @@ export function reservationsRoute(service: ReservationService) {
     if (idemKey) {
       idempotency.set(tenantId, idemKey, { status: 201, body: responseBody });
     }
+    await safeAudit(audit, c, {
+      action: "reservation.create",
+      entityType: "reservation",
+      entityId: row.id,
+      tenantId,
+      after: row,
+    });
     return c.json(responseBody, 201);
   });
 
@@ -68,7 +74,16 @@ export function reservationsRoute(service: ReservationService) {
     const id = parseOrThrow(uuidParam, c.req.param("id"), "id");
     const body = await readJson(c);
     const patch = parseOrThrow(updateBodySchema, body, "body");
+    const before = await service.getById({ tenantId, id });
     const row = await service.update({ tenantId, id, patch });
+    await safeAudit(audit, c, {
+      action: "reservation.update",
+      entityType: "reservation",
+      entityId: id,
+      tenantId,
+      before,
+      after: row,
+    });
     return c.json({ data: row });
   });
 
@@ -76,11 +91,38 @@ export function reservationsRoute(service: ReservationService) {
   app.post("/:id/cancel", async (c) => {
     const tenantId = c.get("tenantId");
     const id = parseOrThrow(uuidParam, c.req.param("id"), "id");
+    const before = await service.getById({ tenantId, id });
     const row = await service.cancel({ tenantId, id });
+    await safeAudit(audit, c, {
+      action: "reservation.cancel",
+      entityType: "reservation",
+      entityId: id,
+      tenantId,
+      before,
+      after: row,
+    });
     return c.json({ data: row });
   });
 
   return app;
+}
+
+async function safeAudit(
+  audit: AuditLogService | undefined,
+  c: Context<AppEnv>,
+  input: Omit<Parameters<AuditLogService["log"]>[0], "actorUserId" | "ip" | "userAgent">,
+): Promise<void> {
+  if (!audit) return;
+  try {
+    await audit.log({
+      ...input,
+      actorUserId: c.get("userId") ?? null,
+      ip: c.req.header("x-forwarded-for") ?? null,
+      userAgent: c.req.header("user-agent") ?? null,
+    });
+  } catch (err) {
+    console.error("[audit_log] échec d'écriture :", err);
+  }
 }
 
 async function readJson(c: { req: { json: () => Promise<unknown> } }): Promise<unknown> {
