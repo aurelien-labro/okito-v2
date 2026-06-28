@@ -13,6 +13,7 @@ import { adminAuditRoute } from "./routes/admin-audit.js";
 import { adminMembersRoute } from "./routes/admin-members.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
 import { adminStatsRoute } from "./routes/admin-stats.js";
+import { adminTablesRoute } from "./routes/admin-tables.js";
 import { adminTenantsRoute } from "./routes/admin-tenants.js";
 import { adminWaitlistRoute } from "./routes/admin-waitlist.js";
 import { chatRoute } from "./routes/chat.js";
@@ -31,6 +32,7 @@ import type { ReminderService } from "./services/reminder.js";
 import type { ReservationService } from "./services/reservation.js";
 import type { StatsService } from "./services/stats.js";
 import type { SubscriptionService } from "./services/subscription.js";
+import type { TableService } from "./services/table.js";
 import type { TenantMemberService } from "./services/tenant-member.js";
 import type { TenantService } from "./services/tenant.js";
 import type { WaitlistService } from "./services/waitlist.js";
@@ -60,6 +62,8 @@ export interface AppServices {
   tenantMember?: TenantMemberService;
   /** Service waitlist — monté sur /v1/admin/waitlist si fourni. */
   waitlist?: WaitlistService;
+  /** Service tables (inventaire) — monté sur /v1/admin/tables si fourni. */
+  table?: TableService;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -171,6 +175,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.waitlist) {
       v1Admin.route("/waitlist", adminWaitlistRoute(services.waitlist));
+    }
+    if (services.table) {
+      v1Admin.route("/tables", adminTablesRoute(services.table));
     }
     app.route("/v1/admin", v1Admin);
   }

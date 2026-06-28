@@ -378,9 +378,20 @@ export class ChatService {
     }
 
     try {
+      // En mode table-based : re-check juste avant l'insert pour récupérer la
+      // tableId à assigner. Évite les races avec d'autres résas créées entre
+      // check_availability et create_reservation.
+      const assign = await this.deps.capacity.check({
+        tenantId: tenant.id,
+        date: parsed.data.dateReservation,
+        heure: parsed.data.heure,
+        couverts: parsed.data.couverts,
+        capacityMax: tenant.capacityMax,
+      });
       const row = await this.deps.reservation.create({
         tenantId: tenant.id,
         data: { ...parsed.data, source: channel },
+        tableId: assign.tableId ?? null,
       });
       // Notifs en fire-and-forget : ne pas bloquer la réponse au client.
       if (this.deps.notifier) {

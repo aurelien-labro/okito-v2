@@ -2,9 +2,16 @@ import type { Database, ServiceWindow, Tenant } from "@okito/db";
 import { describe, expect, it, vi } from "vitest";
 import { CapacityService, checkServiceWindow } from "./capacity.js";
 
-function makeDb(executeResult: unknown) {
+function makeDb(executeResult: unknown, tables: Array<{ id: string; capacity: number }> = []) {
   const execute = vi.fn().mockResolvedValue(executeResult);
-  return { db: { execute } as unknown as Database, execute };
+  // Stub minimaliste de db.select().from().where() utilisé par le mode tables.
+  // Par défaut renvoie aucune table → mode couverts (legacy).
+  const select = vi.fn().mockReturnValue({
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(tables),
+    }),
+  });
+  return { db: { execute, select } as unknown as Database, execute, select };
 }
 
 const baseArgs = {
