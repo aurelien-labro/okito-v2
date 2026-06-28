@@ -26,6 +26,11 @@ const envSchema = z.object({
   TWILIO_SMS_FROM: z.string().optional(),
   /** Si "true" et TWILIO_AUTH_TOKEN défini, valide la signature X-Twilio-Signature sur les webhooks. */
   TWILIO_VALIDATE_WEBHOOK: z.enum(["true", "false"]).optional(),
+  /**
+   * Clé API 360dialog (BSP officiel Meta). Si définie, prend la priorité sur
+   * Twilio pour le canal WhatsApp — économie 30-40% à partir de ~1000 msg/mois.
+   */
+  THREE60DIALOG_API_KEY: z.string().optional(),
   /** UUIDs Supabase Auth des utilisateurs admin (CRUD tenants), séparés par virgule. */
   ADMIN_USER_IDS: z.string().optional(),
 });

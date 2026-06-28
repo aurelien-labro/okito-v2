@@ -3,6 +3,7 @@ import { logger } from "../lib/logger.js";
 import { CompositeNotifier } from "./composite-notifier.js";
 import { LoggingNotifier, type NotificationChannel, type Notifier } from "./notifier.js";
 import { ResendNotifier } from "./resend-notifier.js";
+import { Three60DialogNotifier } from "./three60-dialog-notifier.js";
 import { TwilioSmsNotifier } from "./twilio-sms-notifier.js";
 import { TwilioWhatsAppNotifier } from "./twilio-whatsapp-notifier.js";
 
@@ -11,6 +12,7 @@ import { TwilioWhatsAppNotifier } from "./twilio-whatsapp-notifier.js";
  *
  * Chaque provider est mappé à un canal :
  *   - RESEND_API_KEY + RESEND_FROM_EMAIL → Resend pour `email`
+ *   - THREE60DIALOG_API_KEY → 360dialog pour `whatsapp` (prioritaire sur Twilio)
  *   - TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_WHATSAPP_FROM → Twilio pour `whatsapp`
  *   - TWILIO_ACCOUNT_SID + TWILIO_AUTH_TOKEN + TWILIO_SMS_FROM → Twilio pour `sms`
  *
@@ -29,7 +31,10 @@ export function createNotifier(env: Env): Notifier {
     });
   }
 
-  if (env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_WHATSAPP_FROM) {
+  if (env.THREE60DIALOG_API_KEY) {
+    logger.info("Notifier: 360dialog activé pour WhatsApp (prioritaire sur Twilio)");
+    byChannel.whatsapp = new Three60DialogNotifier({ apiKey: env.THREE60DIALOG_API_KEY });
+  } else if (env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_WHATSAPP_FROM) {
     logger.info({ from: env.TWILIO_WHATSAPP_FROM }, "Notifier: Twilio activé pour WhatsApp");
     byChannel.whatsapp = new TwilioWhatsAppNotifier({
       accountSid: env.TWILIO_ACCOUNT_SID,
