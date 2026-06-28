@@ -2,8 +2,32 @@
 
 import type { Session } from "@supabase/supabase-js";
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
-import { clearToken, getToken, setToken } from "../_lib/api-client";
+import {
+  clearToken,
+  getCurrentTenantId,
+  getToken,
+  listTenants,
+  setCurrentTenantId,
+  setToken,
+} from "../_lib/api-client";
 import { getSupabase, isSupabaseConfigured } from "../_lib/supabase";
+
+/**
+ * Initialise X-Tenant-Id pour les comptes admin sans claim tenant_id.
+ * Pick le premier tenant disponible ; l'utilisateur peut changer plus tard via
+ * un futur sélecteur. Sans ça, /v1/reservations & co retournent 500 pour admin.
+ */
+async function ensureCurrentTenant(): Promise<void> {
+  if (getCurrentTenantId()) return;
+  try {
+    const { data } = await listTenants();
+    const first = data[0];
+    if (first) setCurrentTenantId(first.id);
+  } catch {
+    // pas grave — l'utilisateur n'est peut-être pas admin, le tenant_id
+    // viendra du JWT directement.
+  }
+}
 
 /**
  * Gate qui force l'authentification avant d'afficher children.
@@ -30,15 +54,22 @@ function SupabaseGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const sb = getSupabase();
-    sb.auth.getSession().then(({ data }) => {
+    sb.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
-      if (data.session?.access_token) setToken(data.session.access_token);
+      if (data.session?.access_token) {
+        setToken(data.session.access_token);
+        await ensureCurrentTenant();
+      }
       setReady(true);
     });
-    const { data: sub } = sb.auth.onAuthStateChange((_event, sess) => {
+    const { data: sub } = sb.auth.onAuthStateChange(async (_event, sess) => {
       setSession(sess);
-      if (sess?.access_token) setToken(sess.access_token);
-      else clearToken();
+      if (sess?.access_token) {
+        setToken(sess.access_token);
+        await ensureCurrentTenant();
+      } else {
+        clearToken();
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, []);

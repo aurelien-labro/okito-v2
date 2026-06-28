@@ -69,10 +69,16 @@ export function createAuthMiddleware(env: Env) {
       if (tenantId) {
         c.set("tenantId", tenantId);
       } else if (isAdmin) {
-        // Admin sans tenant_id : opère cross-tenant. Sentinel non-UUID,
-        // les routes /v1/admin/* ignorent tenantId, les autres routes
-        // exigent UUID donc retourneront 400 → comportement attendu.
-        c.set("tenantId", "admin");
+        // Admin sans tenant_id : peut spécifier le tenant courant via header
+        // X-Tenant-Id (utilisé par le dashboard pour piloter un tenant choisi).
+        // Sinon sentinel "admin" — routes /v1/admin/* l'ignorent, autres routes
+        // qui exigent UUID rejetteront.
+        const overrideTenant = c.req.header("X-Tenant-Id");
+        if (overrideTenant && UUID_RE.test(overrideTenant)) {
+          c.set("tenantId", overrideTenant);
+        } else {
+          c.set("tenantId", "admin");
+        }
       } else {
         throw new UnauthorizedError("Token sans claim tenant_id");
       }
