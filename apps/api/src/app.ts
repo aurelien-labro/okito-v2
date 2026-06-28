@@ -110,7 +110,8 @@ export function createApp(env: Env, services: AppServices = {}) {
   if (services.reservation || services.chat) {
     const v1 = new Hono<AppEnv>();
     v1.use("*", createAuthMiddleware(env));
-    if (services.reservation) v1.route("/reservations", reservationsRoute(services.reservation));
+    if (services.reservation)
+      v1.route("/reservations", reservationsRoute(services.reservation, services.audit));
     if (services.chat) v1.route("/chat", chatRoute(services.chat));
     app.route("/v1", v1);
   }
