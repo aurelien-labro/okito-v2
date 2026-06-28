@@ -11,6 +11,7 @@ import { createAuthMiddleware } from "./middleware/auth.js";
 import { metricsMiddleware } from "./middleware/metrics.js";
 import { adminAuditRoute } from "./routes/admin-audit.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
+import { adminStatsRoute } from "./routes/admin-stats.js";
 import { adminTenantsRoute } from "./routes/admin-tenants.js";
 import { chatRoute } from "./routes/chat.js";
 import { healthRoute } from "./routes/health.js";
@@ -26,6 +27,7 @@ import type { AuditLogService } from "./services/audit-log.js";
 import type { ChatService } from "./services/chat.js";
 import type { ReminderService } from "./services/reminder.js";
 import type { ReservationService } from "./services/reservation.js";
+import type { StatsService } from "./services/stats.js";
 import type { SubscriptionService } from "./services/subscription.js";
 import type { TenantService } from "./services/tenant.js";
 
@@ -48,6 +50,8 @@ export interface AppServices {
   audit?: AuditLogService;
   /** Service abonnements Stripe — monte /v1/webhooks/stripe si STRIPE_WEBHOOK_SECRET set. */
   subscription?: SubscriptionService;
+  /** Service de stats business — monté sur /v1/admin/stats si fourni. */
+  stats?: StatsService;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -149,6 +153,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     v1Admin.route("/tenants", adminTenantsRoute(services.tenant, services.audit));
     if (services.audit) {
       v1Admin.route("/audit", adminAuditRoute(services.audit));
+    }
+    if (services.stats) {
+      v1Admin.route("/stats", adminStatsRoute(services.stats));
     }
     app.route("/v1/admin", v1Admin);
   }
