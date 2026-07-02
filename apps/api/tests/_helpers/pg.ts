@@ -84,6 +84,8 @@ async function applySchema(pglite: PGlite): Promise<void> {
       deposit_amount_cents integer,
       deposit_payment_intent_id text,
       table_id uuid,
+      service_id uuid,
+      duration_minutes integer,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now(),
       cancelled_at timestamptz
@@ -96,6 +98,21 @@ async function applySchema(pglite: PGlite): Promise<void> {
       capacity integer not null,
       active boolean not null default true,
       created_at timestamptz not null default now()
+    );
+
+    create table tenant_service_catalog (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      name text not null,
+      description text,
+      duration_minutes integer not null default 60,
+      price_cents integer,
+      currency text not null default 'EUR',
+      active boolean not null default true,
+      display_order integer not null default 0,
+      custom_fields jsonb not null default '{}',
+      created_at timestamptz not null default now(),
+      unique (tenant_id, name)
     );
 
     create unique index uniq_active_reservation on reservations

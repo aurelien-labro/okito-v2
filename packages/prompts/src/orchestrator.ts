@@ -37,6 +37,18 @@ export interface OrchestratorContext {
     isReturning: boolean;
     firstName: string | null;
   } | null;
+  /**
+   * Prestations du catalogue tenant (coupe 30 min, vidange 60 min…).
+   * Si non vide, le bot demande la prestation avant l'heure et peut annoncer
+   * durée/prix. Vide ou absent → flux classique sans prestation.
+   */
+  serviceCatalog?: Array<{
+    name: string;
+    durationMinutes: number;
+    priceCents: number | null;
+    currency: string;
+    description: string | null;
+  }>;
 }
 
 export function buildOrchestratorPrompt(ctx: OrchestratorContext): string {
@@ -65,6 +77,29 @@ Tu as déjà servi ce numéro ${ctx.customer.visitCount} fois.${ctx.customer.fir
 `
         : ""
     : "";
+
+  const catalogBlock =
+    ctx.serviceCatalog && ctx.serviceCatalog.length > 0
+      ? `# Prestations proposées (catalogue officiel — la SEULE source de vérité)
+${ctx.serviceCatalog
+  .map((s) => {
+    const price =
+      s.priceCents !== null
+        ? ` — ${(s.priceCents / 100).toFixed(2).replace(".", ",")} ${s.currency === "EUR" ? "€" : s.currency}`
+        : "";
+    const desc = s.description ? ` (${s.description})` : "";
+    return `- ${s.name} · ${s.durationMinutes} min${price}${desc}`;
+  })
+  .join("\n")}
+
+Règles prestation :
+- Demande QUELLE prestation le client veut AVANT de demander l'heure (via ask_field field="service").
+- Si le client nomme une prestation qui matche le catalogue (même approximativement), enregistre le nom EXACT du catalogue dans \`learned.service\`.
+- Si la demande ne matche RIEN du catalogue, dis-le honnêtement et liste 2-3 prestations proches. N'invente jamais une prestation.
+- Tu peux annoncer la durée et le prix si le client demande — uniquement depuis cette liste.
+
+`
+      : "";
 
   const role = profile.prompt.role.replace("{restaurantName}", ctx.restaurantName);
   const bookingTerm = profile.terms.booking;
@@ -109,7 +144,7 @@ ${profile.prompt.mission}
 # Règles métier (${profile.displayName})
 ${profile.prompt.domainRules}
 
-# Champs à collecter (pour créer une ${bookingTerm})
+${catalogBlock}# Champs à collecter (pour créer une ${bookingTerm})
 ${fieldsList}
 
 # Règles de conversation — IMPORTANT
@@ -387,6 +422,10 @@ export const ORCHESTRATOR_TOOLS: LLMToolDefinition[] = [
         partySize: { type: "integer", minimum: 1 },
         date: { type: "string", description: "AAAA-MM-JJ" },
         time: { type: "string", description: "HH:MM" },
+        service: {
+          type: "string",
+          description: "Nom EXACT d'une prestation du catalogue, si le tenant en a un.",
+        },
         notes: { type: "string" },
       },
     },
@@ -442,7 +481,7 @@ export const ORCHESTRATOR_TOOLS: LLMToolDefinition[] = [
       properties: {
         field: {
           type: "string",
-          enum: ["customerName", "customerPhone", "partySize", "date", "time"],
+          enum: ["customerName", "customerPhone", "partySize", "date", "time", "service"],
         },
         learned: {
           type: "object",
@@ -454,6 +493,7 @@ export const ORCHESTRATOR_TOOLS: LLMToolDefinition[] = [
             partySize: { type: "integer", minimum: 1 },
             date: { type: "string" },
             time: { type: "string" },
+            service: { type: "string" },
           },
         },
       },

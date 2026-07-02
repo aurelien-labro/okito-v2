@@ -13,6 +13,7 @@ const NAV = [
   { href: "/members", label: "Membres" },
   { href: "/waitlist", label: "Liste d'attente" },
   { href: "/tables", label: "Tables" },
+  { href: "/service-catalog", label: "Prestations" },
   { href: "/loyalty", label: "Fidélité" },
   { href: "/settings", label: "Paramètres" },
 ];

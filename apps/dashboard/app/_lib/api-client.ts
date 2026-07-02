@@ -398,6 +398,63 @@ export async function deleteTable(id: string): Promise<void> {
   await request(`/v1/admin/tables/${id}`, { method: "DELETE" });
 }
 
+// --- Service catalog (prestations) -------------------------------------------
+
+export interface ServiceCatalogItem {
+  id: string;
+  tenantId: string;
+  name: string;
+  description: string | null;
+  durationMinutes: number;
+  priceCents: number | null;
+  currency: string;
+  active: boolean;
+  displayOrder: number;
+  customFields: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface ServiceCatalogInput {
+  name: string;
+  description?: string | null;
+  durationMinutes?: number;
+  priceCents?: number | null;
+  currency?: string;
+  displayOrder?: number;
+}
+
+export async function listServiceCatalog(
+  tenantId: string,
+  includeInactive = false,
+): Promise<{ data: ServiceCatalogItem[] }> {
+  const q = includeInactive ? "?includeInactive=true" : "";
+  return request(`/v1/admin/service-catalog/${tenantId}${q}`);
+}
+
+export async function createServiceCatalogItem(
+  tenantId: string,
+  input: ServiceCatalogInput,
+): Promise<{ data: ServiceCatalogItem }> {
+  return request(`/v1/admin/service-catalog/${tenantId}`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateServiceCatalogItem(
+  id: string,
+  patch: Partial<ServiceCatalogInput> & { active?: boolean },
+): Promise<{ data: ServiceCatalogItem }> {
+  return request(`/v1/admin/service-catalog/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function deleteServiceCatalogItem(id: string): Promise<void> {
+  await request(`/v1/admin/service-catalog/${id}`, { method: "DELETE" });
+}
+
 // --- Loyalty ----------------------------------------------------------------
 
 export interface CustomerStats {

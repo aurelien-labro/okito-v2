@@ -61,6 +61,8 @@ export class ReservationService {
     tenantId: string;
     data: ReservationCore & { source?: ReservationSource };
     tableId?: string | null;
+    serviceId?: string | null;
+    durationMinutes?: number | null;
   }) {
     const parsed = createInputSchema.parse(args.data);
     try {
@@ -78,6 +80,8 @@ export class ReservationService {
           source: parsed.source,
           status: "confirmed",
           tableId: args.tableId ?? null,
+          serviceId: args.serviceId ?? null,
+          durationMinutes: args.durationMinutes ?? null,
         })
         .returning();
       if (!row) throw new Error("insert n'a rien retourné");
