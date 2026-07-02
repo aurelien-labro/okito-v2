@@ -9,6 +9,7 @@ import type { ConversationService } from "./conversation.js";
 import type { LoyaltyService } from "./loyalty.js";
 import type { Notifier } from "./notifier.js";
 import { DuplicateReservationError, type ReservationService } from "./reservation.js";
+import type { ServiceCatalogService } from "./service-catalog.js";
 import type { TenantService } from "./tenant.js";
 import type { WaitlistService } from "./waitlist.js";
 
@@ -32,6 +33,8 @@ export interface ChatDeps {
   waitlist?: WaitlistService;
   /** Optionnel — si présent, le bot reçoit les stats fidélité du client (habitué ?). */
   loyalty?: LoyaltyService;
+  /** Optionnel — si présent et catalogue non vide, le bot demande la prestation avant l'heure. */
+  serviceCatalog?: ServiceCatalogService;
 }
 
 interface ToolOutcome {
@@ -103,10 +106,14 @@ export class ChatService {
     // Si on a déjà capté un téléphone, on regarde si c'est un client connu
     // pour permettre au bot d'adapter son accueil ("Pierre, content de vous revoir !").
     const phone = pickString(convAfterUser.collectedFields?.customerPhone);
-    const customerStats =
+    const [customerStats, catalogItems] = await Promise.all([
       phone && this.deps.loyalty
-        ? await this.deps.loyalty.getByPhone(tenant.id, phone).catch(() => null)
-        : null;
+        ? this.deps.loyalty.getByPhone(tenant.id, phone).catch(() => null)
+        : Promise.resolve(null),
+      this.deps.serviceCatalog
+        ? this.deps.serviceCatalog.listByTenant(tenant.id).catch(() => [])
+        : Promise.resolve([]),
+    ]);
 
     const llmResponse = await this.deps.llm.complete({
       system: buildOrchestratorPrompt({
@@ -126,6 +133,13 @@ export class ChatService {
               firstName: customerStats.customerName.split(" ")[0] ?? null,
             }
           : null,
+        serviceCatalog: catalogItems.map((s) => ({
+          name: s.name,
+          durationMinutes: s.durationMinutes,
+          priceCents: s.priceCents,
+          currency: s.currency,
+          description: s.description,
+        })),
       }),
       messages: llmMessages,
       tools: ORCHESTRATOR_TOOLS,
@@ -400,17 +414,25 @@ export class ChatService {
       // En mode table-based : re-check juste avant l'insert pour récupérer la
       // tableId à assigner. Évite les races avec d'autres résas créées entre
       // check_availability et create_reservation.
-      const assign = await this.deps.capacity.check({
-        tenantId: tenant.id,
-        date: parsed.data.dateReservation,
-        heure: parsed.data.heure,
-        couverts: parsed.data.couverts,
-        capacityMax: tenant.capacityMax,
-      });
+      const serviceName = pickString(merged.service);
+      const [assign, catalogItem] = await Promise.all([
+        this.deps.capacity.check({
+          tenantId: tenant.id,
+          date: parsed.data.dateReservation,
+          heure: parsed.data.heure,
+          couverts: parsed.data.couverts,
+          capacityMax: tenant.capacityMax,
+        }),
+        serviceName && this.deps.serviceCatalog
+          ? this.deps.serviceCatalog.findByName(tenant.id, serviceName).catch(() => null)
+          : Promise.resolve(null),
+      ]);
       const row = await this.deps.reservation.create({
         tenantId: tenant.id,
         data: { ...parsed.data, source: channel },
         tableId: assign.tableId ?? null,
+        serviceId: catalogItem?.id ?? null,
+        durationMinutes: catalogItem?.durationMinutes ?? null,
       });
       // Notifs en fire-and-forget : ne pas bloquer la réponse au client.
       if (this.deps.notifier) {
@@ -520,6 +542,7 @@ export class ChatService {
       partySize: "Pour combien de personnes ?",
       date: "Pour quel jour souhaitez-vous réserver ?",
       time: "À quelle heure ?",
+      service: "Ce serait pour quelle prestation ?",
     };
     return {
       reply: questions[field] ?? "Peux-tu préciser un peu plus ?",

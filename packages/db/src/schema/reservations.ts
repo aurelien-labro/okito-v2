@@ -61,6 +61,11 @@ export const reservations = pgTable(
 
     /** Table assignée si le tenant est en mode table-based capacity. Sinon null. */
     tableId: uuid("table_id"),
+
+    /** Prestation du catalogue choisie (nullable — verticaux sans catalogue). */
+    serviceId: uuid("service_id"),
+    /** Snapshot de la durée au moment de la résa (immune aux changements du catalogue). */
+    durationMinutes: integer("duration_minutes"),
   },
   (table) => ({
     uniqActiveReservation: uniqueIndex("uniq_active_reservation").on(
