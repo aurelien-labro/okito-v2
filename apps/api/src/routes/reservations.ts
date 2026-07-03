@@ -7,6 +7,7 @@ import { IdempotencyCache } from "../lib/idempotency.js";
 import type { AppEnv } from "../lib/types.js";
 import type { AuditLogService } from "../services/audit-log.js";
 import type { ReservationService } from "../services/reservation.js";
+import type { WebhookDispatchService } from "../services/webhook-dispatch.js";
 
 const uuidParam = z.string().uuid();
 const dateQuery = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -21,7 +22,11 @@ const updateBodySchema = reservationCoreSchema.partial().extend({
 /** Cache global idempotency partagé entre toutes les routes /v1/reservations. */
 const idempotency = new IdempotencyCache();
 
-export function reservationsRoute(service: ReservationService, audit?: AuditLogService) {
+export function reservationsRoute(
+  service: ReservationService,
+  audit?: AuditLogService,
+  webhooks?: WebhookDispatchService,
+) {
   const app = new Hono<AppEnv>();
 
   // GET /v1/reservations?date=YYYY-MM-DD
@@ -72,6 +77,7 @@ export function reservationsRoute(service: ReservationService, audit?: AuditLogS
       tenantId,
       after: safeRow,
     });
+    webhooks?.emit(tenantId, "reservation.created", safeRow as Record<string, unknown>);
     return c.json(responseBody, 201);
   });
 

@@ -16,6 +16,7 @@ const NAV = [
   { href: "/service-catalog", label: "Prestations" },
   { href: "/schedule", label: "Horaires" },
   { href: "/loyalty", label: "Fidélité" },
+  { href: "/integrations", label: "Intégrations" },
   { href: "/settings", label: "Paramètres" },
 ];
 

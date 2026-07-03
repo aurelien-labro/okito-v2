@@ -7,6 +7,7 @@ import type { Notifier } from "../services/notifier.js";
 import type { ReservationService } from "../services/reservation.js";
 import type { ScheduleRuleService } from "../services/schedule-rule.js";
 import type { TenantService } from "../services/tenant.js";
+import type { WebhookDispatchService } from "../services/webhook-dispatch.js";
 
 export interface PortalDeps {
   reservation: ReservationService;
@@ -14,6 +15,7 @@ export interface PortalDeps {
   capacity: CapacityService;
   scheduleRules?: ScheduleRuleService;
   notifier?: Notifier;
+  webhooks?: WebhookDispatchService;
 }
 
 const patchSchema = z
@@ -94,6 +96,15 @@ export function portalRoute(deps: PortalDeps) {
     if (deps.notifier) {
       void deps.notifier.notifyReservationCancelled(tenant, cancelled).catch(() => {});
     }
+    deps.webhooks?.emit(tenant.id, "reservation.cancelled", {
+      id: cancelled.id,
+      dateReservation: cancelled.dateReservation,
+      heure: cancelled.heure,
+      couverts: cancelled.couverts,
+      customerName: cancelled.customerName,
+      customerPhone: cancelled.customerPhone,
+      status: cancelled.status,
+    });
     return c.json({ data: publicView(cancelled, tenant.name) });
   });
 

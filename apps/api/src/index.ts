@@ -23,6 +23,8 @@ import { TableService } from "./services/table.js";
 import { TenantMemberService } from "./services/tenant-member.js";
 import { TenantService } from "./services/tenant.js";
 import { WaitlistService } from "./services/waitlist.js";
+import { WebhookDispatchService } from "./services/webhook-dispatch.js";
+import { WebhookService } from "./services/webhook.js";
 
 const env = loadEnv();
 initSentry(env);
@@ -45,6 +47,8 @@ if (env.DATABASE_URL) {
   services.loyalty = new LoyaltyService(db);
   services.serviceCatalog = new ServiceCatalogService(db);
   services.scheduleRules = new ScheduleRuleService(db);
+  services.webhook = new WebhookService(db);
+  services.webhookDispatch = new WebhookDispatchService(db);
   services.db = db;
 
   if (env.NODE_ENV !== "production") {
@@ -59,7 +63,7 @@ if (env.DATABASE_URL) {
   const notifier = createNotifier(env);
   services.notifier = notifier;
   services.reminder = new ReminderService(db, notifier);
-  services.noShow = new NoShowService(db, services.audit);
+  services.noShow = new NoShowService(db, services.audit, 120, services.webhookDispatch);
 
   if (env.GEMINI_API_KEY) {
     const llm = createLLMClient(env);
@@ -74,6 +78,7 @@ if (env.DATABASE_URL) {
       loyalty: services.loyalty,
       serviceCatalog: services.serviceCatalog,
       scheduleRules: services.scheduleRules,
+      webhooks: services.webhookDispatch,
     });
   } else {
     logger.warn("GEMINI_API_KEY absent — moteur conversationnel désactivé");

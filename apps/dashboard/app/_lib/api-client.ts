@@ -418,6 +418,59 @@ export async function deleteTable(id: string): Promise<void> {
   await request(`/v1/admin/tables/${id}`, { method: "DELETE" });
 }
 
+// --- Webhooks sortants ------------------------------------------------------
+
+export type WebhookEvent =
+  | "reservation.created"
+  | "reservation.cancelled"
+  | "reservation.no_show"
+  | "waitlist.joined";
+
+export const WEBHOOK_EVENTS: WebhookEvent[] = [
+  "reservation.created",
+  "reservation.cancelled",
+  "reservation.no_show",
+  "waitlist.joined",
+];
+
+export interface TenantWebhook {
+  id: string;
+  tenantId: string;
+  url: string;
+  secret: string;
+  events: WebhookEvent[];
+  active: boolean;
+  createdAt: string;
+}
+
+export async function listWebhooks(tenantId: string): Promise<{ data: TenantWebhook[] }> {
+  return request(`/v1/admin/webhooks/${tenantId}`);
+}
+
+export async function createWebhook(
+  tenantId: string,
+  input: { url: string; events?: WebhookEvent[] },
+): Promise<{ data: TenantWebhook }> {
+  return request(`/v1/admin/webhooks/${tenantId}`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function setWebhookActive(
+  id: string,
+  active: boolean,
+): Promise<{ data: TenantWebhook }> {
+  return request(`/v1/admin/webhooks/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ active }),
+  });
+}
+
+export async function deleteWebhook(id: string): Promise<void> {
+  await request(`/v1/admin/webhooks/${id}`, { method: "DELETE" });
+}
+
 // --- Export iCal ------------------------------------------------------------
 
 export async function getIcalUrls(
