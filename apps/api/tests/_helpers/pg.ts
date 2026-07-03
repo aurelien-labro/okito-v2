@@ -86,6 +86,7 @@ async function applySchema(pglite: PGlite): Promise<void> {
       table_id uuid,
       service_id uuid,
       duration_minutes integer,
+      assigned_member_id uuid,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now(),
       cancelled_at timestamptz
@@ -97,6 +98,17 @@ async function applySchema(pglite: PGlite): Promise<void> {
       label text not null,
       capacity integer not null,
       active boolean not null default true,
+      created_at timestamptz not null default now()
+    );
+
+    create table tenant_members (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      user_id text,
+      invited_email text,
+      role text not null,
+      invited_at timestamptz,
+      accepted_at timestamptz,
       created_at timestamptz not null default now()
     );
 

@@ -12,8 +12,11 @@ const uuidParam = z.string().uuid();
 const dateQuery = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const createBodySchema = reservationCoreSchema.extend({
   source: reservationSourceSchema.optional(),
+  assignedMemberId: z.string().uuid().nullable().optional(),
 });
-const updateBodySchema = reservationCoreSchema.partial();
+const updateBodySchema = reservationCoreSchema.partial().extend({
+  assignedMemberId: z.string().uuid().nullable().optional(),
+});
 
 /** Cache global idempotency partagé entre toutes les routes /v1/reservations. */
 const idempotency = new IdempotencyCache();
@@ -51,8 +54,8 @@ export function reservationsRoute(service: ReservationService, audit?: AuditLogS
     }
 
     const body = await readJson(c);
-    const data = parseOrThrow(createBodySchema, body, "body");
-    const row = await service.create({ tenantId, data });
+    const { assignedMemberId, ...data } = parseOrThrow(createBodySchema, body, "body");
+    const row = await service.create({ tenantId, data, assignedMemberId });
     const responseBody = { data: row };
 
     if (idemKey) {
