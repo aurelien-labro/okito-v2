@@ -308,16 +308,10 @@ function Footer({ t }: { t: LandingContent }) {
           © {new Date().getFullYear()} OKITO. {t.footer.rights}
         </div>
         <div className="flex gap-6">
-          <a
-            href="mailto:hello@okito.app?subject=Mentions%20l%C3%A9gales"
-            className="hover:text-stone-900"
-          >
+          <a href="/legal/terms" className="hover:text-stone-900">
             {t.footer.legal}
           </a>
-          <a
-            href="mailto:hello@okito.app?subject=Confidentialit%C3%A9"
-            className="hover:text-stone-900"
-          >
+          <a href="/legal/privacy" className="hover:text-stone-900">
             {t.footer.privacy}
           </a>
           <a href="mailto:hello@okito.app" className="hover:text-stone-900">
