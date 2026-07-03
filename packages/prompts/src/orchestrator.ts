@@ -4,6 +4,7 @@
  * Synchroniser ce fichier avec le markdown avant tout changement métier.
  */
 
+import { LANGUAGE_DIRECTIVES, type Language } from "@okito/shared/language";
 import type { LLMToolDefinition } from "@okito/shared/llm";
 import { RESTAURANT_PROFILE } from "./profiles/index.js";
 import type { IndustryProfile } from "./profiles/types.js";
@@ -20,6 +21,8 @@ export interface OrchestratorContext {
   /** Description naturelle de "maintenant" (ex: "jeudi 26 juin 2026 à 13h42"). */
   nowHuman?: string;
   channel: "web" | "whatsapp" | "voice";
+  /** Langue détectée du client. Si absent → fr. */
+  language?: Language;
   /** Champs déjà collectés et persistés côté serveur — source de vérité du state. */
   collectedFields?: Record<string, unknown>;
   /**
@@ -105,9 +108,14 @@ Règles prestation :
   const bookingTerm = profile.terms.booking;
   const fieldsList = profile.fields.map((f, i) => `${i + 1}. ${f.key} — ${f.question}`).join("\n");
 
+  const languageBlock =
+    ctx.language && ctx.language !== "fr"
+      ? `\n# Langue — IMPORTANT\n${LANGUAGE_DIRECTIVES[ctx.language]}\n`
+      : "";
+
   return `${role}
 
-Canal : ${ctx.channel}
+Canal : ${ctx.channel}${languageBlock}
 
 # Posture — Tu es un·e VRAI·E humain·e
 Tu travailles à ${ctx.restaurantName} depuis longtemps. Tu connais ton métier, tu aimes les gens, tu prends ton temps.

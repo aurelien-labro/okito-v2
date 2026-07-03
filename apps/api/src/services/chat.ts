@@ -1,6 +1,7 @@
 import type { Conversation, ConversationMessage, Tenant } from "@okito/db";
 import { ORCHESTRATOR_TOOLS, buildOrchestratorPrompt, getIndustryProfile } from "@okito/prompts";
 import { isCancellationIntent } from "@okito/shared/keywords";
+import { type Language, detectLanguage, isLanguage } from "@okito/shared/language";
 import type { LLMClient, LLMToolCall } from "@okito/shared/llm";
 import { type ChatRequest, type ChatResponse, reservationCoreSchema } from "@okito/shared/types";
 import { logger } from "../lib/logger.js";
@@ -76,6 +77,18 @@ export class ChatService {
     // d'annulation, on évite l'appel LLM et on appelle directement handleCancel
     // (qui demandera téléphone + date si manquants ou trouvera la résa sinon).
     const userTurns = convAfterUser.messages.filter((m) => m.role === "user").length;
+
+    // Langue : détectée au 1er message user (avant tout raccourci), figée dans
+    // l'état serveur. Validée pour ne jamais injecter une langue inconnue au prompt.
+    const storedLanguage = convAfterUser.collectedFields?.language;
+    let language: Language = isLanguage(storedLanguage) ? storedLanguage : "fr";
+    if (!isLanguage(storedLanguage) && userTurns === 1) {
+      language = detectLanguage(input.message);
+      if (language !== "fr") {
+        await this.deps.conversation.mergeCollectedFields(conv.id, input.tenantId, { language });
+      }
+    }
+
     if (userTurns === 1 && isCancellationIntent(input.message)) {
       logger.info(
         { tenantId: input.tenantId, sessionKey: input.sessionKey },
@@ -127,6 +140,7 @@ export class ChatService {
         dayOfWeek: now.dayOfWeek,
         nowHuman: now.human,
         channel: llmChannel,
+        language,
         collectedFields: convAfterUser.collectedFields,
         profile,
         customer: customerStats
