@@ -122,6 +122,16 @@ async function applySchema(pglite: PGlite): Promise<void> {
       created_at timestamptz not null default now()
     );
 
+    create table reservation_reviews (
+      id uuid primary key default gen_random_uuid(),
+      reservation_id uuid not null references reservations(id) on delete cascade,
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      rating integer not null,
+      comment text,
+      submitted_at timestamptz not null default now(),
+      unique (reservation_id)
+    );
+
     create table tenant_webhooks (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid not null references tenants(id) on delete cascade,

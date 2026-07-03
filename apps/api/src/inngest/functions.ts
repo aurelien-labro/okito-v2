@@ -3,6 +3,7 @@ import { inngest } from "../lib/inngest.js";
 import { logger } from "../lib/logger.js";
 import type { NoShowService } from "../services/no-show.js";
 import type { ReminderService } from "../services/reminder.js";
+import type { ReviewRequestService } from "../services/review-request.js";
 
 /**
  * Functions Inngest exposées par l'API.
@@ -20,6 +21,7 @@ import type { ReminderService } from "../services/reminder.js";
 export function createInngestFunctions(
   reminder: ReminderService,
   noShow?: NoShowService,
+  reviewRequest?: ReviewRequestService,
 ): InngestFunction.Any[] {
   const dailyReminders = inngest.createFunction(
     {
@@ -50,6 +52,24 @@ export function createInngestFunctions(
       },
     );
     functions.push(markNoShows);
+  }
+
+  if (reviewRequest) {
+    const sendReviewRequests = inngest.createFunction(
+      {
+        id: "send-review-requests",
+        name: "Demandes d'avis (10h Europe/Paris)",
+        triggers: [{ cron: "TZ=Europe/Paris 0 10 * * *" }],
+      },
+      async ({ step }) => {
+        const result = await step.run("run-for-yesterday", async () =>
+          reviewRequest.runForYesterday(),
+        );
+        logger.info({ result }, "Inngest: sendReviewRequests terminé");
+        return result;
+      },
+    );
+    functions.push(sendReviewRequests);
   }
 
   return functions;

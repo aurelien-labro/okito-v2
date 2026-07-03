@@ -15,6 +15,8 @@ import { NoShowService } from "./services/no-show.js";
 import { createNotifier } from "./services/notifier-factory.js";
 import { ReminderService } from "./services/reminder.js";
 import { ReservationService } from "./services/reservation.js";
+import { ReviewRequestService } from "./services/review-request.js";
+import { ReviewService } from "./services/review.js";
 import { ScheduleRuleService } from "./services/schedule-rule.js";
 import { ServiceCatalogService } from "./services/service-catalog.js";
 import { StatsService } from "./services/stats.js";
@@ -49,6 +51,7 @@ if (env.DATABASE_URL) {
   services.scheduleRules = new ScheduleRuleService(db);
   services.webhook = new WebhookService(db);
   services.webhookDispatch = new WebhookDispatchService(db);
+  services.review = new ReviewService(db);
   services.db = db;
 
   if (env.NODE_ENV !== "production") {
@@ -63,6 +66,14 @@ if (env.DATABASE_URL) {
   const notifier = createNotifier(env);
   services.notifier = notifier;
   services.reminder = new ReminderService(db, notifier);
+  if (env.REVIEW_LINK_SECRET) {
+    services.reviewRequest = new ReviewRequestService(
+      db,
+      notifier,
+      env.REVIEW_LINK_SECRET,
+      env.PORTAL_URL,
+    );
+  }
   services.noShow = new NoShowService(db, services.audit, 120, services.webhookDispatch);
 
   if (env.GEMINI_API_KEY) {
