@@ -82,6 +82,7 @@ export interface Reservation {
   status: string;
   source: string;
   notes: string | null;
+  assignedMemberId: string | null;
   createdAt: string;
 }
 
@@ -102,6 +103,7 @@ export interface ReservationUpdate {
   dateReservation?: string;
   heure?: string;
   notes?: string;
+  assignedMemberId?: string | null;
 }
 
 export async function updateReservation(

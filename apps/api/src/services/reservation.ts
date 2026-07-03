@@ -15,6 +15,12 @@ class DuplicateReservationError extends HttpError {
   }
 }
 
+class UnknownMemberError extends HttpError {
+  constructor() {
+    super(400, "unknown_member", "Ce membre n'appartient pas à cet établissement.");
+  }
+}
+
 const listFiltersSchema = z.object({
   tenantId: z.string().uuid(),
   date: z
@@ -31,6 +37,7 @@ export type CreateInput = z.infer<typeof createInputSchema>;
 
 const updateInputSchema = reservationCoreSchema.partial().extend({
   notes: z.string().max(500).optional(),
+  assignedMemberId: z.string().uuid().nullable().optional(),
 });
 export type UpdateInput = z.infer<typeof updateInputSchema>;
 
@@ -63,8 +70,12 @@ export class ReservationService {
     tableId?: string | null;
     serviceId?: string | null;
     durationMinutes?: number | null;
+    assignedMemberId?: string | null;
   }) {
     const parsed = createInputSchema.parse(args.data);
+    if (args.assignedMemberId) {
+      await this.assertMemberOfTenant(args.tenantId, args.assignedMemberId);
+    }
     try {
       const [row] = await this.db
         .insert(schema.reservations)
@@ -82,6 +93,7 @@ export class ReservationService {
           tableId: args.tableId ?? null,
           serviceId: args.serviceId ?? null,
           durationMinutes: args.durationMinutes ?? null,
+          assignedMemberId: args.assignedMemberId ?? null,
         })
         .returning();
       if (!row) throw new Error("insert n'a rien retourné");
@@ -97,6 +109,9 @@ export class ReservationService {
     if (Object.keys(patch).length === 0) {
       return this.getById({ tenantId: args.tenantId, id: args.id });
     }
+    if (patch.assignedMemberId) {
+      await this.assertMemberOfTenant(args.tenantId, patch.assignedMemberId);
+    }
 
     try {
       const [row] = await this.db
@@ -109,6 +124,9 @@ export class ReservationService {
           ...(patch.dateReservation !== undefined && { dateReservation: patch.dateReservation }),
           ...(patch.heure !== undefined && { heure: patch.heure }),
           ...(patch.notes !== undefined && { notes: patch.notes }),
+          ...(patch.assignedMemberId !== undefined && {
+            assignedMemberId: patch.assignedMemberId,
+          }),
           updatedAt: new Date(),
         })
         .where(
@@ -121,6 +139,15 @@ export class ReservationService {
       if (isUniqueViolation(err)) throw new DuplicateReservationError();
       throw err;
     }
+  }
+
+  /** Anti-IDOR : un membre ne peut être assigné que s'il appartient au tenant. */
+  private async assertMemberOfTenant(tenantId: string, memberId: string): Promise<void> {
+    const member = await this.db.query.tenantMembers.findFirst({
+      where: (m, { and: a, eq: e }) => a(e(m.id, memberId), e(m.tenantId, tenantId)),
+      columns: { id: true },
+    });
+    if (!member) throw new UnknownMemberError();
   }
 
   async findActiveByPhoneAndDate(args: {

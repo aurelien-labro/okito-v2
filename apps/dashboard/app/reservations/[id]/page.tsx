@@ -7,8 +7,11 @@ import { LoginGate } from "../../_components/login-gate";
 import {
   type Reservation,
   type ReservationUpdate,
+  type TenantMember,
   cancelReservation,
+  getCurrentTenantId,
   getReservation,
+  listMembers,
   updateReservation,
 } from "../../_lib/api-client";
 
@@ -33,6 +36,15 @@ function ReservationDetail() {
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
   const [form, setForm] = useState<FormState | null>(null);
+  const [members, setMembers] = useState<TenantMember[]>([]);
+
+  useEffect(() => {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    listMembers(tenantId)
+      .then((res) => setMembers(res.data))
+      .catch(() => setMembers([]));
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -229,6 +241,28 @@ function ReservationDetail() {
           </div>
         </Section>
 
+        <Section title="Assignation">
+          <Field label="Assigner à">
+            <select
+              value={form.assignedMemberId}
+              onChange={(e) => patchForm({ assignedMemberId: e.target.value })}
+              disabled={cancelled}
+              className="w-full rounded border border-stone-300 px-3 py-2 text-sm disabled:bg-stone-50 disabled:text-stone-400 md:w-1/2"
+            >
+              <option value="">— Personne —</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {memberLabel(m)}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <p className="mt-1 text-xs text-stone-400">
+            Le membre du staff qui prend en charge cette réservation (coiffeur, mécanicien,
+            praticien…).
+          </p>
+        </Section>
+
         <Section title="Notes internes">
           <textarea
             value={form.notes}
@@ -298,6 +332,11 @@ interface FormState {
   dateReservation: string;
   heure: string;
   notes: string;
+  assignedMemberId: string;
+}
+
+function memberLabel(m: TenantMember): string {
+  return m.invitedEmail ?? m.userId ?? m.id.slice(0, 8);
 }
 
 function toForm(r: Reservation): FormState {
@@ -309,6 +348,7 @@ function toForm(r: Reservation): FormState {
     dateReservation: r.dateReservation,
     heure: r.heure,
     notes: r.notes ?? "",
+    assignedMemberId: r.assignedMemberId ?? "",
   };
 }
 
@@ -324,6 +364,9 @@ function diffPatch(prev: FormState, next: FormState): ReservationUpdate {
   if (prev.heure !== next.heure) patch.heure = next.heure;
   if (prev.notes !== next.notes) {
     if (next.notes.trim()) patch.notes = next.notes;
+  }
+  if (prev.assignedMemberId !== next.assignedMemberId) {
+    patch.assignedMemberId = next.assignedMemberId || null;
   }
   return patch;
 }

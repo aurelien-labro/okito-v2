@@ -64,6 +64,8 @@ export const reservations = pgTable(
 
     /** Prestation du catalogue choisie (nullable — verticaux sans catalogue). */
     serviceId: uuid("service_id"),
+    /** Membre du staff assigné (coiffeur, mécanicien, praticien…). Nullable. */
+    assignedMemberId: uuid("assigned_member_id"),
     /** Snapshot de la durée au moment de la résa (immune aux changements du catalogue). */
     durationMinutes: integer("duration_minutes"),
   },
