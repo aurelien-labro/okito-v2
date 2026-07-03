@@ -19,6 +19,7 @@ const baseEnv: Env = {
   PORT: 3001,
   APP_URL: "http://localhost:3000",
   PORTAL_URL: "https://okito.app",
+  PUBLIC_API_URL: "http://localhost:3001",
   LLM_MODEL: "gemini-2.5-flash",
   LLM_FALLBACK_MODEL: "gemini-2.5-pro",
   LLM_TIMEOUT_MS: 15000,
