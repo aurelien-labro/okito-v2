@@ -3,11 +3,11 @@ import { z } from "zod";
 import { BadRequestError, HttpError, NotFoundError } from "../lib/errors.js";
 import type { AppEnv } from "../lib/types.js";
 import { type CapacityService, checkServiceWindow } from "../services/capacity.js";
+import type { BusinessEventEmitter } from "../services/event-bus.js";
 import type { Notifier } from "../services/notifier.js";
 import type { ReservationService } from "../services/reservation.js";
 import type { ScheduleRuleService } from "../services/schedule-rule.js";
 import type { TenantService } from "../services/tenant.js";
-import type { WebhookDispatchService } from "../services/webhook-dispatch.js";
 
 export interface PortalDeps {
   reservation: ReservationService;
@@ -15,7 +15,7 @@ export interface PortalDeps {
   capacity: CapacityService;
   scheduleRules?: ScheduleRuleService;
   notifier?: Notifier;
-  webhooks?: WebhookDispatchService;
+  webhooks?: BusinessEventEmitter;
 }
 
 const patchSchema = z

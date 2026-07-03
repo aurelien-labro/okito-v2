@@ -6,8 +6,8 @@ import { BadRequestError } from "../lib/errors.js";
 import { IdempotencyCache } from "../lib/idempotency.js";
 import type { AppEnv } from "../lib/types.js";
 import type { AuditLogService } from "../services/audit-log.js";
+import type { BusinessEventEmitter } from "../services/event-bus.js";
 import type { ReservationService } from "../services/reservation.js";
-import type { WebhookDispatchService } from "../services/webhook-dispatch.js";
 
 const uuidParam = z.string().uuid();
 const dateQuery = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -25,7 +25,7 @@ const idempotency = new IdempotencyCache();
 export function reservationsRoute(
   service: ReservationService,
   audit?: AuditLogService,
-  webhooks?: WebhookDispatchService,
+  webhooks?: BusinessEventEmitter,
 ) {
   const app = new Hono<AppEnv>();
 

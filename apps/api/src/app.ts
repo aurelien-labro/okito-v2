@@ -40,6 +40,7 @@ import type { AuditLogService } from "./services/audit-log.js";
 import type { CapacityService } from "./services/capacity.js";
 import type { ChatService } from "./services/chat.js";
 import type { CustomerPrivacyService } from "./services/customer-privacy.js";
+import type { BusinessEventEmitter } from "./services/event-bus.js";
 import type { LoyaltyService } from "./services/loyalty.js";
 import type { NoShowService } from "./services/no-show.js";
 import type { Notifier } from "./services/notifier.js";
@@ -55,7 +56,6 @@ import type { TableService } from "./services/table.js";
 import type { TenantMemberService } from "./services/tenant-member.js";
 import type { TenantService } from "./services/tenant.js";
 import type { WaitlistService } from "./services/waitlist.js";
-import type { WebhookDispatchService } from "./services/webhook-dispatch.js";
 import type { WebhookService } from "./services/webhook.js";
 
 export interface AppServices {
@@ -99,8 +99,8 @@ export interface AppServices {
   noShow?: NoShowService;
   /** CRUD webhooks sortants — monté sur /v1/admin/webhooks si fourni. */
   webhook?: WebhookService;
-  /** Dispatcher webhooks — injecté dans reservations/portal pour émettre les events. */
-  webhookDispatch?: WebhookDispatchService;
+  /** Bus d'événements — injecté dans reservations/portal pour émettre les events (journal + webhooks). */
+  eventBus?: BusinessEventEmitter;
   /** Avis clients — monté sur /v1/admin/reviews et /review si REVIEW_LINK_SECRET fourni. */
   review?: ReviewService;
   /** Service de demandes d'avis (cron) — ajoute la function Inngest matinale si fourni. */
@@ -164,7 +164,7 @@ export function createApp(env: Env, services: AppServices = {}) {
     if (services.reservation)
       v1.route(
         "/reservations",
-        reservationsRoute(services.reservation, services.audit, services.webhookDispatch),
+        reservationsRoute(services.reservation, services.audit, services.eventBus),
       );
     if (services.chat) v1.route("/chat", chatRoute(services.chat));
     app.route("/v1", v1);
@@ -185,7 +185,7 @@ export function createApp(env: Env, services: AppServices = {}) {
         capacity: services.capacity,
         scheduleRules: services.scheduleRules,
         notifier: services.notifier,
-        webhooks: services.webhookDispatch,
+        webhooks: services.eventBus,
       }),
     );
   }
