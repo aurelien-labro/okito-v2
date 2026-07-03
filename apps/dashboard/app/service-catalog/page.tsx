@@ -10,6 +10,7 @@ import {
   listServiceCatalog,
   updateServiceCatalogItem,
 } from "../_lib/api-client";
+import { formatDuration } from "../_lib/format";
 
 export default function ServiceCatalogPage() {
   return (
@@ -23,17 +24,6 @@ function formatPrice(cents: number | null, currency: string): string {
   if (cents === null) return "—";
   const amount = (cents / 100).toFixed(2).replace(".", ",");
   return currency === "EUR" ? `${amount} €` : `${amount} ${currency}`;
-}
-
-function formatDuration(min: number): string {
-  if (min < 60) return `${min} min`;
-  const h = Math.floor(min / 60);
-  const rest = min % 60;
-  if (min >= 1440 && min % 1440 === 0) {
-    const days = min / 1440;
-    return days === 1 ? "1 jour" : `${days} jours`;
-  }
-  return rest === 0 ? `${h}h` : `${h}h${String(rest).padStart(2, "0")}`;
 }
 
 function CatalogView() {

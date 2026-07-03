@@ -12,6 +12,7 @@ import {
   listReservations,
   statsForPhones,
 } from "../_lib/api-client";
+import { formatDuration, hhmmToMinutes } from "../_lib/format";
 
 function todayISO(): string {
   const d = new Date();
@@ -36,6 +37,7 @@ function ReservationsList() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [view, setView] = useState<"list" | "agenda">("list");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -90,6 +92,30 @@ function ReservationsList() {
           <p className="mt-1 text-sm text-stone-500">Filtre par date — défaut : aujourd'hui.</p>
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex overflow-hidden rounded border border-stone-300 text-sm">
+            <button
+              type="button"
+              onClick={() => setView("list")}
+              className={
+                view === "list"
+                  ? "bg-stone-900 px-3 py-2 text-white"
+                  : "px-3 py-2 hover:bg-stone-50"
+              }
+            >
+              Liste
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("agenda")}
+              className={
+                view === "agenda"
+                  ? "bg-stone-900 px-3 py-2 text-white"
+                  : "px-3 py-2 hover:bg-stone-50"
+              }
+            >
+              Agenda
+            </button>
+          </div>
           <input
             type="date"
             value={date}
@@ -130,82 +156,205 @@ function ReservationsList() {
         </div>
       )}
 
-      <div className="mt-6 overflow-hidden rounded-lg border border-stone-200 bg-white">
-        {loading ? (
-          <div className="p-8 text-center text-sm text-stone-500">Chargement…</div>
-        ) : rows.length === 0 ? (
-          <div className="p-8 text-center text-sm text-stone-500">
-            Aucune réservation pour ce jour.
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
-              <tr>
-                <Th>Heure</Th>
-                <Th>Client</Th>
-                <Th>Téléphone</Th>
-                <Th>Couverts</Th>
-                <Th>Source</Th>
-                <Th>Statut</Th>
-                <Th>—</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => {
-                const stats = loyalty[r.customerPhone];
-                return (
-                  <tr key={r.id} className="border-t border-stone-100">
-                    <Td className="font-medium">{r.heure.slice(0, 5)}</Td>
-                    <Td>
-                      <div className="flex items-center gap-2">
-                        <span>{r.customerName}</span>
-                        {stats?.isReturning && (
-                          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-800">
-                            habitué · {stats.visitCount}
-                          </span>
-                        )}
-                        {stats && !stats.isReturning && stats.visitCount >= 2 && (
-                          <span className="text-[10px] text-stone-400">
-                            {stats.visitCount}× déjà vu
-                          </span>
-                        )}
-                      </div>
-                    </Td>
-                    <Td className="text-stone-600">{r.customerPhone}</Td>
-                    <Td>{r.couverts}</Td>
-                    <Td>
-                      <span className="rounded bg-stone-100 px-2 py-0.5 text-xs uppercase tracking-wide text-stone-600">
-                        {r.source}
-                      </span>
-                    </Td>
-                    <Td>
-                      <StatusBadge status={r.status} />
-                    </Td>
-                    <Td>
-                      <div className="flex items-center gap-3">
-                        <Link
-                          href={`/reservations/${r.id}`}
-                          className="text-xs text-stone-700 hover:underline"
-                        >
-                          Éditer
-                        </Link>
-                        {r.status !== "cancelled" && (
-                          <button
-                            type="button"
-                            onClick={() => handleCancel(r.id)}
-                            className="text-xs text-red-700 hover:underline"
+      {view === "agenda" ? (
+        <AgendaView rows={rows} loading={loading} />
+      ) : (
+        <div className="mt-6 overflow-hidden rounded-lg border border-stone-200 bg-white">
+          {loading ? (
+            <div className="p-8 text-center text-sm text-stone-500">Chargement…</div>
+          ) : rows.length === 0 ? (
+            <div className="p-8 text-center text-sm text-stone-500">
+              Aucune réservation pour ce jour.
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
+                <tr>
+                  <Th>Heure</Th>
+                  <Th>Client</Th>
+                  <Th>Téléphone</Th>
+                  <Th>Couverts</Th>
+                  <Th>Source</Th>
+                  <Th>Statut</Th>
+                  <Th>—</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => {
+                  const stats = loyalty[r.customerPhone];
+                  return (
+                    <tr key={r.id} className="border-t border-stone-100">
+                      <Td className="font-medium">{r.heure.slice(0, 5)}</Td>
+                      <Td>
+                        <div className="flex items-center gap-2">
+                          <span>{r.customerName}</span>
+                          {stats?.isReturning && (
+                            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-800">
+                              habitué · {stats.visitCount}
+                            </span>
+                          )}
+                          {stats && !stats.isReturning && stats.visitCount >= 2 && (
+                            <span className="text-[10px] text-stone-400">
+                              {stats.visitCount}× déjà vu
+                            </span>
+                          )}
+                        </div>
+                      </Td>
+                      <Td className="text-stone-600">{r.customerPhone}</Td>
+                      <Td>{r.couverts}</Td>
+                      <Td>
+                        <span className="rounded bg-stone-100 px-2 py-0.5 text-xs uppercase tracking-wide text-stone-600">
+                          {r.source}
+                        </span>
+                      </Td>
+                      <Td>
+                        <StatusBadge status={r.status} />
+                      </Td>
+                      <Td>
+                        <div className="flex items-center gap-3">
+                          <Link
+                            href={`/reservations/${r.id}`}
+                            className="text-xs text-stone-700 hover:underline"
                           >
-                            Annuler
-                          </button>
-                        )}
-                      </div>
-                    </Td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
+                            Éditer
+                          </Link>
+                          {r.status !== "cancelled" && (
+                            <button
+                              type="button"
+                              onClick={() => handleCancel(r.id)}
+                              className="text-xs text-red-700 hover:underline"
+                            >
+                              Annuler
+                            </button>
+                          )}
+                        </div>
+                      </Td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const PX_PER_MIN = 1.2;
+const DEFAULT_DURATION = 30;
+
+/**
+ * Assigne à chaque résa une "lane" (colonne) en évitant le chevauchement
+ * temporel réel : deux résas qui se recouvrent ne partagent jamais une lane.
+ * Retourne les lanes et le nombre total de colonnes utilisées.
+ */
+function packLanes(items: { start: number; end: number }[]): {
+  lanes: number[];
+  laneCount: number;
+} {
+  const laneEnds: number[] = [];
+  const lanes = items.map((it) => {
+    let lane = laneEnds.findIndex((end) => end <= it.start);
+    if (lane === -1) {
+      lane = laneEnds.length;
+      laneEnds.push(it.end);
+    } else {
+      laneEnds[lane] = it.end;
+    }
+    return lane;
+  });
+  return { lanes, laneCount: Math.max(1, laneEnds.length) };
+}
+
+function AgendaView({ rows, loading }: { rows: Reservation[]; loading: boolean }) {
+  const active = rows.filter((r) => r.status !== "cancelled");
+  if (loading) {
+    return (
+      <div className="mt-6 rounded-lg border border-stone-200 bg-white p-8 text-center text-sm text-stone-500">
+        Chargement…
+      </div>
+    );
+  }
+  if (active.length === 0) {
+    return (
+      <div className="mt-6 rounded-lg border border-stone-200 bg-white p-8 text-center text-sm text-stone-500">
+        Aucune réservation active pour ce jour.
+      </div>
+    );
+  }
+
+  const events = active
+    .map((r) => {
+      const start = hhmmToMinutes(r.heure);
+      return { r, start, end: start + (r.durationMinutes ?? DEFAULT_DURATION) };
+    })
+    .sort((a, b) => a.start - b.start);
+
+  // Plage dynamique : englobe la première et la dernière résa du jour (défaut 8h-24h).
+  const earliest = Math.min(...events.map((e) => e.start));
+  const latest = Math.max(...events.map((e) => e.end));
+  const startHour = Math.min(8, Math.floor(earliest / 60));
+  const endHour = Math.max(24, Math.ceil(latest / 60));
+  const startMin = startHour * 60;
+  const totalHeight = (endHour - startHour) * 60 * PX_PER_MIN;
+
+  const { lanes, laneCount } = packLanes(events);
+  const laneWidth = 100 / laneCount;
+
+  const hours: number[] = [];
+  for (let h = startHour; h < endHour; h++) hours.push(h);
+
+  return (
+    <div className="mt-6 overflow-hidden rounded-lg border border-stone-200 bg-white">
+      <div className="relative flex" style={{ height: totalHeight }}>
+        <div className="w-16 shrink-0 border-r border-stone-100">
+          {hours.map((h) => (
+            <div
+              key={h}
+              className="relative text-right text-[10px] text-stone-400"
+              style={{ height: 60 * PX_PER_MIN }}
+            >
+              <span className="absolute -top-1.5 right-2">{String(h % 24).padStart(2, "0")}h</span>
+            </div>
+          ))}
+        </div>
+        <div className="relative flex-1">
+          {hours.map((h) => (
+            <div
+              key={h}
+              className="border-t border-stone-100"
+              style={{ height: 60 * PX_PER_MIN }}
+            />
+          ))}
+          {events.map((e, i) => {
+            const top = (e.start - startMin) * PX_PER_MIN;
+            const rawHeight = (e.end - e.start) * PX_PER_MIN;
+            const height = Math.min(Math.max(18, rawHeight), totalHeight - top);
+            const lane = lanes[i] ?? 0;
+            return (
+              <Link
+                key={e.r.id}
+                href={`/reservations/${e.r.id}`}
+                className="absolute overflow-hidden rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs hover:bg-emerald-100"
+                style={{
+                  top,
+                  height,
+                  left: `${lane * laneWidth}%`,
+                  width: `${laneWidth - 1}%`,
+                }}
+              >
+                <div className="truncate font-medium text-emerald-900">
+                  {e.r.heure.slice(0, 5)} · {e.r.customerName}
+                </div>
+                <div className="truncate text-emerald-700">
+                  {e.r.couverts} p.
+                  {e.r.durationMinutes ? ` · ${formatDuration(e.r.durationMinutes)}` : ""}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

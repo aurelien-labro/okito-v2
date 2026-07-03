@@ -83,6 +83,7 @@ export interface Reservation {
   source: string;
   notes: string | null;
   assignedMemberId: string | null;
+  durationMinutes: number | null;
   createdAt: string;
 }
 
