@@ -10,6 +10,7 @@ import { createAdminMiddleware } from "./middleware/admin.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import { metricsMiddleware } from "./middleware/metrics.js";
 import { adminAuditRoute } from "./routes/admin-audit.js";
+import { adminCustomersRoute } from "./routes/admin-customers.js";
 import { adminIcalRoute } from "./routes/admin-ical.js";
 import { adminLoyaltyRoute } from "./routes/admin-loyalty.js";
 import { adminMembersRoute } from "./routes/admin-members.js";
@@ -38,6 +39,7 @@ import { widgetRoute } from "./routes/widget.js";
 import type { AuditLogService } from "./services/audit-log.js";
 import type { CapacityService } from "./services/capacity.js";
 import type { ChatService } from "./services/chat.js";
+import type { CustomerPrivacyService } from "./services/customer-privacy.js";
 import type { LoyaltyService } from "./services/loyalty.js";
 import type { NoShowService } from "./services/no-show.js";
 import type { Notifier } from "./services/notifier.js";
@@ -103,6 +105,8 @@ export interface AppServices {
   review?: ReviewService;
   /** Service de demandes d'avis (cron) — ajoute la function Inngest matinale si fourni. */
   reviewRequest?: ReviewRequestService;
+  /** Droit à l'oubli RGPD — monté sur /v1/admin/customers si fourni. */
+  customerPrivacy?: CustomerPrivacyService;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -294,6 +298,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.review) {
       v1Admin.route("/reviews", adminReviewsRoute(services.review));
+    }
+    if (services.customerPrivacy) {
+      v1Admin.route("/customers", adminCustomersRoute(services.customerPrivacy, services.audit));
     }
     app.route("/v1/admin", v1Admin);
   }

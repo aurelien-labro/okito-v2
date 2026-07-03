@@ -9,6 +9,7 @@ import { AuditLogService } from "./services/audit-log.js";
 import { CapacityService } from "./services/capacity.js";
 import { ChatService } from "./services/chat.js";
 import { ConversationService } from "./services/conversation.js";
+import { CustomerPrivacyService } from "./services/customer-privacy.js";
 import { createLLMClient } from "./services/llm/index.js";
 import { LoyaltyService } from "./services/loyalty.js";
 import { NoShowService } from "./services/no-show.js";
@@ -52,6 +53,7 @@ if (env.DATABASE_URL) {
   services.webhook = new WebhookService(db);
   services.webhookDispatch = new WebhookDispatchService(db);
   services.review = new ReviewService(db);
+  services.customerPrivacy = new CustomerPrivacyService(db);
   services.db = db;
 
   if (env.NODE_ENV !== "production") {

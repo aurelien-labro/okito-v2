@@ -122,6 +122,24 @@ async function applySchema(pglite: PGlite): Promise<void> {
       created_at timestamptz not null default now()
     );
 
+    create table waitlist_entries (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      customer_name text not null,
+      customer_phone text not null,
+      customer_email text,
+      couverts integer not null,
+      date_souhaitee date not null,
+      heure_souhaitee time not null,
+      flex_minutes integer not null default 30,
+      status text not null default 'waiting',
+      notified_at timestamptz,
+      converted_at timestamptz,
+      expired_at timestamptz,
+      notes text,
+      created_at timestamptz not null default now()
+    );
+
     create table reservation_reviews (
       id uuid primary key default gen_random_uuid(),
       reservation_id uuid not null references reservations(id) on delete cascade,
