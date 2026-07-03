@@ -2,7 +2,7 @@ import { type Database, schema } from "@okito/db";
 import { and, eq, lt } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import type { AuditLogService } from "./audit-log.js";
-import type { WebhookDispatchService } from "./webhook-dispatch.js";
+import type { BusinessEventEmitter } from "./event-bus.js";
 
 export interface NoShowRunResult {
   tenantsProcessed: number;
@@ -28,7 +28,7 @@ export class NoShowService {
     private readonly db: Database,
     private readonly audit?: AuditLogService,
     private readonly graceMinutes = 120,
-    private readonly webhooks?: WebhookDispatchService,
+    private readonly webhooks?: BusinessEventEmitter,
   ) {}
 
   async markStale(opts?: { dryRun?: boolean }): Promise<NoShowRunResult> {

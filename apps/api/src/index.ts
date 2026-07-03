@@ -10,6 +10,7 @@ import { CapacityService } from "./services/capacity.js";
 import { ChatService } from "./services/chat.js";
 import { ConversationService } from "./services/conversation.js";
 import { CustomerPrivacyService } from "./services/customer-privacy.js";
+import { EventBusService } from "./services/event-bus.js";
 import { createLLMClient } from "./services/llm/index.js";
 import { LoyaltyService } from "./services/loyalty.js";
 import { NoShowService } from "./services/no-show.js";
@@ -51,7 +52,7 @@ if (env.DATABASE_URL) {
   services.serviceCatalog = new ServiceCatalogService(db);
   services.scheduleRules = new ScheduleRuleService(db);
   services.webhook = new WebhookService(db);
-  services.webhookDispatch = new WebhookDispatchService(db);
+  services.eventBus = new EventBusService(db, new WebhookDispatchService(db));
   services.review = new ReviewService(db);
   services.customerPrivacy = new CustomerPrivacyService(db);
   services.db = db;
@@ -76,7 +77,7 @@ if (env.DATABASE_URL) {
       env.PORTAL_URL,
     );
   }
-  services.noShow = new NoShowService(db, services.audit, 120, services.webhookDispatch);
+  services.noShow = new NoShowService(db, services.audit, 120, services.eventBus);
 
   if (env.GEMINI_API_KEY) {
     const llm = createLLMClient(env);
@@ -91,7 +92,7 @@ if (env.DATABASE_URL) {
       loyalty: services.loyalty,
       serviceCatalog: services.serviceCatalog,
       scheduleRules: services.scheduleRules,
-      webhooks: services.webhookDispatch,
+      webhooks: services.eventBus,
     });
   } else {
     logger.warn("GEMINI_API_KEY absent — moteur conversationnel désactivé");

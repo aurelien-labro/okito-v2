@@ -7,6 +7,7 @@ import { type ChatRequest, type ChatResponse, reservationCoreSchema } from "@oki
 import { logger } from "../lib/logger.js";
 import { type CapacityService, checkServiceWindow } from "./capacity.js";
 import type { ConversationService } from "./conversation.js";
+import type { BusinessEventEmitter } from "./event-bus.js";
 import type { LoyaltyService } from "./loyalty.js";
 import type { Notifier } from "./notifier.js";
 import { DuplicateReservationError, type ReservationService } from "./reservation.js";
@@ -14,7 +15,6 @@ import type { ScheduleRuleService } from "./schedule-rule.js";
 import type { ServiceCatalogService } from "./service-catalog.js";
 import type { TenantService } from "./tenant.js";
 import type { WaitlistService } from "./waitlist.js";
-import type { WebhookDispatchService } from "./webhook-dispatch.js";
 
 const MAX_HISTORY_MESSAGES = 20;
 const CHANNEL_TO_LLM: Record<ChatRequest["channel"], "web" | "whatsapp" | "voice"> = {
@@ -40,8 +40,8 @@ export interface ChatDeps {
   serviceCatalog?: ServiceCatalogService;
   /** Optionnel — si présent, les fermetures hebdo/congés bloquent check_availability. */
   scheduleRules?: ScheduleRuleService;
-  /** Optionnel — diffuse les événements résa/waitlist aux webhooks sortants du tenant. */
-  webhooks?: WebhookDispatchService;
+  /** Optionnel — diffuse les événements résa/waitlist (event bus + webhooks sortants). */
+  webhooks?: BusinessEventEmitter;
 }
 
 interface ToolOutcome {
