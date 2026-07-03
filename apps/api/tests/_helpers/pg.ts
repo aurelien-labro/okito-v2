@@ -87,6 +87,7 @@ async function applySchema(pglite: PGlite): Promise<void> {
       service_id uuid,
       duration_minutes integer,
       assigned_member_id uuid,
+      access_token_hash text unique,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now(),
       cancelled_at timestamptz

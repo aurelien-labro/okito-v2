@@ -56,7 +56,11 @@ export function reservationsRoute(service: ReservationService, audit?: AuditLogS
     const body = await readJson(c);
     const { assignedMemberId, ...data } = parseOrThrow(createBodySchema, body, "body");
     const row = await service.create({ tenantId, data, assignedMemberId });
-    const responseBody = { data: row };
+    // Le token portail brut ne quitte le serveur que par le lien de notification
+    // envoyé au client. Il ne doit jamais transiter par la réponse HTTP, le cache
+    // idempotency, ni l'audit log.
+    const { accessToken: _token, ...safeRow } = row;
+    const responseBody = { data: safeRow };
 
     if (idemKey) {
       idempotency.set(tenantId, idemKey, { status: 201, body: responseBody });
@@ -66,7 +70,7 @@ export function reservationsRoute(service: ReservationService, audit?: AuditLogS
       entityType: "reservation",
       entityId: row.id,
       tenantId,
-      after: row,
+      after: safeRow,
     });
     return c.json(responseBody, 201);
   });
