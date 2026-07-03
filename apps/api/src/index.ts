@@ -11,6 +11,7 @@ import { ChatService } from "./services/chat.js";
 import { ConversationService } from "./services/conversation.js";
 import { createLLMClient } from "./services/llm/index.js";
 import { LoyaltyService } from "./services/loyalty.js";
+import { NoShowService } from "./services/no-show.js";
 import { createNotifier } from "./services/notifier-factory.js";
 import { ReminderService } from "./services/reminder.js";
 import { ReservationService } from "./services/reservation.js";
@@ -58,6 +59,7 @@ if (env.DATABASE_URL) {
   const notifier = createNotifier(env);
   services.notifier = notifier;
   services.reminder = new ReminderService(db, notifier);
+  services.noShow = new NoShowService(db, services.audit);
 
   if (env.GEMINI_API_KEY) {
     const llm = createLLMClient(env);

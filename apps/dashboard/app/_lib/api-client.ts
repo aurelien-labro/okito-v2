@@ -95,6 +95,23 @@ export async function getReservation(id: string): Promise<{ data: Reservation }>
   return request(`/v1/reservations/${id}`);
 }
 
+export interface ReservationCreate {
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  couverts: number;
+  dateReservation: string;
+  heure: string;
+  notes?: string;
+}
+
+export async function createReservation(input: ReservationCreate): Promise<{ data: Reservation }> {
+  return request("/v1/reservations", {
+    method: "POST",
+    body: JSON.stringify({ ...input, source: "manual" }),
+  });
+}
+
 export interface ReservationUpdate {
   customerName?: string;
   customerPhone?: string;

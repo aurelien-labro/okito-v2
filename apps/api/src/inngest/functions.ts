@@ -1,6 +1,7 @@
 import type { InngestFunction } from "inngest";
 import { inngest } from "../lib/inngest.js";
 import { logger } from "../lib/logger.js";
+import type { NoShowService } from "../services/no-show.js";
 import type { ReminderService } from "../services/reminder.js";
 
 /**
@@ -16,7 +17,10 @@ import type { ReminderService } from "../services/reminder.js";
  * "demain" calculé proprement. Sera affiné si on cible des tenants
  * géographiquement très éloignés.
  */
-export function createInngestFunctions(reminder: ReminderService): InngestFunction.Any[] {
+export function createInngestFunctions(
+  reminder: ReminderService,
+  noShow?: NoShowService,
+): InngestFunction.Any[] {
   const dailyReminders = inngest.createFunction(
     {
       id: "daily-reminders-j1",
@@ -30,5 +34,23 @@ export function createInngestFunctions(reminder: ReminderService): InngestFuncti
     },
   );
 
-  return [dailyReminders];
+  const functions: InngestFunction.Any[] = [dailyReminders];
+
+  if (noShow) {
+    const markNoShows = inngest.createFunction(
+      {
+        id: "mark-no-shows",
+        name: "Auto no-show (toutes les heures)",
+        triggers: [{ cron: "0 * * * *" }],
+      },
+      async ({ step }) => {
+        const result = await step.run("mark-stale", async () => noShow.markStale());
+        logger.info({ result }, "Inngest: markNoShows terminé");
+        return result;
+      },
+    );
+    functions.push(markNoShows);
+  }
+
+  return functions;
 }

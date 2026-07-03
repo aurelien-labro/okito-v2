@@ -34,6 +34,7 @@ import type { AuditLogService } from "./services/audit-log.js";
 import type { CapacityService } from "./services/capacity.js";
 import type { ChatService } from "./services/chat.js";
 import type { LoyaltyService } from "./services/loyalty.js";
+import type { NoShowService } from "./services/no-show.js";
 import type { Notifier } from "./services/notifier.js";
 import type { ReminderService } from "./services/reminder.js";
 import type { ReservationService } from "./services/reservation.js";
@@ -83,6 +84,8 @@ export interface AppServices {
   capacity?: CapacityService;
   /** Notifier pour les annulations depuis le portail. */
   notifier?: Notifier;
+  /** Service auto no-show — ajoute la function Inngest horaire si fourni. */
+  noShow?: NoShowService;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -235,7 +238,7 @@ export function createApp(env: Env, services: AppServices = {}) {
   // Inngest : endpoint scrape par le dashboard pour découvrir + invoquer
   // les functions (cron rappels J-1, future events).
   if (services.reminder) {
-    app.route("/api/inngest", inngestRoute(services.reminder));
+    app.route("/api/inngest", inngestRoute(services.reminder, services.noShow));
   }
 
   // Webhook Stripe — signature vérifiée via STRIPE_WEBHOOK_SECRET.

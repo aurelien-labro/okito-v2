@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { LoginGate } from "../_components/login-gate";
 import {
   type CustomerStats,
   type Reservation,
   cancelReservation,
+  createReservation,
   getCurrentTenantId,
   listReservations,
   statsForPhones,
@@ -34,6 +35,7 @@ function ReservationsList() {
   const [loyalty, setLoyalty] = useState<Record<string, CustomerStats>>({});
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -97,12 +99,30 @@ function ReservationsList() {
           <button
             type="button"
             onClick={fetchData}
-            className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
+            className="rounded border border-stone-300 px-4 py-2 text-sm font-medium hover:bg-stone-50"
           >
             Recharger
           </button>
+          <button
+            type="button"
+            onClick={() => setShowCreate(true)}
+            className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
+          >
+            + Nouvelle résa
+          </button>
         </div>
       </header>
+
+      {showCreate && (
+        <CreateModal
+          defaultDate={date}
+          onClose={() => setShowCreate(false)}
+          onCreated={() => {
+            setShowCreate(false);
+            fetchData();
+          }}
+        />
+      )}
 
       {err && (
         <div className="mt-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -186,6 +206,149 @@ function ReservationsList() {
             </tbody>
           </table>
         )}
+      </div>
+    </div>
+  );
+}
+
+function CreateModal({
+  defaultDate,
+  onClose,
+  onCreated,
+}: {
+  defaultDate: string;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [couverts, setCouverts] = useState(2);
+  const [dateReservation, setDateReservation] = useState(defaultDate);
+  const [heure, setHeure] = useState("20:00");
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setErr(null);
+    try {
+      await createReservation({
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        couverts,
+        dateReservation,
+        heure,
+        notes: notes.trim() || undefined,
+      });
+      onCreated();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Erreur création");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 p-4">
+      <div className="w-full max-w-lg rounded-xl border border-stone-200 bg-white p-6 shadow-lg">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Nouvelle réservation</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-sm text-stone-400 hover:text-stone-700"
+          >
+            Fermer
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="block">
+              <span className="text-xs uppercase tracking-wide text-stone-500">Nom *</span>
+              <input
+                required
+                minLength={2}
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs uppercase tracking-wide text-stone-500">Téléphone *</span>
+              <input
+                type="tel"
+                required
+                minLength={6}
+                maxLength={20}
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs uppercase tracking-wide text-stone-500">Date *</span>
+              <input
+                type="date"
+                required
+                value={dateReservation}
+                onChange={(e) => setDateReservation(e.target.value)}
+                className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs uppercase tracking-wide text-stone-500">Heure *</span>
+              <input
+                type="time"
+                required
+                value={heure}
+                onChange={(e) => setHeure(e.target.value)}
+                className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs uppercase tracking-wide text-stone-500">Couverts *</span>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                required
+                value={couverts}
+                onChange={(e) => setCouverts(Number(e.target.value))}
+                className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+              />
+            </label>
+          </div>
+          <label className="block">
+            <span className="text-xs uppercase tracking-wide text-stone-500">Notes</span>
+            <textarea
+              rows={2}
+              maxLength={500}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Allergies, demandes spéciales…"
+              className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+            />
+          </label>
+          {err && <div className="text-sm text-rose-700">{err}</div>}
+          <div className="flex justify-end gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded border border-stone-300 px-4 py-2 text-sm hover:bg-stone-50"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={busy || !customerName.trim() || !customerPhone.trim()}
+              className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+            >
+              {busy ? "Création…" : "Créer"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
