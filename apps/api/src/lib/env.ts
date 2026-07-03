@@ -10,6 +10,8 @@ const envSchema = z.object({
   ICAL_FEED_SECRET: z.string().min(16).optional(),
   /** URL publique de l'API (base des flux iCal). */
   PUBLIC_API_URL: z.string().url().default("http://localhost:3001"),
+  /** Secret HMAC des liens d'avis post-visite signés. Absent → demandes d'avis désactivées. */
+  REVIEW_LINK_SECRET: z.string().min(16).optional(),
   DATABASE_URL: z.string().url().optional(),
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_JWT_SECRET: z.string().min(16).optional(),

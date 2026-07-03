@@ -2,7 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { LoginGate } from "../_components/login-gate";
-import { type StatsOverview, type Tenant, getStatsOverview, listTenants } from "../_lib/api-client";
+import {
+  type ReviewSummary,
+  type StatsOverview,
+  type Tenant,
+  getReviewSummary,
+  getStatsOverview,
+  listTenants,
+} from "../_lib/api-client";
 
 const RANGES = [
   { label: "7 jours", value: 7 },
@@ -24,6 +31,7 @@ function StatsView() {
   const [tenantId, setTenantId] = useState<string>("");
   const [days, setDays] = useState(30);
   const [stats, setStats] = useState<StatsOverview | null>(null);
+  const [reviews, setReviews] = useState<ReviewSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -43,6 +51,9 @@ function StatsView() {
     try {
       const res = await getStatsOverview(tenantId, days);
       setStats(res.data);
+      getReviewSummary(tenantId)
+        .then((r) => setReviews(r.data))
+        .catch(() => setReviews(null));
     } catch (e) {
       setErr(extractMessage(e));
     } finally {
@@ -113,8 +124,41 @@ function StatsView() {
               <HourList data={stats.byHour} />
             </ChartCard>
           </div>
+          {reviews && reviews.count > 0 && (
+            <ChartCard title="Avis clients">
+              <ReviewsWidget reviews={reviews} />
+            </ChartCard>
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+function ReviewsWidget({ reviews }: { reviews: ReviewSummary }) {
+  return (
+    <div>
+      <div className="flex items-baseline gap-3">
+        <div className="text-3xl font-semibold tracking-tight">{reviews.average.toFixed(1)}</div>
+        <div className="text-sm text-amber-500">
+          {"★".repeat(Math.round(reviews.average))}
+          <span className="text-stone-300">{"★".repeat(5 - Math.round(reviews.average))}</span>
+        </div>
+        <div className="text-xs text-stone-500">
+          {reviews.count} avis{reviews.count > 1 ? "" : ""}
+        </div>
+      </div>
+      <ul className="mt-4 space-y-2">
+        {reviews.recent.map((r, i) => (
+          <li
+            key={`${r.submittedAt}-${i}`}
+            className="rounded border border-stone-100 px-3 py-2 text-sm"
+          >
+            <span className="text-amber-500">{"★".repeat(r.rating)}</span>
+            {r.comment && <span className="ml-2 text-stone-600">{r.comment}</span>}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

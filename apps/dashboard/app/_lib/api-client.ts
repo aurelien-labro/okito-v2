@@ -418,6 +418,18 @@ export async function deleteTable(id: string): Promise<void> {
   await request(`/v1/admin/tables/${id}`, { method: "DELETE" });
 }
 
+// --- Reviews ----------------------------------------------------------------
+
+export interface ReviewSummary {
+  count: number;
+  average: number;
+  recent: Array<{ rating: number; comment: string | null; submittedAt: string }>;
+}
+
+export async function getReviewSummary(tenantId: string): Promise<{ data: ReviewSummary }> {
+  return request(`/v1/admin/reviews/${tenantId}/summary`);
+}
+
 // --- Webhooks sortants ------------------------------------------------------
 
 export type WebhookEvent =

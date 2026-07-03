@@ -14,6 +14,7 @@ import { adminIcalRoute } from "./routes/admin-ical.js";
 import { adminLoyaltyRoute } from "./routes/admin-loyalty.js";
 import { adminMembersRoute } from "./routes/admin-members.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
+import { adminReviewsRoute } from "./routes/admin-reviews.js";
 import { adminScheduleRulesRoute } from "./routes/admin-schedule-rules.js";
 import { adminServiceCatalogRoute } from "./routes/admin-service-catalog.js";
 import { adminStatsRoute } from "./routes/admin-stats.js";
@@ -29,6 +30,7 @@ import { metricsRoute } from "./routes/metrics.js";
 import { playgroundRoute } from "./routes/playground.js";
 import { portalRoute } from "./routes/portal.js";
 import { reservationsRoute } from "./routes/reservations.js";
+import { reviewRoute } from "./routes/review.js";
 import { stripeWebhookRoute } from "./routes/stripe-webhook.js";
 import { vapiLlmRoute } from "./routes/vapi-llm.js";
 import { whatsappWebhookRoute } from "./routes/whatsapp-webhook.js";
@@ -41,6 +43,8 @@ import type { NoShowService } from "./services/no-show.js";
 import type { Notifier } from "./services/notifier.js";
 import type { ReminderService } from "./services/reminder.js";
 import type { ReservationService } from "./services/reservation.js";
+import type { ReviewRequestService } from "./services/review-request.js";
+import type { ReviewService } from "./services/review.js";
 import type { ScheduleRuleService } from "./services/schedule-rule.js";
 import type { ServiceCatalogService } from "./services/service-catalog.js";
 import type { StatsService } from "./services/stats.js";
@@ -95,6 +99,10 @@ export interface AppServices {
   webhook?: WebhookService;
   /** Dispatcher webhooks — injecté dans reservations/portal pour émettre les events. */
   webhookDispatch?: WebhookDispatchService;
+  /** Avis clients — monté sur /v1/admin/reviews et /review si REVIEW_LINK_SECRET fourni. */
+  review?: ReviewService;
+  /** Service de demandes d'avis (cron) — ajoute la function Inngest matinale si fourni. */
+  reviewRequest?: ReviewRequestService;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -174,6 +182,23 @@ export function createApp(env: Env, services: AppServices = {}) {
         scheduleRules: services.scheduleRules,
         notifier: services.notifier,
         webhooks: services.webhookDispatch,
+      }),
+    );
+  }
+
+  // Avis post-visite — public, lien signé HMAC sur reservationId.
+  if (services.reservation && services.review && services.tenant && env.REVIEW_LINK_SECRET) {
+    app.use(
+      "/review/*",
+      cors({ origin: "*", allowMethods: ["GET", "POST", "OPTIONS"], maxAge: 86400 }),
+    );
+    app.route(
+      "/review",
+      reviewRoute({
+        reservation: services.reservation,
+        review: services.review,
+        tenant: services.tenant,
+        secret: env.REVIEW_LINK_SECRET,
       }),
     );
   }
@@ -267,13 +292,19 @@ export function createApp(env: Env, services: AppServices = {}) {
     if (services.webhook) {
       v1Admin.route("/webhooks", adminWebhooksRoute(services.webhook));
     }
+    if (services.review) {
+      v1Admin.route("/reviews", adminReviewsRoute(services.review));
+    }
     app.route("/v1/admin", v1Admin);
   }
 
   // Inngest : endpoint scrape par le dashboard pour découvrir + invoquer
   // les functions (cron rappels J-1, future events).
   if (services.reminder) {
-    app.route("/api/inngest", inngestRoute(services.reminder, services.noShow));
+    app.route(
+      "/api/inngest",
+      inngestRoute(services.reminder, services.noShow, services.reviewRequest),
+    );
   }
 
   // Webhook Stripe — signature vérifiée via STRIPE_WEBHOOK_SECRET.

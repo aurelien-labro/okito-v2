@@ -163,6 +163,14 @@ export class ReservationService {
     }
   }
 
+  /** Lookup par id sans filtre tenant (l'appelant a déjà vérifié l'accès, ex: lien signé). */
+  async findByIdUnscoped(id: string) {
+    const row = await this.db.query.reservations.findFirst({
+      where: (r, { eq: e }) => e(r.id, id),
+    });
+    return row ?? null;
+  }
+
   /** Lookup portail : le token brut de l'URL est hashé puis comparé. */
   async findByAccessToken(token: string): Promise<Reservation | null> {
     if (!/^[a-f0-9]{64}$/.test(token)) return null;

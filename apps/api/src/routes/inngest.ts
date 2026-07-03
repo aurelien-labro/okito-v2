@@ -4,6 +4,7 @@ import { createInngestFunctions } from "../inngest/functions.js";
 import { inngest } from "../lib/inngest.js";
 import type { NoShowService } from "../services/no-show.js";
 import type { ReminderService } from "../services/reminder.js";
+import type { ReviewRequestService } from "../services/review-request.js";
 
 /**
  * Endpoint Inngest. À monter sur `/api/inngest` :
@@ -14,11 +15,15 @@ import type { ReminderService } from "../services/reminder.js";
  *
  * En prod : protégé par signature Inngest si INNGEST_SIGNING_KEY est défini.
  */
-export function inngestRoute(reminder: ReminderService, noShow?: NoShowService) {
+export function inngestRoute(
+  reminder: ReminderService,
+  noShow?: NoShowService,
+  reviewRequest?: ReviewRequestService,
+) {
   const app = new Hono();
   const handler = serve({
     client: inngest,
-    functions: createInngestFunctions(reminder, noShow),
+    functions: createInngestFunctions(reminder, noShow, reviewRequest),
   });
   app.all("/*", handler);
   return app;
