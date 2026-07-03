@@ -14,6 +14,7 @@ const NAV = [
   { href: "/waitlist", label: "Liste d'attente" },
   { href: "/tables", label: "Tables" },
   { href: "/service-catalog", label: "Prestations" },
+  { href: "/schedule", label: "Horaires" },
   { href: "/loyalty", label: "Fidélité" },
   { href: "/settings", label: "Paramètres" },
 ];

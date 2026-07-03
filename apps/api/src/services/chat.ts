@@ -9,6 +9,7 @@ import type { ConversationService } from "./conversation.js";
 import type { LoyaltyService } from "./loyalty.js";
 import type { Notifier } from "./notifier.js";
 import { DuplicateReservationError, type ReservationService } from "./reservation.js";
+import type { ScheduleRuleService } from "./schedule-rule.js";
 import type { ServiceCatalogService } from "./service-catalog.js";
 import type { TenantService } from "./tenant.js";
 import type { WaitlistService } from "./waitlist.js";
@@ -35,6 +36,8 @@ export interface ChatDeps {
   loyalty?: LoyaltyService;
   /** Optionnel — si présent et catalogue non vide, le bot demande la prestation avant l'heure. */
   serviceCatalog?: ServiceCatalogService;
+  /** Optionnel — si présent, les fermetures hebdo/congés bloquent check_availability. */
+  scheduleRules?: ScheduleRuleService;
 }
 
 interface ToolOutcome {
@@ -249,8 +252,22 @@ export class ChatService {
 
     await this.mergeFields(ctx.conversationId, tenant.id, { date, time, partySize: couverts }, ctx);
 
-    const window = checkServiceWindow(tenant, time);
+    const rules = this.deps.scheduleRules
+      ? await this.deps.scheduleRules.listByTenant(tenant.id).catch(() => [])
+      : [];
+    const window = checkServiceWindow(tenant, time, { date, rules });
     const isVoice = channel === "voice";
+
+    if (window.closedDay) {
+      // Jour fermé : on libère la date pour que le client puisse en proposer une autre.
+      await this.clearFields(ctx.conversationId, tenant.id, ["date", "time"], ctx);
+      return {
+        reply: isVoice
+          ? `Désolé, on est ${window.closedReason ?? "fermé ce jour-là"}. Un autre jour ?`
+          : `Désolé, on est ${window.closedReason ?? "fermé ce jour-là"}. Vous voulez essayer un autre jour ?`,
+        status: "in_progress",
+      };
+    }
 
     if (!window.inService) {
       // Heure hors service : on libère time pour que le user puisse re-proposer.
@@ -408,6 +425,24 @@ export class ChatService {
           : "Il me manque une info pour finaliser, peux-tu préciser ?",
         status: "in_progress",
       };
+    }
+
+    // Re-check des règles d'ouverture au moment du create : l'état collecté
+    // peut dater d'un tour où la règle n'existait pas, ou le LLM peut sauter
+    // check_availability.
+    if (this.deps.scheduleRules) {
+      const rules = await this.deps.scheduleRules.listByTenant(tenant.id).catch(() => []);
+      const window = checkServiceWindow(tenant, parsed.data.heure, {
+        date: parsed.data.dateReservation,
+        rules,
+      });
+      if (window.closedDay) {
+        await this.clearFields(ctx.conversationId, tenant.id, ["date", "time"], ctx);
+        return {
+          reply: `Désolé, on est ${window.closedReason ?? "fermé ce jour-là"}. Vous voulez essayer un autre jour ?`,
+          status: "in_progress",
+        };
+      }
     }
 
     try {

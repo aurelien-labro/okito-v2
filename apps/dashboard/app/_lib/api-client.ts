@@ -457,6 +457,57 @@ export async function deleteServiceCatalogItem(id: string): Promise<void> {
   await request(`/v1/admin/service-catalog/${id}`, { method: "DELETE" });
 }
 
+// --- Schedule rules (règles d'ouverture) --------------------------------------
+
+export type ScheduleRuleKind = "weekly_closed" | "date_closed" | "date_special";
+
+export interface ScheduleRule {
+  id: string;
+  tenantId: string;
+  kind: ScheduleRuleKind;
+  payload: {
+    weekdays?: number[];
+    date?: string;
+    from?: string;
+    to?: string;
+    services?: ServiceWindow[];
+  };
+  active: boolean;
+  createdAt: string;
+}
+
+export async function listScheduleRules(
+  tenantId: string,
+  includeInactive = false,
+): Promise<{ data: ScheduleRule[] }> {
+  const q = includeInactive ? "?includeInactive=true" : "";
+  return request(`/v1/admin/schedule-rules/${tenantId}${q}`);
+}
+
+export async function createScheduleRule(
+  tenantId: string,
+  input: { kind: ScheduleRuleKind; payload: ScheduleRule["payload"] },
+): Promise<{ data: ScheduleRule }> {
+  return request(`/v1/admin/schedule-rules/${tenantId}`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function setScheduleRuleActive(
+  id: string,
+  active: boolean,
+): Promise<{ data: ScheduleRule }> {
+  return request(`/v1/admin/schedule-rules/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ active }),
+  });
+}
+
+export async function deleteScheduleRule(id: string): Promise<void> {
+  await request(`/v1/admin/schedule-rules/${id}`, { method: "DELETE" });
+}
+
 // --- Loyalty ----------------------------------------------------------------
 
 export interface CustomerStats {

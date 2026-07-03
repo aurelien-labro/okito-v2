@@ -14,6 +14,7 @@ import { LoyaltyService } from "./services/loyalty.js";
 import { createNotifier } from "./services/notifier-factory.js";
 import { ReminderService } from "./services/reminder.js";
 import { ReservationService } from "./services/reservation.js";
+import { ScheduleRuleService } from "./services/schedule-rule.js";
 import { ServiceCatalogService } from "./services/service-catalog.js";
 import { StatsService } from "./services/stats.js";
 import { SubscriptionService } from "./services/subscription.js";
@@ -42,6 +43,7 @@ if (env.DATABASE_URL) {
   services.table = new TableService(db);
   services.loyalty = new LoyaltyService(db);
   services.serviceCatalog = new ServiceCatalogService(db);
+  services.scheduleRules = new ScheduleRuleService(db);
   services.db = db;
 
   if (env.NODE_ENV !== "production") {
@@ -66,6 +68,7 @@ if (env.DATABASE_URL) {
       waitlist: services.waitlist,
       loyalty: services.loyalty,
       serviceCatalog: services.serviceCatalog,
+      scheduleRules: services.scheduleRules,
     });
   } else {
     logger.warn("GEMINI_API_KEY absent — moteur conversationnel désactivé");

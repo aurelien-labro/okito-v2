@@ -1,4 +1,13 @@
-import { type Database, type ServiceWindow, type Tenant, schema } from "@okito/db";
+import {
+  type Database,
+  type DateClosedPayload,
+  type DateSpecialPayload,
+  type ScheduleRule,
+  type ServiceWindow,
+  type Tenant,
+  type WeeklyClosedPayload,
+  schema,
+} from "@okito/db";
 import { and, eq, sql } from "drizzle-orm";
 
 export interface AvailabilityCheck {
@@ -19,19 +28,59 @@ export interface ServiceWindowCheck {
   service?: string;
   /** Suggestion d'horaire valide si inService=false. */
   suggestion?: string;
+  /** L'établissement est fermé ce jour-là (règle weekly_closed / date_closed). */
+  closedDay?: boolean;
+  /** Explication de la fermeture ("fermé le lundi", "fermeture exceptionnelle"). */
+  closedReason?: string;
 }
+
+const WEEKDAY_LABELS = [
+  "le dimanche",
+  "le lundi",
+  "le mardi",
+  "le mercredi",
+  "le jeudi",
+  "le vendredi",
+  "le samedi",
+];
 
 /**
  * Vérifie qu'une heure HH:MM tombe dans une des plages de service du tenant.
  *
  * Source de vérité : tenant.services (JSONB) si non-vide.
  * Sinon fallback sur les 4 colonnes legacy lunch/dinner (resto historique).
+ *
+ * Si `opts.date` + `opts.rules` sont fournis, les règles d'ouverture s'appliquent :
+ *   1. date_special matchant la date → ses plages remplacent les horaires normaux
+ *      (prioritaire, permet d'OUVRIR un jour normalement fermé)
+ *   2. weekly_closed / date_closed matchant → fermé (inService=false, closedDay=true)
+ *   3. sinon → horaires normaux
  */
-export function checkServiceWindow(tenant: Tenant, heure: string): ServiceWindowCheck {
+export function checkServiceWindow(
+  tenant: Tenant,
+  heure: string,
+  opts?: { date?: string; rules?: ScheduleRule[] },
+): ServiceWindowCheck {
   const t = normalizeTime(heure);
   if (!t) return { inService: false };
 
-  const windows = effectiveServices(tenant);
+  let windows = effectiveServices(tenant);
+
+  if (opts?.date && opts.rules && opts.rules.length > 0) {
+    const active = opts.rules.filter((r) => r.active);
+
+    const special = active.find(
+      (r) => r.kind === "date_special" && (r.payload as DateSpecialPayload).date === opts.date,
+    );
+    if (special) {
+      const payload = special.payload as DateSpecialPayload;
+      windows = Array.isArray(payload.services) ? payload.services : [];
+    } else {
+      const closed = findClosureReason(active, opts.date);
+      if (closed) return { inService: false, closedDay: true, closedReason: closed };
+    }
+  }
+
   if (windows.length === 0) return { inService: false };
 
   for (const w of windows) {
@@ -46,6 +95,28 @@ export function checkServiceWindow(tenant: Tenant, heure: string): ServiceWindow
     .map((w) => `${formatHm(normalizeTime(w.start))} (${w.label})`)
     .join(" ou ");
   return { inService: false, suggestion };
+}
+
+/** Raison de fermeture pour cette date, ou null si ouvert. */
+function findClosureReason(rules: ScheduleRule[], date: string): string | null {
+  const weekday = new Date(`${date}T00:00:00`).getDay();
+
+  for (const r of rules) {
+    if (r.kind === "weekly_closed") {
+      const payload = r.payload as WeeklyClosedPayload;
+      if (Array.isArray(payload.weekdays) && payload.weekdays.includes(weekday)) {
+        return `fermé ${WEEKDAY_LABELS[weekday] ?? "ce jour-là"}`;
+      }
+    }
+    if (r.kind === "date_closed") {
+      const payload = r.payload as DateClosedPayload;
+      if (payload.date === date) return "fermeture exceptionnelle ce jour-là";
+      if (payload.from && payload.to && date >= payload.from && date <= payload.to) {
+        return "fermeture exceptionnelle sur cette période";
+      }
+    }
+  }
+  return null;
 }
 
 /** Retourne les plages effectives — services JSONB en priorité, sinon legacy lunch/dinner. */

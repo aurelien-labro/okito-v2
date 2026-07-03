@@ -13,6 +13,7 @@ import { adminAuditRoute } from "./routes/admin-audit.js";
 import { adminLoyaltyRoute } from "./routes/admin-loyalty.js";
 import { adminMembersRoute } from "./routes/admin-members.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
+import { adminScheduleRulesRoute } from "./routes/admin-schedule-rules.js";
 import { adminServiceCatalogRoute } from "./routes/admin-service-catalog.js";
 import { adminStatsRoute } from "./routes/admin-stats.js";
 import { adminTablesRoute } from "./routes/admin-tables.js";
@@ -33,6 +34,7 @@ import type { ChatService } from "./services/chat.js";
 import type { LoyaltyService } from "./services/loyalty.js";
 import type { ReminderService } from "./services/reminder.js";
 import type { ReservationService } from "./services/reservation.js";
+import type { ScheduleRuleService } from "./services/schedule-rule.js";
 import type { ServiceCatalogService } from "./services/service-catalog.js";
 import type { StatsService } from "./services/stats.js";
 import type { SubscriptionService } from "./services/subscription.js";
@@ -72,6 +74,8 @@ export interface AppServices {
   loyalty?: LoyaltyService;
   /** Catalogue de prestations — monté sur /v1/admin/service-catalog si fourni. */
   serviceCatalog?: ServiceCatalogService;
+  /** Règles d'ouverture — montées sur /v1/admin/schedule-rules si fournies. */
+  scheduleRules?: ScheduleRuleService;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -192,6 +196,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.serviceCatalog) {
       v1Admin.route("/service-catalog", adminServiceCatalogRoute(services.serviceCatalog));
+    }
+    if (services.scheduleRules) {
+      v1Admin.route("/schedule-rules", adminScheduleRulesRoute(services.scheduleRules));
     }
     if (services.reminder) {
       v1Admin.route("/reminders", adminRemindersRoute(services.reminder));
