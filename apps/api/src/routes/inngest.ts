@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { serve } from "inngest/hono";
 import { createInngestFunctions } from "../inngest/functions.js";
 import { inngest } from "../lib/inngest.js";
+import type { NoShowService } from "../services/no-show.js";
 import type { ReminderService } from "../services/reminder.js";
 
 /**
@@ -13,11 +14,11 @@ import type { ReminderService } from "../services/reminder.js";
  *
  * En prod : protégé par signature Inngest si INNGEST_SIGNING_KEY est défini.
  */
-export function inngestRoute(reminder: ReminderService) {
+export function inngestRoute(reminder: ReminderService, noShow?: NoShowService) {
   const app = new Hono();
   const handler = serve({
     client: inngest,
-    functions: createInngestFunctions(reminder),
+    functions: createInngestFunctions(reminder, noShow),
   });
   app.all("/*", handler);
   return app;
