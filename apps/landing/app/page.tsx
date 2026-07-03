@@ -1,23 +1,55 @@
 import Link from "next/link";
+import { CONTENT, type LandingContent, type Lang, resolveLang } from "./_content";
 
-export default function LandingPage() {
+export default async function LandingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string }>;
+}) {
+  const { lang: rawLang } = await searchParams;
+  const lang = resolveLang(rawLang);
+  const t = CONTENT[lang];
   return (
     <div>
-      <Nav />
-      <Hero />
-      <SocialProof />
-      <Features />
-      <HowItWorks />
-      <Verticals />
-      <Pricing />
-      <FAQ />
-      <CTA />
-      <Footer />
+      <Nav t={t} lang={lang} />
+      <Hero t={t} />
+      <SocialProof t={t} />
+      <Features t={t} />
+      <HowItWorks t={t} />
+      <Verticals t={t} />
+      <Pricing t={t} />
+      <FAQ t={t} />
+      <CTA t={t} />
+      <Footer t={t} />
     </div>
   );
 }
 
-function Nav() {
+function LangToggle({ lang }: { lang: Lang }) {
+  return (
+    <div className="flex items-center gap-1 text-xs">
+      <Link
+        href="?lang=fr"
+        className={
+          lang === "fr" ? "font-semibold text-stone-900" : "text-stone-400 hover:text-stone-700"
+        }
+      >
+        FR
+      </Link>
+      <span className="text-stone-300">/</span>
+      <Link
+        href="?lang=en"
+        className={
+          lang === "en" ? "font-semibold text-stone-900" : "text-stone-400 hover:text-stone-700"
+        }
+      >
+        EN
+      </Link>
+    </div>
+  );
+}
+
+function Nav({ t, lang }: { t: LandingContent; lang: Lang }) {
   return (
     <nav className="sticky top-0 z-50 border-b border-stone-200 bg-stone-50/80 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -26,27 +58,28 @@ function Nav() {
         </Link>
         <div className="hidden gap-6 text-sm text-stone-600 md:flex">
           <a href="#features" className="hover:text-stone-900">
-            Fonctionnalités
+            {t.nav.features}
           </a>
           <a href="#how" className="hover:text-stone-900">
-            Comment ça marche
+            {t.nav.how}
           </a>
           <a href="#pricing" className="hover:text-stone-900">
-            Tarifs
+            {t.nav.pricing}
           </a>
           <a href="#faq" className="hover:text-stone-900">
-            FAQ
+            {t.nav.faq}
           </a>
         </div>
         <div className="flex items-center gap-3">
+          <LangToggle lang={lang} />
           <a href="#cta" className="hidden text-sm text-stone-600 hover:text-stone-900 md:inline">
-            Essai gratuit
+            {t.nav.trial}
           </a>
           <a
             href="mailto:hello@okito.app?subject=Demande%20de%20d%C3%A9mo%20OKITO"
             className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
           >
-            Demander une démo
+            {t.nav.demo}
           </a>
         </div>
       </div>
@@ -54,55 +87,49 @@ function Nav() {
   );
 }
 
-function Hero() {
+function Hero({ t }: { t: LandingContent }) {
   return (
     <section className="mx-auto max-w-6xl px-6 pt-20 pb-24 text-center">
       <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-1 text-xs text-stone-600">
         <span className="size-1.5 rounded-full bg-emerald-500" />
-        En production · agents IA voix & WhatsApp
+        {t.hero.badge}
       </div>
       <h1 className="mx-auto mt-6 max-w-3xl text-5xl font-semibold leading-tight tracking-tight md:text-6xl">
-        L&apos;IA qui prend vos réservations
+        {t.hero.titleLead}
         <br />
-        <span className="text-stone-500">24h/24, à votre place.</span>
+        <span className="text-stone-500">{t.hero.titleAccent}</span>
       </h1>
-      <p className="mx-auto mt-6 max-w-2xl text-lg text-stone-600">
-        Vos clients appellent, WhatsAppent, cliquent sur votre widget. OKITO répond, comprend,
-        confirme et note la résa dans votre agenda. Vous récupérez le temps perdu au téléphone.
-      </p>
+      <p className="mx-auto mt-6 max-w-2xl text-lg text-stone-600">{t.hero.subtitle}</p>
       <div className="mt-8 flex items-center justify-center gap-3">
         <a
           href="mailto:hello@okito.app?subject=Demande%20de%20d%C3%A9mo%20OKITO"
           className="rounded-full bg-stone-900 px-6 py-3 text-sm font-medium text-white hover:bg-stone-700"
         >
-          Demander une démo
+          {t.hero.ctaDemo}
         </a>
         <a
           href="#how"
           className="rounded-full border border-stone-300 bg-white px-6 py-3 text-sm font-medium hover:bg-stone-100"
         >
-          Voir comment ça marche
+          {t.hero.ctaHow}
         </a>
       </div>
-      <p className="mt-4 text-xs text-stone-500">
-        Sans engagement · Mise en route en 24h · Vos données restent en Europe.
-      </p>
+      <p className="mt-4 text-xs text-stone-500">{t.hero.reassurance}</p>
     </section>
   );
 }
 
-function SocialProof() {
+function SocialProof({ t }: { t: LandingContent }) {
   return (
     <section className="border-y border-stone-200 bg-white py-10">
       <div className="mx-auto max-w-6xl px-6">
         <p className="text-center text-xs uppercase tracking-widest text-stone-500">
-          Pensé pour la restauration, hôtellerie, garages, salons, services à booking
+          {t.proof.tagline}
         </p>
         <div className="mt-8 grid grid-cols-2 gap-6 text-center md:grid-cols-4">
-          <Stat value="< 2s" label="Réponse vocale" />
-          <Stat value="24/7" label="Disponibilité" />
-          <Stat value="-80%" label="Appels manqués" />
-          <Stat value="FR · EN · ES" label="Multilingue" />
+          {t.proof.stats.map((s) => (
+            <Stat key={s.label} value={s.value} label={s.label} />
+          ))}
         </div>
       </div>
     </section>
@@ -118,52 +145,16 @@ function Stat({ value, label }: { value: string; label: string }) {
   );
 }
 
-function Features() {
-  const items = [
-    {
-      title: "Voix naturelle",
-      body: "L'agent parle comme un employé qui connaît votre maison. Pas de répondeur, pas de 'appuyez sur 1'. Une vraie conversation.",
-    },
-    {
-      title: "WhatsApp natif",
-      body: "Vos clients vous écrivent au numéro pro habituel. OKITO répond, propose des créneaux, confirme. Vous récupérez l'historique dans le dashboard.",
-    },
-    {
-      title: "Widget web 1 ligne",
-      body: "Copiez le script sur votre site. Bouton de chat aux couleurs de votre marque. Pas de redirection, le client reste chez vous.",
-    },
-    {
-      title: "Liste d'attente intelligente",
-      body: "Quand un créneau est plein, le bot propose la liste d'attente. Annulation → notification automatique au prochain client.",
-    },
-    {
-      title: "Inventaire de tables",
-      body: "Définissez vos tables (T1 2pl., T2 4pl., …). OKITO sélectionne la plus petite table qui passe. Vous n'optimisez plus à la main.",
-    },
-    {
-      title: "Fidélité automatique",
-      body: "À partir de 3 visites, l'agent reconnaît votre habitué·e par son téléphone et adapte son accueil. Naturel, pas commercial.",
-    },
-    {
-      title: "Rappels J-1",
-      body: "Le matin, OKITO envoie un rappel personnalisé par email ou WhatsApp à chaque résa du jour. Le no-show s'effondre.",
-    },
-    {
-      title: "Acomptes anti no-show",
-      body: "Pour les grandes tablées ou les événements, demande de carte au moment de la résa. Garanti par Stripe.",
-    },
-  ];
+function Features({ t }: { t: LandingContent }) {
   return (
     <section id="features" className="mx-auto max-w-6xl px-6 py-24">
       <h2 className="text-center text-3xl font-semibold tracking-tight md:text-4xl">
-        Tout ce qu&apos;un·e bon·ne réceptionniste fait.
+        {t.features.heading}
         <br />
-        <span className="text-stone-500">
-          Sans pauses, sans absences, sans rage du vendredi soir.
-        </span>
+        <span className="text-stone-500">{t.features.headingAccent}</span>
       </h2>
       <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {items.map((it) => (
+        {t.features.items.map((it) => (
           <div
             key={it.title}
             className="rounded-2xl border border-stone-200 bg-white p-5 hover:shadow-sm"
@@ -177,35 +168,16 @@ function Features() {
   );
 }
 
-function HowItWorks() {
-  const steps = [
-    {
-      n: "01",
-      title: "On vous connecte en 24h",
-      body: "Numéro vocal dédié + numéro WhatsApp Business + snippet à coller sur votre site. On configure vos horaires, vos tables et votre ton.",
-    },
-    {
-      n: "02",
-      title: "OKITO répond, vous regardez",
-      body: "Chaque conversation est tracée dans le dashboard. Vous voyez ce qui s'est dit, les résas créées, les annulations. Reprise en main à 1 clic.",
-    },
-    {
-      n: "03",
-      title: "Vous gardez le contrôle",
-      body: "Synchronisation vers votre agenda existant (ou notre tableau résa). Filtres par jour, recherche par téléphone, édition manuelle.",
-    },
-  ];
+function HowItWorks({ t }: { t: LandingContent }) {
   return (
     <section id="how" className="border-y border-stone-200 bg-white">
       <div className="mx-auto max-w-6xl px-6 py-24">
         <h2 className="text-center text-3xl font-semibold tracking-tight md:text-4xl">
-          Comment ça marche
+          {t.how.heading}
         </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-center text-stone-600">
-          Pas de setup à rallonge. Pas d&apos;intégration douloureuse. On s&apos;occupe de tout.
-        </p>
+        <p className="mx-auto mt-4 max-w-2xl text-center text-stone-600">{t.how.subtitle}</p>
         <div className="mt-12 grid gap-8 md:grid-cols-3">
-          {steps.map((s) => (
+          {t.how.steps.map((s) => (
             <div key={s.n} className="relative rounded-2xl border border-stone-200 p-6">
               <div className="text-xs font-mono text-stone-400">{s.n}</div>
               <div className="mt-2 text-base font-semibold">{s.title}</div>
@@ -218,24 +190,13 @@ function HowItWorks() {
   );
 }
 
-function Verticals() {
-  const verts = [
-    { emoji: "🍽️", label: "Restaurants" },
-    { emoji: "🏨", label: "Hôtels" },
-    { emoji: "💇", label: "Salons / spa" },
-    { emoji: "🚗", label: "Garages" },
-    { emoji: "🏡", label: "Locations courte durée" },
-    { emoji: "📅", label: "Tout métier à booking" },
-  ];
+function Verticals({ t }: { t: LandingContent }) {
   return (
     <section className="mx-auto max-w-6xl px-6 py-24 text-center">
-      <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">Vertical-agnostique.</h2>
-      <p className="mx-auto mt-4 max-w-2xl text-stone-600">
-        Le moteur s&apos;adapte au vocabulaire et aux règles de votre métier. Un même compte,
-        plusieurs établissements.
-      </p>
+      <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">{t.verticals.heading}</h2>
+      <p className="mx-auto mt-4 max-w-2xl text-stone-600">{t.verticals.subtitle}</p>
       <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
-        {verts.map((v) => (
+        {t.verticals.items.map((v) => (
           <div
             key={v.label}
             className="rounded-full border border-stone-300 bg-white px-5 py-2 text-sm font-medium"
@@ -249,67 +210,16 @@ function Verticals() {
   );
 }
 
-function Pricing() {
-  const plans = [
-    {
-      name: "Essentiel",
-      price: "39 €",
-      period: "/ mois",
-      tag: null,
-      features: [
-        "Widget web embarqué",
-        "Bot WhatsApp",
-        "Jusqu'à 200 résas / mois",
-        "Dashboard temps réel",
-        "Rappels J-1 email",
-        "Setup inclus",
-      ],
-      cta: "Commencer",
-    },
-    {
-      name: "Pro",
-      price: "69 €",
-      period: "/ mois",
-      tag: "Le plus populaire",
-      features: [
-        "Tout l'Essentiel",
-        "Agent vocal Vapi",
-        "WhatsApp + SMS rappels",
-        "Inventaire de tables",
-        "Liste d'attente automatique",
-        "Programme fidélité",
-        "Acomptes Stripe inclus",
-        "Volume résas illimité",
-      ],
-      cta: "Demander une démo",
-    },
-    {
-      name: "Multi-établissements",
-      price: "Sur devis",
-      period: "",
-      tag: null,
-      features: [
-        "Tout le Pro",
-        "Plusieurs tenants",
-        "Rôles & équipes",
-        "API access",
-        "SLA dédié",
-        "On-prem possible",
-      ],
-      cta: "Nous contacter",
-    },
-  ];
+function Pricing({ t }: { t: LandingContent }) {
   return (
     <section id="pricing" className="border-y border-stone-200 bg-white">
       <div className="mx-auto max-w-6xl px-6 py-24">
         <h2 className="text-center text-3xl font-semibold tracking-tight md:text-4xl">
-          Tarifs simples
+          {t.pricing.heading}
         </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-center text-stone-600">
-          Sans engagement. Premier mois gratuit. Annulable à tout moment.
-        </p>
+        <p className="mx-auto mt-4 max-w-2xl text-center text-stone-600">{t.pricing.subtitle}</p>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {plans.map((p) => (
+          {t.pricing.plans.map((p) => (
             <div
               key={p.name}
               className={`relative rounded-2xl border p-6 ${
@@ -354,34 +264,14 @@ function Pricing() {
   );
 }
 
-function FAQ() {
-  const qa = [
-    {
-      q: "Mes clients vont s'apercevoir que ce n'est pas un humain ?",
-      a: "Si vous leur demandez, oui — on ne ment pas. Mais le ton, les hésitations, les acknowledgments font que dans 95% des cas ils raccrochent en pensant avoir parlé à votre réceptionniste.",
-    },
-    {
-      q: "Et si OKITO se trompe ?",
-      a: "Vous voyez chaque conversation dans le dashboard. Annulation ou édition manuelle à 1 clic. Les cas limites (groupes > 20, demandes spéciales) sont redirigés vers vous automatiquement.",
-    },
-    {
-      q: "Mes données ?",
-      a: "Stockées en Europe (Supabase Paris). RGPD. Vous restez propriétaire. Export à tout moment, suppression sur demande.",
-    },
-    {
-      q: "Compatible avec mon logiciel actuel ?",
-      a: "On synchronise avec les agendas type Google Calendar / Outlook. Pour TheFork / OpenTable / GuestOnline, on étudie sur demande.",
-    },
-    {
-      q: "Combien de temps pour démarrer ?",
-      a: "24h en moyenne. On configure votre ligne, vos horaires, vos tables. Vous validez quelques messages-types et c'est en route.",
-    },
-  ];
+function FAQ({ t }: { t: LandingContent }) {
   return (
     <section id="faq" className="mx-auto max-w-3xl px-6 py-24">
-      <h2 className="text-center text-3xl font-semibold tracking-tight md:text-4xl">FAQ</h2>
+      <h2 className="text-center text-3xl font-semibold tracking-tight md:text-4xl">
+        {t.faq.heading}
+      </h2>
       <div className="mt-10 space-y-3">
-        {qa.map((it) => (
+        {t.faq.items.map((it) => (
           <details key={it.q} className="rounded-2xl border border-stone-200 bg-white p-5">
             <summary className="cursor-pointer text-sm font-semibold">{it.q}</summary>
             <p className="mt-3 text-sm text-stone-600">{it.a}</p>
@@ -392,48 +282,46 @@ function FAQ() {
   );
 }
 
-function CTA() {
+function CTA({ t }: { t: LandingContent }) {
   return (
     <section id="cta" className="border-t border-stone-200 bg-stone-900 text-white">
       <div className="mx-auto max-w-3xl px-6 py-20 text-center">
-        <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
-          Reprenez votre soirée.
-        </h2>
-        <p className="mt-4 text-stone-300">
-          15 minutes de démo. Une simulation sur votre vraie ligne. Vous voyez si ça tient ou pas.
-        </p>
+        <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">{t.cta.heading}</h2>
+        <p className="mt-4 text-stone-300">{t.cta.subtitle}</p>
         <a
           href="mailto:hello@okito.app?subject=Demande%20de%20d%C3%A9mo%20OKITO"
           className="mt-8 inline-block rounded-full bg-white px-6 py-3 text-sm font-medium text-stone-900 hover:bg-stone-100"
         >
-          Demander une démo
+          {t.cta.button}
         </a>
-        <p className="mt-4 text-xs text-stone-500">hello@okito.app — réponse sous 24h ouvrées</p>
+        <p className="mt-4 text-xs text-stone-500">{t.cta.note}</p>
       </div>
     </section>
   );
 }
 
-function Footer() {
+function Footer({ t }: { t: LandingContent }) {
   return (
     <footer className="border-t border-stone-200 bg-stone-50">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 text-xs text-stone-500 md:flex-row">
-        <div>© {new Date().getFullYear()} OKITO. Tous droits réservés.</div>
+        <div>
+          © {new Date().getFullYear()} OKITO. {t.footer.rights}
+        </div>
         <div className="flex gap-6">
           <a
             href="mailto:hello@okito.app?subject=Mentions%20l%C3%A9gales"
             className="hover:text-stone-900"
           >
-            Mentions légales
+            {t.footer.legal}
           </a>
           <a
             href="mailto:hello@okito.app?subject=Confidentialit%C3%A9"
             className="hover:text-stone-900"
           >
-            Confidentialité
+            {t.footer.privacy}
           </a>
           <a href="mailto:hello@okito.app" className="hover:text-stone-900">
-            Contact
+            {t.footer.contact}
           </a>
         </div>
       </div>

@@ -9,7 +9,8 @@
     ".": "./src/index.ts",
     "./llm": "./src/llm.ts",
     "./types": "./src/types.ts",
-    "./keywords": "./src/keywords.ts"
+    "./keywords": "./src/keywords.ts",
+    "./language": "./src/language.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
