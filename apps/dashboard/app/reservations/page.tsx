@@ -9,6 +9,7 @@ import {
   cancelReservation,
   createReservation,
   getCurrentTenantId,
+  getIcalUrls,
   listReservations,
   statsForPhones,
 } from "../_lib/api-client";
@@ -129,6 +130,7 @@ function ReservationsList() {
           >
             Recharger
           </button>
+          <IcalButton />
           <button
             type="button"
             onClick={() => setShowCreate(true)}
@@ -357,6 +359,42 @@ function AgendaView({ rows, loading }: { rows: Reservation[]; loading: boolean }
         </div>
       </div>
     </div>
+  );
+}
+
+function IcalButton() {
+  const [busy, setBusy] = useState(false);
+
+  async function handleClick() {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    setBusy(true);
+    try {
+      const { data } = await getIcalUrls(tenantId);
+      const detail = `Télécharger : ${data.httpsUrl}\n\nS'abonner (Google Agenda / Outlook / Apple) :\n${data.webcalUrl}`;
+      if (confirm(`${detail}\n\nOK pour télécharger le fichier .ics maintenant ?`)) {
+        window.location.href = data.httpsUrl;
+      }
+    } catch (e) {
+      alert(
+        e instanceof Error
+          ? e.message
+          : "Export iCal indisponible (ICAL_FEED_SECRET non configuré ?)",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={busy}
+      className="rounded border border-stone-300 px-4 py-2 text-sm font-medium hover:bg-stone-50 disabled:opacity-50"
+    >
+      {busy ? "…" : "Exporter iCal"}
+    </button>
   );
 }
 

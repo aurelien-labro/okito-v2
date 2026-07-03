@@ -6,7 +6,7 @@ import {
   reservationCoreSchema,
   reservationSourceSchema,
 } from "@okito/shared/types";
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
 import { z } from "zod";
 import { HttpError, NotFoundError } from "../lib/errors.js";
 
@@ -55,6 +55,23 @@ export class ReservationService {
       .from(schema.reservations)
       .where(and(...conditions))
       .orderBy(desc(schema.reservations.createdAt));
+  }
+
+  /** Résas confirmées d'un tenant entre deux dates incluses (pour l'export iCal). */
+  async listBetween(args: { tenantId: string; from: string; to: string }) {
+    return this.db
+      .select()
+      .from(schema.reservations)
+      .where(
+        and(
+          eq(schema.reservations.tenantId, args.tenantId),
+          eq(schema.reservations.status, "confirmed"),
+          gte(schema.reservations.dateReservation, args.from),
+          lte(schema.reservations.dateReservation, args.to),
+        ),
+      )
+      .orderBy(asc(schema.reservations.dateReservation), asc(schema.reservations.heure))
+      .limit(2000);
   }
 
   async getById(args: { tenantId: string; id: string }) {

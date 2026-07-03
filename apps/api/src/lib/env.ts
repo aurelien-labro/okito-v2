@@ -6,6 +6,10 @@ const envSchema = z.object({
   APP_URL: z.string().url().default("http://localhost:3000"),
   /** Base des liens portail client /r/:token (landing). */
   PORTAL_URL: z.string().url().default("https://okito.app"),
+  /** Secret HMAC des flux iCal publics signés. Si absent, le feed webcal est désactivé. */
+  ICAL_FEED_SECRET: z.string().min(16).optional(),
+  /** URL publique de l'API (base des flux iCal). */
+  PUBLIC_API_URL: z.string().url().default("http://localhost:3001"),
   DATABASE_URL: z.string().url().optional(),
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_JWT_SECRET: z.string().min(16).optional(),

@@ -418,6 +418,14 @@ export async function deleteTable(id: string): Promise<void> {
   await request(`/v1/admin/tables/${id}`, { method: "DELETE" });
 }
 
+// --- Export iCal ------------------------------------------------------------
+
+export async function getIcalUrls(
+  tenantId: string,
+): Promise<{ data: { httpsUrl: string; webcalUrl: string } }> {
+  return request(`/v1/admin/ical/${tenantId}`);
+}
+
 // --- Service catalog (prestations) -------------------------------------------
 
 export interface ServiceCatalogItem {

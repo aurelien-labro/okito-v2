@@ -10,6 +10,7 @@ import { createAdminMiddleware } from "./middleware/admin.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import { metricsMiddleware } from "./middleware/metrics.js";
 import { adminAuditRoute } from "./routes/admin-audit.js";
+import { adminIcalRoute } from "./routes/admin-ical.js";
 import { adminLoyaltyRoute } from "./routes/admin-loyalty.js";
 import { adminMembersRoute } from "./routes/admin-members.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
@@ -21,6 +22,7 @@ import { adminTenantsRoute } from "./routes/admin-tenants.js";
 import { adminWaitlistRoute } from "./routes/admin-waitlist.js";
 import { chatRoute } from "./routes/chat.js";
 import { healthRoute } from "./routes/health.js";
+import { icalFeedRoute } from "./routes/ical-feed.js";
 import { inngestRoute } from "./routes/inngest.js";
 import { metricsRoute } from "./routes/metrics.js";
 import { playgroundRoute } from "./routes/playground.js";
@@ -165,6 +167,19 @@ export function createApp(env: Env, services: AppServices = {}) {
     );
   }
 
+  // Flux iCal public signé — pas de JWT (apps calendrier), protégé par HMAC.
+  if (services.reservation && services.tenant && env.ICAL_FEED_SECRET) {
+    app.use("/feed/*", cors({ origin: "*", allowMethods: ["GET", "OPTIONS"], maxAge: 86400 }));
+    app.route(
+      "/feed",
+      icalFeedRoute({
+        reservation: services.reservation,
+        tenant: services.tenant,
+        secret: env.ICAL_FEED_SECRET,
+      }),
+    );
+  }
+
   // Vapi custom LLM webhook — non-auth (Vapi n'envoie pas de JWT Supabase).
   // En prod, ajouter un middleware qui vérifie un X-Vapi-Secret partagé avec l'assistant.
   if (services.chat) {
@@ -231,6 +246,12 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.reminder) {
       v1Admin.route("/reminders", adminRemindersRoute(services.reminder));
+    }
+    if (env.ICAL_FEED_SECRET) {
+      v1Admin.route(
+        "/ical",
+        adminIcalRoute({ secret: env.ICAL_FEED_SECRET, apiBaseUrl: env.PUBLIC_API_URL }),
+      );
     }
     app.route("/v1/admin", v1Admin);
   }
