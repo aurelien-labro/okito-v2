@@ -8,7 +8,7 @@ import {
   type WeeklyClosedPayload,
   schema,
 } from "@okito/db";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 
 export interface AvailabilityCheck {
   available: boolean;
@@ -156,6 +156,8 @@ export class CapacityService {
     heure: string;
     couverts: number;
     capacityMax: number;
+    /** Résa à exclure du décompte (édition d'une résa existante — elle occupe déjà sa place). */
+    excludeReservationId?: string;
   }): Promise<AvailabilityCheck> {
     const tables = await this.db
       .select({
@@ -203,24 +205,27 @@ export class CapacityService {
     heure: string;
     couverts: number;
     capacityMax: number;
+    excludeReservationId?: string;
     tables: Array<{ id: string; capacity: number }>;
   }): Promise<AvailabilityCheck> {
     // Toutes les tables triées par capacité croissante (smallest fit first).
     const sortedTables = [...args.tables].sort((a, b) => a.capacity - b.capacity);
     const totalCapacity = sortedTables.reduce((sum, t) => sum + t.capacity, 0);
 
-    // Récupère les tables déjà occupées sur ce slot exact.
+    // Récupère les tables déjà occupées sur ce slot exact (hors résa éditée).
+    const conditions = [
+      eq(schema.reservations.tenantId, args.tenantId),
+      eq(schema.reservations.dateReservation, args.date),
+      eq(schema.reservations.heure, args.heure),
+      eq(schema.reservations.status, "confirmed"),
+    ];
+    if (args.excludeReservationId) {
+      conditions.push(ne(schema.reservations.id, args.excludeReservationId));
+    }
     const occupiedRows = await this.db
       .select({ tableId: schema.reservations.tableId })
       .from(schema.reservations)
-      .where(
-        and(
-          eq(schema.reservations.tenantId, args.tenantId),
-          eq(schema.reservations.dateReservation, args.date),
-          eq(schema.reservations.heure, args.heure),
-          eq(schema.reservations.status, "confirmed"),
-        ),
-      );
+      .where(and(...conditions));
     const occupiedTableIds = new Set(
       occupiedRows.map((r) => r.tableId).filter((id): id is string => !!id),
     );

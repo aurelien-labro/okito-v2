@@ -121,6 +121,23 @@ describe("POST /v1/reservations", () => {
     expect(calls.create).toHaveBeenCalled();
   });
 
+  it("ne renvoie JAMAIS le token portail brut dans la réponse", async () => {
+    const { app, calls, authHeader } = makeAppWithStub();
+    calls.create.mockResolvedValueOnce({
+      id: RES_ID,
+      ...validCreatePayload,
+      accessToken: "deadbeef".repeat(8),
+    });
+    const res = await app.request("/v1/reservations", {
+      method: "POST",
+      headers: { ...authHeader, "Content-Type": "application/json" },
+      body: JSON.stringify(validCreatePayload),
+    });
+    const body = (await res.json()) as { data: Record<string, unknown> };
+    expect(body.data.accessToken).toBeUndefined();
+    expect(JSON.stringify(body)).not.toContain("deadbeef");
+  });
+
   it("409 si DuplicateReservationError", async () => {
     const { app, calls, authHeader } = makeAppWithStub();
     calls.create.mockRejectedValueOnce(new DuplicateReservationError());

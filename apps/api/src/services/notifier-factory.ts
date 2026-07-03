@@ -68,5 +68,5 @@ export function createNotifier(env: Env): Notifier {
   // consulte tenant.notificationPreferences et filtre destinataires + canaux.
   // Cette couche est transparente pour ChatService — elle appelle toujours
   // notifyReservationCreated/Cancelled, mais l'envoi réel respecte la policy.
-  return new PolicyAwareNotifier(base);
+  return new PolicyAwareNotifier(base, env.PORTAL_URL);
 }

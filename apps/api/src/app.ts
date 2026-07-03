@@ -24,14 +24,17 @@ import { healthRoute } from "./routes/health.js";
 import { inngestRoute } from "./routes/inngest.js";
 import { metricsRoute } from "./routes/metrics.js";
 import { playgroundRoute } from "./routes/playground.js";
+import { portalRoute } from "./routes/portal.js";
 import { reservationsRoute } from "./routes/reservations.js";
 import { stripeWebhookRoute } from "./routes/stripe-webhook.js";
 import { vapiLlmRoute } from "./routes/vapi-llm.js";
 import { whatsappWebhookRoute } from "./routes/whatsapp-webhook.js";
 import { widgetRoute } from "./routes/widget.js";
 import type { AuditLogService } from "./services/audit-log.js";
+import type { CapacityService } from "./services/capacity.js";
 import type { ChatService } from "./services/chat.js";
 import type { LoyaltyService } from "./services/loyalty.js";
+import type { Notifier } from "./services/notifier.js";
 import type { ReminderService } from "./services/reminder.js";
 import type { ReservationService } from "./services/reservation.js";
 import type { ScheduleRuleService } from "./services/schedule-rule.js";
@@ -76,6 +79,10 @@ export interface AppServices {
   serviceCatalog?: ServiceCatalogService;
   /** Règles d'ouverture — montées sur /v1/admin/schedule-rules si fournies. */
   scheduleRules?: ScheduleRuleService;
+  /** Capacité — requis (avec reservation+tenant) pour le portail public /r. */
+  capacity?: CapacityService;
+  /** Notifier pour les annulations depuis le portail. */
+  notifier?: Notifier;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -134,6 +141,25 @@ export function createApp(env: Env, services: AppServices = {}) {
       v1.route("/reservations", reservationsRoute(services.reservation, services.audit));
     if (services.chat) v1.route("/chat", chatRoute(services.chat));
     app.route("/v1", v1);
+  }
+
+  // Portail self-service client — public, le token est l'auth (hashé en DB).
+  // CORS ouvert : la page /r/[token] de la landing tourne sur un autre domaine.
+  if (services.reservation && services.tenant && services.capacity) {
+    app.use(
+      "/r/*",
+      cors({ origin: "*", allowMethods: ["GET", "POST", "PATCH", "OPTIONS"], maxAge: 86400 }),
+    );
+    app.route(
+      "/r",
+      portalRoute({
+        reservation: services.reservation,
+        tenant: services.tenant,
+        capacity: services.capacity,
+        scheduleRules: services.scheduleRules,
+        notifier: services.notifier,
+      }),
+    );
   }
 
   // Vapi custom LLM webhook — non-auth (Vapi n'envoie pas de JWT Supabase).

@@ -53,7 +53,10 @@ if (env.DATABASE_URL) {
     if (env.VAPI_ASSISTANT_ID) services.vapiAssistantId = env.VAPI_ASSISTANT_ID;
   }
 
+  services.capacity = capacity;
+
   const notifier = createNotifier(env);
+  services.notifier = notifier;
   services.reminder = new ReminderService(db, notifier);
 
   if (env.GEMINI_API_KEY) {

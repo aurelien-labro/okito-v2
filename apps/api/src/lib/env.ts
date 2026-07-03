@@ -4,6 +4,8 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
   APP_URL: z.string().url().default("http://localhost:3000"),
+  /** Base des liens portail client /r/:token (landing). */
+  PORTAL_URL: z.string().url().default("https://okito.app"),
   DATABASE_URL: z.string().url().optional(),
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_JWT_SECRET: z.string().min(16).optional(),

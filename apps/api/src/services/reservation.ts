@@ -1,4 +1,5 @@
-import { type Database, schema } from "@okito/db";
+import { createHash, randomBytes } from "node:crypto";
+import { type Database, type Reservation, schema } from "@okito/db";
 import {
   type ReservationCore,
   type ReservationSource,
@@ -76,6 +77,9 @@ export class ReservationService {
     if (args.assignedMemberId) {
       await this.assertMemberOfTenant(args.tenantId, args.assignedMemberId);
     }
+    // Token portail client : le brut part dans l'URL de confirmation, seul
+    // le hash est persisté (une fuite DB ne permet pas de forger des liens).
+    const accessToken = randomBytes(32).toString("hex");
     try {
       const [row] = await this.db
         .insert(schema.reservations)
@@ -94,10 +98,11 @@ export class ReservationService {
           serviceId: args.serviceId ?? null,
           durationMinutes: args.durationMinutes ?? null,
           assignedMemberId: args.assignedMemberId ?? null,
+          accessTokenHash: hashToken(accessToken),
         })
         .returning();
       if (!row) throw new Error("insert n'a rien retourné");
-      return row;
+      return { ...row, accessToken };
     } catch (err) {
       if (isUniqueViolation(err)) throw new DuplicateReservationError();
       throw err;
@@ -141,6 +146,15 @@ export class ReservationService {
     }
   }
 
+  /** Lookup portail : le token brut de l'URL est hashé puis comparé. */
+  async findByAccessToken(token: string): Promise<Reservation | null> {
+    if (!/^[a-f0-9]{64}$/.test(token)) return null;
+    const row = await this.db.query.reservations.findFirst({
+      where: (r, { eq: e }) => e(r.accessTokenHash, hashToken(token)),
+    });
+    return row ?? null;
+  }
+
   /** Anti-IDOR : un membre ne peut être assigné que s'il appartient au tenant. */
   private async assertMemberOfTenant(tenantId: string, memberId: string): Promise<void> {
     const member = await this.db.query.tenantMembers.findFirst({
@@ -180,6 +194,10 @@ export class ReservationService {
     if (!row) throw new NotFoundError("Réservation introuvable");
     return row;
   }
+}
+
+function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
 }
 
 function isUniqueViolation(err: unknown): boolean {

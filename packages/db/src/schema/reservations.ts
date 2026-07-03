@@ -66,6 +66,12 @@ export const reservations = pgTable(
     serviceId: uuid("service_id"),
     /** Membre du staff assigné (coiffeur, mécanicien, praticien…). Nullable. */
     assignedMemberId: uuid("assigned_member_id"),
+
+    /**
+     * SHA-256 du token portail client. Le token brut n'est jamais persisté —
+     * il ne vit que dans l'URL /r/:token envoyée au client.
+     */
+    accessTokenHash: text("access_token_hash"),
     /** Snapshot de la durée au moment de la résa (immune aux changements du catalogue). */
     durationMinutes: integer("duration_minutes"),
   },

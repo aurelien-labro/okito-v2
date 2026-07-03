@@ -20,13 +20,20 @@ import type { NotificationInput, NotificationResult, Notifier } from "./notifier
  * envoie seulement si elle peut.
  */
 export class PolicyAwareNotifier implements Notifier {
-  constructor(private readonly base: Notifier) {}
+  constructor(
+    private readonly base: Notifier,
+    /** Base des liens portail /r/:token. Si absent, pas de lien dans les notifs. */
+    private readonly portalBaseUrl?: string,
+  ) {}
 
   send(input: NotificationInput): Promise<NotificationResult> {
     return this.base.send(input);
   }
 
-  async notifyReservationCreated(tenant: Tenant, r: Reservation): Promise<void> {
+  async notifyReservationCreated(
+    tenant: Tenant,
+    r: Reservation & { accessToken?: string },
+  ): Promise<void> {
     await this.dispatch(tenant, r, "reservation.created");
   }
 
@@ -36,7 +43,7 @@ export class PolicyAwareNotifier implements Notifier {
 
   private async dispatch(
     tenant: Tenant,
-    r: Reservation,
+    r: Reservation & { accessToken?: string },
     event: "reservation.created" | "reservation.cancelled",
   ): Promise<void> {
     const recipients = recipientsFor(tenant, event);
@@ -48,7 +55,11 @@ export class PolicyAwareNotifier implements Notifier {
       return;
     }
 
-    const messages = buildMessages(tenant, r, event);
+    const portalUrl =
+      event === "reservation.created" && r.accessToken && this.portalBaseUrl
+        ? `${this.portalBaseUrl.replace(/\/$/, "")}/r/${r.accessToken}`
+        : undefined;
+    const messages = buildMessages(tenant, r, event, portalUrl);
 
     const sends: Promise<unknown>[] = [];
     for (const { audience, channels } of recipients) {
@@ -88,16 +99,18 @@ function buildMessages(
   tenant: Tenant,
   r: Reservation,
   event: "reservation.created" | "reservation.cancelled",
+  portalUrl?: string,
 ): Record<Audience, BuiltMessage> {
   const date = formatDateHuman(r.dateReservation);
   const time = r.heure.slice(0, 5);
   const couvertsLabel = `${r.couverts} personne${r.couverts > 1 ? "s" : ""}`;
+  const portalLine = portalUrl ? `\nGérer ma réservation : ${portalUrl}` : "";
 
   if (event === "reservation.created") {
     return {
       client: {
         subject: `Confirmation de réservation — ${tenant.name}`,
-        body: `Bonjour ${firstName(r.customerName)}, on confirme votre réservation chez ${tenant.name} ${date} à ${time} pour ${couvertsLabel}. À très vite !`,
+        body: `Bonjour ${firstName(r.customerName)}, on confirme votre réservation chez ${tenant.name} ${date} à ${time} pour ${couvertsLabel}. À très vite !${portalLine}`,
       },
       manager: {
         subject: `Nouvelle résa — ${r.customerName} le ${date} à ${time}`,
