@@ -2,6 +2,7 @@ import { type Database, schema } from "@okito/db";
 import { and, eq, lt } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import type { AuditLogService } from "./audit-log.js";
+import type { WebhookDispatchService } from "./webhook-dispatch.js";
 
 export interface NoShowRunResult {
   tenantsProcessed: number;
@@ -27,6 +28,7 @@ export class NoShowService {
     private readonly db: Database,
     private readonly audit?: AuditLogService,
     private readonly graceMinutes = 120,
+    private readonly webhooks?: WebhookDispatchService,
   ) {}
 
   async markStale(opts?: { dryRun?: boolean }): Promise<NoShowRunResult> {
@@ -81,6 +83,15 @@ export class NoShowService {
           .returning();
         if (!updated) continue;
         result.marked++;
+        this.webhooks?.emit(tenant.id, "reservation.no_show", {
+          id: updated.id,
+          dateReservation: updated.dateReservation,
+          heure: updated.heure,
+          couverts: updated.couverts,
+          customerName: updated.customerName,
+          customerPhone: updated.customerPhone,
+          status: updated.status,
+        });
         if (this.audit) {
           await this.audit
             .log({

@@ -14,6 +14,7 @@ import type { ScheduleRuleService } from "./schedule-rule.js";
 import type { ServiceCatalogService } from "./service-catalog.js";
 import type { TenantService } from "./tenant.js";
 import type { WaitlistService } from "./waitlist.js";
+import type { WebhookDispatchService } from "./webhook-dispatch.js";
 
 const MAX_HISTORY_MESSAGES = 20;
 const CHANNEL_TO_LLM: Record<ChatRequest["channel"], "web" | "whatsapp" | "voice"> = {
@@ -39,6 +40,8 @@ export interface ChatDeps {
   serviceCatalog?: ServiceCatalogService;
   /** Optionnel — si présent, les fermetures hebdo/congés bloquent check_availability. */
   scheduleRules?: ScheduleRuleService;
+  /** Optionnel — diffuse les événements résa/waitlist aux webhooks sortants du tenant. */
+  webhooks?: WebhookDispatchService;
 }
 
 interface ToolOutcome {
@@ -386,6 +389,13 @@ export class ChatService {
         dateSouhaitee,
         heureSouhaitee,
       });
+      this.deps.webhooks?.emit(tenant.id, "waitlist.joined", {
+        customerName,
+        customerPhone,
+        couverts,
+        dateSouhaitee,
+        heureSouhaitee,
+      });
     } catch (err) {
       logger.error({ err, tenantId: tenant.id }, "waitlist.join failed");
       return {
@@ -491,6 +501,7 @@ export class ChatService {
             logger.error({ err, reservationId: row.id }, "notifyReservationCreated failed"),
           );
       }
+      this.deps.webhooks?.emit(tenant.id, "reservation.created", webhookPayload(row));
       const isVoice = channel === "voice";
       const dateStr = isVoice
         ? formatDateVoice(row.dateReservation)
@@ -558,6 +569,7 @@ export class ChatService {
           logger.error({ err, reservationId: cancelled.id }, "notifyReservationCancelled failed"),
         );
     }
+    this.deps.webhooks?.emit(tenant.id, "reservation.cancelled", webhookPayload(cancelled));
     return {
       reply: `Réservation annulée. Si vous changez d'avis, on est là.`,
       status: "completed",
@@ -598,6 +610,28 @@ export class ChatService {
       status: "in_progress",
     };
   }
+}
+
+function webhookPayload(r: {
+  id: string;
+  dateReservation: string;
+  heure: string;
+  couverts: number;
+  customerName: string;
+  customerPhone: string;
+  status: string;
+  source: string;
+}): Record<string, unknown> {
+  return {
+    id: r.id,
+    dateReservation: r.dateReservation,
+    heure: r.heure,
+    couverts: r.couverts,
+    customerName: r.customerName,
+    customerPhone: r.customerPhone,
+    status: r.status,
+    source: r.source,
+  };
 }
 
 function pickString(v: unknown): string | null {

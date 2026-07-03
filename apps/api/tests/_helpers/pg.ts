@@ -122,6 +122,16 @@ async function applySchema(pglite: PGlite): Promise<void> {
       created_at timestamptz not null default now()
     );
 
+    create table tenant_webhooks (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      url text not null,
+      secret text not null,
+      events text[] not null default '{}',
+      active boolean not null default true,
+      created_at timestamptz not null default now()
+    );
+
     create table tenant_service_catalog (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid not null references tenants(id) on delete cascade,

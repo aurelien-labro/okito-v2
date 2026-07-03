@@ -20,6 +20,7 @@ import { adminStatsRoute } from "./routes/admin-stats.js";
 import { adminTablesRoute } from "./routes/admin-tables.js";
 import { adminTenantsRoute } from "./routes/admin-tenants.js";
 import { adminWaitlistRoute } from "./routes/admin-waitlist.js";
+import { adminWebhooksRoute } from "./routes/admin-webhooks.js";
 import { chatRoute } from "./routes/chat.js";
 import { healthRoute } from "./routes/health.js";
 import { icalFeedRoute } from "./routes/ical-feed.js";
@@ -48,6 +49,8 @@ import type { TableService } from "./services/table.js";
 import type { TenantMemberService } from "./services/tenant-member.js";
 import type { TenantService } from "./services/tenant.js";
 import type { WaitlistService } from "./services/waitlist.js";
+import type { WebhookDispatchService } from "./services/webhook-dispatch.js";
+import type { WebhookService } from "./services/webhook.js";
 
 export interface AppServices {
   reservation?: ReservationService;
@@ -88,6 +91,10 @@ export interface AppServices {
   notifier?: Notifier;
   /** Service auto no-show — ajoute la function Inngest horaire si fourni. */
   noShow?: NoShowService;
+  /** CRUD webhooks sortants — monté sur /v1/admin/webhooks si fourni. */
+  webhook?: WebhookService;
+  /** Dispatcher webhooks — injecté dans reservations/portal pour émettre les events. */
+  webhookDispatch?: WebhookDispatchService;
 }
 
 export function createApp(env: Env, services: AppServices = {}) {
@@ -143,7 +150,10 @@ export function createApp(env: Env, services: AppServices = {}) {
     const v1 = new Hono<AppEnv>();
     v1.use("*", createAuthMiddleware(env));
     if (services.reservation)
-      v1.route("/reservations", reservationsRoute(services.reservation, services.audit));
+      v1.route(
+        "/reservations",
+        reservationsRoute(services.reservation, services.audit, services.webhookDispatch),
+      );
     if (services.chat) v1.route("/chat", chatRoute(services.chat));
     app.route("/v1", v1);
   }
@@ -163,6 +173,7 @@ export function createApp(env: Env, services: AppServices = {}) {
         capacity: services.capacity,
         scheduleRules: services.scheduleRules,
         notifier: services.notifier,
+        webhooks: services.webhookDispatch,
       }),
     );
   }
@@ -252,6 +263,9 @@ export function createApp(env: Env, services: AppServices = {}) {
         "/ical",
         adminIcalRoute({ secret: env.ICAL_FEED_SECRET, apiBaseUrl: env.PUBLIC_API_URL }),
       );
+    }
+    if (services.webhook) {
+      v1Admin.route("/webhooks", adminWebhooksRoute(services.webhook));
     }
     app.route("/v1/admin", v1Admin);
   }
