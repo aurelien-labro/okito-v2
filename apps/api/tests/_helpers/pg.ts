@@ -112,6 +112,15 @@ async function applySchema(pglite: PGlite): Promise<void> {
       created_at timestamptz not null default now()
     );
 
+    create table tenant_schedule_rules (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      kind text not null,
+      payload jsonb not null default '{}',
+      active boolean not null default true,
+      created_at timestamptz not null default now()
+    );
+
     create table tenant_service_catalog (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid not null references tenants(id) on delete cascade,

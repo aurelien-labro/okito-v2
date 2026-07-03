@@ -7,4 +7,5 @@ export * from "./subscriptions.js";
 export * from "./tenant-members.js";
 export * from "./tenant-tables.js";
 export * from "./service-catalog.js";
+export * from "./schedule-rules.js";
 export * from "./waitlist.js";

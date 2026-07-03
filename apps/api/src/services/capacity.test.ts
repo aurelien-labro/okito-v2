@@ -93,4 +93,62 @@ describe("checkServiceWindow", () => {
     expect(out.suggestion).toContain("09h00 (Matin)");
     expect(out.suggestion).toContain("14h00 (Aprèm)");
   });
+
+  describe("schedule rules", () => {
+    const tenant = tenantWithServices([{ label: "Journée", start: "09:00", end: "18:00" }]);
+    function rule(kind: string, payload: unknown, active = true) {
+      return { kind, payload, active } as never;
+    }
+
+    // 2026-07-06 est un lundi, 2026-07-05 un dimanche.
+    it("weekly_closed : refuse le jour fermé, accepte les autres", () => {
+      const rules = [rule("weekly_closed", { weekdays: [1] })];
+      const closed = checkServiceWindow(tenant, "10:00", { date: "2026-07-06", rules });
+      expect(closed.inService).toBe(false);
+      expect(closed.closedDay).toBe(true);
+      expect(closed.closedReason).toContain("lundi");
+
+      const open = checkServiceWindow(tenant, "10:00", { date: "2026-07-07", rules });
+      expect(open.inService).toBe(true);
+    });
+
+    it("date_closed : date unique et plage from/to", () => {
+      const rules = [
+        rule("date_closed", { date: "2026-12-25" }),
+        rule("date_closed", { from: "2026-08-01", to: "2026-08-15" }),
+      ];
+      expect(checkServiceWindow(tenant, "10:00", { date: "2026-12-25", rules }).closedDay).toBe(
+        true,
+      );
+      expect(checkServiceWindow(tenant, "10:00", { date: "2026-08-10", rules }).closedDay).toBe(
+        true,
+      );
+      expect(checkServiceWindow(tenant, "10:00", { date: "2026-08-16", rules }).inService).toBe(
+        true,
+      );
+    });
+
+    it("date_special : prioritaire, peut OUVRIR un jour normalement fermé", () => {
+      const rules = [
+        rule("weekly_closed", { weekdays: [1] }),
+        rule("date_special", {
+          date: "2026-07-06",
+          services: [{ label: "Férié", start: "10:00", end: "14:00" }],
+        }),
+      ];
+      const inSpecial = checkServiceWindow(tenant, "11:00", { date: "2026-07-06", rules });
+      expect(inSpecial.inService).toBe(true);
+      expect(inSpecial.service).toBe("Férié");
+
+      const outSpecial = checkServiceWindow(tenant, "16:00", { date: "2026-07-06", rules });
+      expect(outSpecial.inService).toBe(false);
+    });
+
+    it("règle inactive → ignorée", () => {
+      const rules = [rule("weekly_closed", { weekdays: [1] }, false)];
+      expect(checkServiceWindow(tenant, "10:00", { date: "2026-07-06", rules }).inService).toBe(
+        true,
+      );
+    });
+  });
 });
