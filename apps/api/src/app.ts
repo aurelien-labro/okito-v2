@@ -44,6 +44,7 @@ import type { CapacityService } from "./services/capacity.js";
 import type { ChatService } from "./services/chat.js";
 import type { CustomerPrivacyService } from "./services/customer-privacy.js";
 import type { BusinessEventEmitter } from "./services/event-bus.js";
+import type { GmailSyncService } from "./services/gmail-sync.js";
 import type { JarvisActionService } from "./services/jarvis-action.js";
 import type { JarvisAdvisorService } from "./services/jarvis-advisor.js";
 import type { JarvisExecutor } from "./services/jarvis-executor.js";
@@ -119,6 +120,8 @@ export interface AppServices {
   jarvisObserver?: JarvisObserverService;
   /** Boîtes Gmail — monté sur /v1/admin/mailboxes + /oauth/google/callback si OAuth configuré. */
   mailbox?: MailboxService;
+  /** Sync Gmail — ajoute la function Inngest 5-min si fournie. */
+  gmailSync?: GmailSyncService;
   /** Avis clients — monté sur /v1/admin/reviews et /review si REVIEW_LINK_SECRET fourni. */
   review?: ReviewService;
   /** Service de demandes d'avis (cron) — ajoute la function Inngest matinale si fourni. */
@@ -349,6 +352,7 @@ export function createApp(env: Env, services: AppServices = {}) {
         services.jarvisExecutor,
         services.jarvisAdvisor,
         services.jarvisObserver,
+        services.gmailSync,
       ),
     );
   }
