@@ -4,53 +4,111 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { TenantSwitcher } from "./tenant-switcher";
 
-const NAV = [
-  { href: "/", label: "Vue d'ensemble" },
-  { href: "/jarvis", label: "Jarvis" },
-  { href: "/onboarding", label: "Diagnostic" },
-  { href: "/reservations", label: "Réservations" },
-  { href: "/tenants", label: "Tenants" },
-  { href: "/audit", label: "Audit" },
-  { href: "/stats", label: "Statistiques" },
-  { href: "/members", label: "Membres" },
-  { href: "/waitlist", label: "Liste d'attente" },
-  { href: "/tables", label: "Tables" },
-  { href: "/service-catalog", label: "Prestations" },
-  { href: "/schedule", label: "Horaires" },
-  { href: "/loyalty", label: "Fidélité" },
-  { href: "/integrations", label: "Intégrations" },
-  { href: "/settings", label: "Paramètres" },
+type NavItem = { href: string; label: string; icon: string };
+
+const TOP: NavItem[] = [
+  { href: "/", label: "Vue globale", icon: "ti-layout-dashboard" },
+  { href: "/jarvis", label: "Jarvis", icon: "ti-sparkles" },
+  { href: "/onboarding", label: "Diagnostic", icon: "ti-stethoscope" },
+];
+
+// Modules du produit : ce qui existe aujourd'hui dans OKITO V2/V3. Les cases
+// à venir (Inbox, Site web, Admin, Marketing) sont grisées comme repères de roadmap.
+const MODULES: NavItem[] = [
+  { href: "/reservations", label: "Agenda", icon: "ti-calendar" },
+  { href: "/loyalty", label: "Clients", icon: "ti-users" },
+  { href: "/integrations", label: "Intégrations", icon: "ti-plug" },
+  { href: "/waitlist", label: "Liste d'attente", icon: "ti-hourglass" },
+  { href: "/service-catalog", label: "Prestations", icon: "ti-list-details" },
+  { href: "/schedule", label: "Horaires", icon: "ti-clock" },
+  { href: "/tables", label: "Tables", icon: "ti-armchair" },
+];
+
+const COMING: { label: string; icon: string }[] = [
+  { label: "Inbox", icon: "ti-inbox" },
+  { label: "Site web", icon: "ti-world" },
+  { label: "Admin", icon: "ti-file-invoice" },
+  { label: "Marketing", icon: "ti-speakerphone" },
+];
+
+const ADMIN: NavItem[] = [
+  { href: "/tenants", label: "Tenants", icon: "ti-building-store" },
+  { href: "/members", label: "Membres", icon: "ti-user-cog" },
+  { href: "/stats", label: "Statistiques", icon: "ti-chart-bar" },
+  { href: "/audit", label: "Audit", icon: "ti-history" },
+  { href: "/settings", label: "Paramètres", icon: "ti-settings" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+
   return (
-    <aside className="w-56 border-r border-stone-200 bg-white px-4 py-6">
-      <div className="mb-6 px-2">
-        <div className="text-sm font-semibold tracking-tight">OKITO</div>
-        <div className="text-xs text-stone-500">Dashboard</div>
+    <aside className="flex w-56 flex-col border-r border-stone-200 bg-white px-3 py-5">
+      <div className="mb-5 px-2">
+        <div className="flex items-center gap-2">
+          <div className="flex size-6 items-center justify-center rounded-lg bg-stone-900 text-xs font-medium text-white">
+            O
+          </div>
+          <span className="text-sm font-semibold tracking-tight">OKITO</span>
+        </div>
       </div>
-      <div className="px-2">
+      <div className="mb-4 px-2">
         <TenantSwitcher />
       </div>
-      <nav className="space-y-1">
-        {NAV.map((item) => {
-          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={
-                active
-                  ? "block rounded px-3 py-2 text-sm font-medium bg-stone-900 text-white"
-                  : "block rounded px-3 py-2 text-sm text-stone-700 hover:bg-stone-100"
-              }
-            >
-              {item.label}
-            </Link>
-          );
-        })}
+
+      <nav className="flex-1 space-y-0.5 overflow-y-auto">
+        {TOP.map((item) => (
+          <NavLink key={item.href} item={item} active={isActive(item.href)} />
+        ))}
+
+        <SectionLabel>Modules</SectionLabel>
+        {MODULES.map((item) => (
+          <NavLink key={item.href} item={item} active={isActive(item.href)} />
+        ))}
+        {COMING.map((item) => (
+          <div
+            key={item.label}
+            className="flex items-center gap-2.5 rounded px-3 py-1.5 text-sm text-stone-300"
+            title="Bientôt disponible"
+          >
+            <span className={`ti ${item.icon} text-[15px]`} aria-hidden="true" />
+            {item.label}
+            <span className="ml-auto rounded bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-400">
+              bientôt
+            </span>
+          </div>
+        ))}
+
+        <SectionLabel>Administration</SectionLabel>
+        {ADMIN.map((item) => (
+          <NavLink key={item.href} item={item} active={isActive(item.href)} />
+        ))}
       </nav>
     </aside>
+  );
+}
+
+function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+  return (
+    <Link
+      href={item.href}
+      className={
+        active
+          ? "flex items-center gap-2.5 rounded bg-stone-900 px-3 py-1.5 text-sm font-medium text-white"
+          : "flex items-center gap-2.5 rounded px-3 py-1.5 text-sm text-stone-700 hover:bg-stone-100"
+      }
+    >
+      <span className={`ti ${item.icon} text-[15px]`} aria-hidden="true" />
+      {item.label}
+    </Link>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="px-3 pb-1 pt-4 text-[10px] font-medium uppercase tracking-wide text-stone-400">
+      {children}
+    </div>
   );
 }
