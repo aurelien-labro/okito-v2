@@ -12,6 +12,7 @@ import { metricsMiddleware } from "./middleware/metrics.js";
 import { adminAuditRoute } from "./routes/admin-audit.js";
 import { adminCustomersRoute } from "./routes/admin-customers.js";
 import { adminIcalRoute } from "./routes/admin-ical.js";
+import { adminInboxRoute } from "./routes/admin-inbox.js";
 import { adminInvoicesRoute } from "./routes/admin-invoices.js";
 import { adminJarvisActionsRoute } from "./routes/admin-jarvis-actions.js";
 import { adminJarvisBriefRoute } from "./routes/admin-jarvis-brief.js";
@@ -47,6 +48,7 @@ import type { ChatService } from "./services/chat.js";
 import type { CustomerPrivacyService } from "./services/customer-privacy.js";
 import type { BusinessEventEmitter } from "./services/event-bus.js";
 import type { GmailSyncService } from "./services/gmail-sync.js";
+import type { InboxService } from "./services/inbox.js";
 import type { InvoiceOverdueRunner } from "./services/invoice-overdue-runner.js";
 import type { InvoiceService } from "./services/invoice.js";
 import type { JarvisActionService } from "./services/jarvis-action.js";
@@ -127,6 +129,8 @@ export interface AppServices {
   mailbox?: MailboxService;
   /** Sync Gmail — ajoute la function Inngest 5-min si fournie. */
   gmailSync?: GmailSyncService;
+  /** Inbox unifiée — monté sur /v1/admin/inbox si fourni. */
+  inbox?: InboxService;
   /** Factures clients — monté sur /v1/admin/invoices si fourni. */
   invoice?: InvoiceService;
   /** Runner cron overdue — ajoute la function Inngest horaire si fourni. */
@@ -333,6 +337,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.invoice) {
       v1Admin.route("/invoices", adminInvoicesRoute(services.invoice));
+    }
+    if (services.inbox) {
+      v1Admin.route("/inbox", adminInboxRoute(services.inbox));
     }
     if (services.db) {
       v1Admin.route("/jarvis-brief", adminJarvisBriefRoute(services.db, services.jarvisAdvisor));

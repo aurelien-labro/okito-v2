@@ -12,6 +12,7 @@ import { ConversationService } from "./services/conversation.js";
 import { CustomerPrivacyService } from "./services/customer-privacy.js";
 import { EventBusService } from "./services/event-bus.js";
 import { GmailSyncService } from "./services/gmail-sync.js";
+import { InboxService } from "./services/inbox.js";
 import { InvoiceOverdueRunner } from "./services/invoice-overdue-runner.js";
 import { InvoiceService } from "./services/invoice.js";
 import { JarvisActionService } from "./services/jarvis-action.js";
@@ -71,6 +72,7 @@ if (env.DATABASE_URL) {
   services.jarvisExecutor = jarvisExecutor;
   services.jarvisObserver = new JarvisObserverService(db, jarvisAction);
   services.review = new ReviewService(db, eventBus);
+  services.inbox = new InboxService(db);
   const invoice = new InvoiceService(db, eventBus);
   services.invoice = invoice;
   services.invoiceOverdue = new InvoiceOverdueRunner(db, invoice);
