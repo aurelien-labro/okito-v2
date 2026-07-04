@@ -634,6 +634,68 @@ export async function statsForPhones(
   });
 }
 
+// --- Jarvis -------------------------------------------------------------------
+
+export type JarvisPolicy = "auto" | "auto_cancellable" | "approval";
+export type JarvisActionStatus =
+  | "awaiting_approval"
+  | "scheduled"
+  | "executed"
+  | "cancelled"
+  | "failed";
+
+export interface JarvisAction {
+  id: string;
+  tenantId: string;
+  type: string;
+  summary: string;
+  policy: JarvisPolicy;
+  status: JarvisActionStatus;
+  payload: Record<string, unknown>;
+  result: Record<string, unknown> | null;
+  cancellableUntil: string | null;
+  createdAt: string;
+  executedAt: string | null;
+  cancelledAt: string | null;
+}
+
+export async function listJarvisActions(
+  tenantId: string,
+  status?: JarvisActionStatus,
+): Promise<{ data: JarvisAction[] }> {
+  const q = status ? `?status=${status}` : "";
+  return request(`/v1/admin/jarvis-actions/${tenantId}${q}`);
+}
+
+export async function approveJarvisAction(
+  tenantId: string,
+  id: string,
+): Promise<{ data: JarvisAction }> {
+  return request(`/v1/admin/jarvis-actions/${tenantId}/${id}/approve`, { method: "POST" });
+}
+
+export async function cancelJarvisAction(
+  tenantId: string,
+  id: string,
+): Promise<{ data: JarvisAction }> {
+  return request(`/v1/admin/jarvis-actions/${tenantId}/${id}/cancel`, { method: "POST" });
+}
+
+export interface JarvisBrief {
+  text: string;
+  eventCount?: number;
+  pendingApprovals?: number;
+  at?: string;
+}
+
+export async function getJarvisBrief(tenantId: string): Promise<{ data: JarvisBrief }> {
+  return request(`/v1/admin/jarvis-brief/${tenantId}`);
+}
+
+export async function regenerateJarvisBrief(tenantId: string): Promise<{ data: JarvisBrief }> {
+  return request(`/v1/admin/jarvis-brief/${tenantId}`, { method: "POST" });
+}
+
 // --- Reminders --------------------------------------------------------------
 
 export interface ReminderRunResult {
