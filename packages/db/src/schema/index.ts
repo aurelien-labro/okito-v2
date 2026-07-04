@@ -12,3 +12,4 @@ export * from "./tenant-webhooks.js";
 export * from "./reservation-reviews.js";
 export * from "./waitlist.js";
 export * from "./events.js";
+export * from "./jarvis-actions.js";

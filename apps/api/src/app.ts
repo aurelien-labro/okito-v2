@@ -12,6 +12,7 @@ import { metricsMiddleware } from "./middleware/metrics.js";
 import { adminAuditRoute } from "./routes/admin-audit.js";
 import { adminCustomersRoute } from "./routes/admin-customers.js";
 import { adminIcalRoute } from "./routes/admin-ical.js";
+import { adminJarvisActionsRoute } from "./routes/admin-jarvis-actions.js";
 import { adminLoyaltyRoute } from "./routes/admin-loyalty.js";
 import { adminMembersRoute } from "./routes/admin-members.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
@@ -41,6 +42,8 @@ import type { CapacityService } from "./services/capacity.js";
 import type { ChatService } from "./services/chat.js";
 import type { CustomerPrivacyService } from "./services/customer-privacy.js";
 import type { BusinessEventEmitter } from "./services/event-bus.js";
+import type { JarvisActionService } from "./services/jarvis-action.js";
+import type { JarvisExecutor } from "./services/jarvis-executor.js";
 import type { LoyaltyService } from "./services/loyalty.js";
 import type { NoShowService } from "./services/no-show.js";
 import type { Notifier } from "./services/notifier.js";
@@ -101,6 +104,10 @@ export interface AppServices {
   webhook?: WebhookService;
   /** Bus d'événements — injecté dans reservations/portal pour émettre les events (journal + webhooks). */
   eventBus?: BusinessEventEmitter;
+  /** Garde-fous des actions Jarvis — monté sur /v1/admin/jarvis-actions si fourni. */
+  jarvisAction?: JarvisActionService;
+  /** Executor Jarvis — ajoute la function Inngest 5-min si fourni. */
+  jarvisExecutor?: JarvisExecutor;
   /** Avis clients — monté sur /v1/admin/reviews et /review si REVIEW_LINK_SECRET fourni. */
   review?: ReviewService;
   /** Service de demandes d'avis (cron) — ajoute la function Inngest matinale si fourni. */
@@ -296,6 +303,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     if (services.webhook) {
       v1Admin.route("/webhooks", adminWebhooksRoute(services.webhook));
     }
+    if (services.jarvisAction) {
+      v1Admin.route("/jarvis-actions", adminJarvisActionsRoute(services.jarvisAction));
+    }
     if (services.review) {
       v1Admin.route("/reviews", adminReviewsRoute(services.review));
     }
@@ -310,7 +320,12 @@ export function createApp(env: Env, services: AppServices = {}) {
   if (services.reminder) {
     app.route(
       "/api/inngest",
-      inngestRoute(services.reminder, services.noShow, services.reviewRequest),
+      inngestRoute(
+        services.reminder,
+        services.noShow,
+        services.reviewRequest,
+        services.jarvisExecutor,
+      ),
     );
   }
 
