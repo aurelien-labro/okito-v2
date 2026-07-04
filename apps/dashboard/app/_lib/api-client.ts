@@ -696,6 +696,45 @@ export async function regenerateJarvisBrief(tenantId: string): Promise<{ data: J
   return request(`/v1/admin/jarvis-brief/${tenantId}`, { method: "POST" });
 }
 
+// --- Mailboxes (Gmail) --------------------------------------------------------
+
+export type MailboxStatus = "active" | "paused" | "error";
+
+export interface Mailbox {
+  id: string;
+  tenantId: string;
+  provider: string;
+  emailAddress: string;
+  historyId: string | null;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  status: MailboxStatus;
+  createdAt: string;
+}
+
+export async function listMailboxes(tenantId: string): Promise<{ data: Mailbox[] }> {
+  return request(`/v1/admin/mailboxes/${tenantId}`);
+}
+
+export async function connectMailbox(tenantId: string): Promise<{ data: { url: string } }> {
+  return request(`/v1/admin/mailboxes/${tenantId}/connect`, { method: "POST" });
+}
+
+export async function setMailboxStatus(
+  tenantId: string,
+  id: string,
+  status: "active" | "paused",
+): Promise<{ data: Mailbox }> {
+  return request(`/v1/admin/mailboxes/${tenantId}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function deleteMailbox(tenantId: string, id: string): Promise<void> {
+  await request(`/v1/admin/mailboxes/${tenantId}/${id}`, { method: "DELETE" });
+}
+
 // --- Reminders --------------------------------------------------------------
 
 export interface ReminderRunResult {
