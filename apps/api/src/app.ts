@@ -13,6 +13,7 @@ import { adminAuditRoute } from "./routes/admin-audit.js";
 import { adminCustomersRoute } from "./routes/admin-customers.js";
 import { adminIcalRoute } from "./routes/admin-ical.js";
 import { adminJarvisActionsRoute } from "./routes/admin-jarvis-actions.js";
+import { adminJarvisBriefRoute } from "./routes/admin-jarvis-brief.js";
 import { adminLoyaltyRoute } from "./routes/admin-loyalty.js";
 import { adminMembersRoute } from "./routes/admin-members.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
@@ -308,6 +309,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.jarvisAction) {
       v1Admin.route("/jarvis-actions", adminJarvisActionsRoute(services.jarvisAction));
+    }
+    if (services.db) {
+      v1Admin.route("/jarvis-brief", adminJarvisBriefRoute(services.db, services.jarvisAdvisor));
     }
     if (services.review) {
       v1Admin.route("/reviews", adminReviewsRoute(services.review));
