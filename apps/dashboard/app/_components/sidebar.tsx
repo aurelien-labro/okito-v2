@@ -44,16 +44,8 @@ export function Sidebar() {
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (
-    <aside className="flex w-56 flex-col border-r border-stone-200 bg-white px-3 py-5">
-      <div className="mb-5 px-2">
-        <div className="flex items-center gap-2">
-          <div className="flex size-6 items-center justify-center rounded-lg bg-stone-900 text-xs font-medium text-white">
-            O
-          </div>
-          <span className="text-sm font-semibold tracking-tight">OKITO</span>
-        </div>
-      </div>
-      <div className="mb-4 px-2">
+    <aside className="flex w-52 flex-col border-r border-stone-200 bg-stone-50/60 px-2.5 py-3">
+      <div className="mb-3 px-1.5">
         <TenantSwitcher />
       </div>
 
@@ -95,8 +87,8 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       href={item.href}
       className={
         active
-          ? "flex items-center gap-2.5 rounded bg-stone-900 px-3 py-1.5 text-sm font-medium text-white"
-          : "flex items-center gap-2.5 rounded px-3 py-1.5 text-sm text-stone-700 hover:bg-stone-100"
+          ? "flex items-center gap-2.5 rounded-md bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700"
+          : "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-100"
       }
     >
       <span className={`ti ${item.icon} text-[15px]`} aria-hidden="true" />

@@ -4,12 +4,12 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { LoginGate } from "./_components/login-gate";
 import {
-  type HealthStatus,
   type JarvisAction,
   type JarvisBrief,
+  type JarvisChatMessage,
   type ReviewSummary,
+  chatWithJarvis,
   getCurrentTenantId,
-  getHealth,
   getJarvisBrief,
   getReviewSummary,
   listJarvisActions,
@@ -31,18 +31,13 @@ export default function OverviewPage() {
 
 function Overview() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Vue globale</h1>
-        <p className="mt-1 text-sm text-stone-500">
-          Ce que Jarvis a fait, ce qui t&apos;attend, et l&apos;état de ton commerce en un coup
-          d&apos;œil.
-        </p>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-4">
       <BriefBanner />
       <Indicators />
-      <RecentActions />
-      <SystemStatus />
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.35fr_1fr]">
+        <RecentActions />
+        <ChatPanel />
+      </div>
     </div>
   );
 }
@@ -83,50 +78,67 @@ function BriefBanner() {
     }
   }
 
+  const pending = brief?.pendingApprovals ?? 0;
+
   return (
-    <section className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-5">
+    <section
+      className="rounded-xl border p-4"
+      style={{ background: "#EEEDFE", borderColor: "#534AB7" }}
+    >
       <div className="mb-2 flex items-center gap-2">
-        <span className="ti ti-sparkles text-lg text-indigo-700" aria-hidden="true" />
-        <h2 className="text-sm font-semibold text-indigo-900">Brief de Jarvis</h2>
-        <span className="ml-auto rounded bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-800">
+        <span className="ti ti-sparkles text-lg" style={{ color: "#3C3489" }} aria-hidden="true" />
+        <h2 className="text-sm font-semibold" style={{ color: "#26215C" }}>
+          Brief de Jarvis
+        </h2>
+        <span className="rounded bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-800">
           Mode auto actif
         </span>
+        <button
+          type="button"
+          onClick={regenerate}
+          disabled={busy}
+          className="ml-auto rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
+        >
+          {busy ? "Génération…" : "Refaire le point"}
+        </button>
       </div>
 
       {state === "ready" && brief ? (
         <>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-stone-800">{brief.text}</p>
-          <div className="mt-3 flex items-center gap-3 text-xs text-indigo-700">
-            <Link href="/jarvis" className="font-medium hover:underline">
-              Ouvrir Jarvis →
+          <p className="whitespace-pre-wrap text-sm leading-relaxed" style={{ color: "#3C3489" }}>
+            {brief.text}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Link
+              href="/jarvis"
+              className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50"
+              style={{ border: "0.5px solid #AFA9EC" }}
+            >
+              <span className="ti ti-sparkles mr-1 text-[13px]" aria-hidden="true" />
+              Ouvrir Jarvis
             </Link>
-            {typeof brief.pendingApprovals === "number" && brief.pendingApprovals > 0 && (
-              <span>{brief.pendingApprovals} action(s) attendent ta validation</span>
+            {pending > 0 && (
+              <Link
+                href="/jarvis"
+                className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-stone-50"
+                style={{ border: "0.5px solid #EF9F27" }}
+              >
+                <span className="ti ti-alert-triangle mr-1 text-[13px]" aria-hidden="true" />
+                {pending} action(s) à valider
+              </Link>
             )}
           </div>
         </>
       ) : state === "unavailable" ? (
-        <p className="text-sm text-stone-600">
+        <p className="text-sm" style={{ color: "#3C3489" }}>
           Le brief nécessite un LLM configuré côté API (variable <code>GEMINI_API_KEY</code>).
         </p>
       ) : (
-        <div className="flex items-center gap-3">
-          <p className="text-sm text-stone-600">
-            {state === "loading"
-              ? "Chargement du brief…"
-              : "Aucun brief pour l'instant — il arrive chaque matin à 8h."}
-          </p>
-          {state !== "loading" && (
-            <button
-              type="button"
-              onClick={regenerate}
-              disabled={busy}
-              className="rounded bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-            >
-              {busy ? "Génération…" : "Faire le point maintenant"}
-            </button>
-          )}
-        </div>
+        <p className="text-sm" style={{ color: "#3C3489" }}>
+          {state === "loading"
+            ? "Chargement du brief…"
+            : "Aucun brief pour l'instant — clique sur « Refaire le point »."}
+        </p>
       )}
     </section>
   );
@@ -135,8 +147,6 @@ function BriefBanner() {
 function Indicators() {
   const [reservations, setReservations] = useState<number | null>(null);
   const [reviews, setReviews] = useState<ReviewSummary | null>(null);
-  const [jarvisDone, setJarvisDone] = useState<number | null>(null);
-  const [pending, setPending] = useState<number | null>(null);
 
   useEffect(() => {
     const tenantId = getCurrentTenantId();
@@ -147,68 +157,63 @@ function Indicators() {
     getReviewSummary(tenantId)
       .then((r) => setReviews(r.data))
       .catch(() => setReviews(null));
-    listJarvisActions(tenantId, "executed")
-      .then((r) => setJarvisDone(r.data.length))
-      .catch(() => setJarvisDone(null));
-    listJarvisActions(tenantId, "awaiting_approval")
-      .then((r) => setPending(r.data.length))
-      .catch(() => setPending(null));
   }, []);
 
   return (
     <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <Metric label="Chiffre du jour" value="—" sub="bientôt" muted href="/settings" />
+      <Metric label="Visites site" value="—" sub="bientôt" muted href="/integrations" />
       <Metric
-        href="/reservations"
-        label="Réservations aujourd'hui"
+        label="Réservations"
         value={reservations === null ? "—" : String(reservations)}
+        sub="aujourd'hui"
+        href="/reservations"
       />
       <Metric
-        href="/loyalty"
         label="Note Google"
         value={reviews && reviews.count > 0 ? `${reviews.average} ★` : "—"}
-        hint={reviews ? `${reviews.count} avis` : undefined}
-      />
-      <Metric
-        href="/jarvis"
-        label="Actions faites par Jarvis"
-        value={jarvisDone === null ? "—" : String(jarvisDone)}
-      />
-      <Metric
-        href="/jarvis"
-        label="En attente de validation"
-        value={pending === null ? "—" : String(pending)}
-        warn={(pending ?? 0) > 0}
+        sub={reviews ? `${reviews.count} avis` : "bientôt"}
+        muted={!reviews || reviews.count === 0}
+        href="/loyalty"
       />
     </section>
   );
 }
 
 function Metric({
-  href,
   label,
   value,
-  hint,
-  warn,
+  sub,
+  href,
+  muted,
 }: {
-  href: string;
   label: string;
   value: string;
-  hint?: string;
-  warn?: boolean;
+  sub?: string;
+  href: string;
+  muted?: boolean;
 }) {
   return (
-    <Link href={href} className="rounded-lg bg-stone-50 p-4 transition hover:bg-stone-100">
-      <div className="flex items-center text-xs text-stone-500">
+    <Link href={href} className="rounded-lg bg-stone-100/70 p-3 transition hover:bg-stone-100">
+      <div className="flex items-center text-[11px] text-stone-500">
         {label}
-        <span className="ti ti-arrow-up-right ml-auto text-xs" aria-hidden="true" />
+        <span className="ti ti-arrow-up-right ml-auto text-[11px]" aria-hidden="true" />
       </div>
-      <div className={`mt-1 text-2xl font-medium ${warn ? "text-amber-700" : "text-stone-900"}`}>
-        {value}
-      </div>
-      {hint && <div className="text-xs text-stone-400">{hint}</div>}
+      <div className="mt-1 text-xl font-medium text-stone-900">{value}</div>
+      {sub && (
+        <div className={`text-[11px] ${muted ? "text-stone-400" : "text-stone-500"}`}>{sub}</div>
+      )}
     </Link>
   );
 }
+
+const ACTION_ICON: Record<string, string> = {
+  "review.reply": "ti-star",
+  "invoice.remind": "ti-file-invoice",
+  "email.reply": "ti-mail",
+  "reservation.confirm": "ti-calendar-check",
+  "reminder.send": "ti-bell",
+};
 
 function RecentActions() {
   const [actions, setActions] = useState<JarvisAction[] | null>(null);
@@ -222,76 +227,161 @@ function RecentActions() {
   }, []);
 
   return (
-    <section className="rounded-lg border border-stone-200 bg-white p-5">
+    <section className="rounded-xl border border-stone-200 bg-white p-4">
       <div className="mb-3 flex items-center gap-2">
         <span className="ti ti-checklist text-base text-stone-500" aria-hidden="true" />
-        <h2 className="text-sm font-semibold">Jarvis a agi pour toi</h2>
+        <h2 className="text-sm font-medium">Jarvis a agi pour toi</h2>
         <Link href="/jarvis" className="ml-auto text-xs text-stone-500 hover:underline">
           Tout voir
         </Link>
       </div>
       {actions === null ? (
-        <p className="text-sm text-stone-400">Chargement…</p>
+        <p className="py-4 text-sm text-stone-400">Chargement…</p>
       ) : actions.length === 0 ? (
-        <p className="text-sm text-stone-400">
+        <p className="py-4 text-sm text-stone-400">
           Rien pour l&apos;instant. Jarvis proposera des actions dès qu&apos;il aura matière à agir.
         </p>
       ) : (
-        <ul className="divide-y divide-stone-100">
-          {actions.map((a) => (
-            <li key={a.id} className="flex items-center gap-3 py-2 text-sm">
-              <span className="min-w-0 flex-1 truncate">{a.summary}</span>
+        <div className="flex flex-col">
+          {actions.map((a, i) => (
+            <div
+              key={a.id}
+              className={`flex items-start gap-2.5 py-2 ${i < actions.length - 1 ? "border-b border-stone-100" : ""}`}
+            >
+              <span
+                className={`ti ${ACTION_ICON[a.type] ?? "ti-point"} mt-0.5 text-[15px] text-stone-400`}
+                aria-hidden="true"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm">{a.summary}</div>
+                <div className="text-[11px] text-stone-400">{subtitle(a)}</div>
+              </div>
               <ActionBadge status={a.status} />
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </section>
   );
+}
+
+function subtitle(a: JarvisAction): string {
+  if (a.status === "scheduled" && a.cancellableUntil) {
+    const h = Math.max(
+      0,
+      Math.round((new Date(a.cancellableUntil).getTime() - Date.now()) / 3.6e6),
+    );
+    return `programmée · annulable ${h} h`;
+  }
+  if (a.status === "awaiting_approval") return "action sensible · non exécutée";
+  const ref = a.executedAt ?? a.createdAt;
+  return new Date(ref).toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function ActionBadge({ status }: { status: JarvisAction["status"] }) {
   const map: Record<JarvisAction["status"], { label: string; cls: string }> = {
     awaiting_approval: { label: "À valider", cls: "bg-amber-100 text-amber-800" },
     scheduled: { label: "Programmée", cls: "bg-blue-100 text-blue-800" },
-    executed: { label: "Faite", cls: "bg-emerald-100 text-emerald-800" },
+    executed: { label: "Fait", cls: "bg-emerald-100 text-emerald-800" },
     cancelled: { label: "Annulée", cls: "bg-stone-200 text-stone-700" },
     failed: { label: "Échouée", cls: "bg-rose-100 text-rose-800" },
   };
   const { label, cls } = map[status];
-  return <span className={`rounded px-2 py-0.5 text-xs font-medium ${cls}`}>{label}</span>;
-}
-
-function SystemStatus() {
-  const [health, setHealth] = useState<HealthStatus | null>(null);
-
-  useEffect(() => {
-    getHealth()
-      .then(setHealth)
-      .catch(() => setHealth(null));
-  }, []);
-
-  const dot = (ok?: boolean) => (ok ? "bg-emerald-500" : health ? "bg-rose-500" : "bg-stone-300");
-
   return (
-    <section className="rounded-lg border border-stone-200 bg-white px-5 py-3">
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-stone-600">
-        <span className="font-medium text-stone-500">État système</span>
-        <Dot cls={dot(health?.status === "ok")} label="API" />
-        <Dot cls={dot(health?.llm.status === "ok")} label={`LLM ${health?.llm.model ?? ""}`} />
-        <Dot cls={dot(health?.db.status === "ok")} label="Base de données" />
-        <Dot cls={dot(health?.notifiers?.email.status === "configured")} label="Email" />
-        <Dot cls={dot(health?.notifiers?.whatsapp.status === "configured")} label="WhatsApp" />
-      </div>
-    </section>
+    <span className={`shrink-0 rounded px-2 py-0.5 text-[11px] font-medium ${cls}`}>{label}</span>
   );
 }
 
-function Dot({ cls, label }: { cls: string; label: string }) {
+function ChatPanel() {
+  const [messages, setMessages] = useState<JarvisChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function send() {
+    const tenantId = getCurrentTenantId();
+    const q = input.trim();
+    if (!tenantId || !q || sending) return;
+    const next: JarvisChatMessage[] = [...messages, { role: "user", content: q }];
+    setMessages(next);
+    setInput("");
+    setSending(true);
+    setErr(null);
+    try {
+      const res = await chatWithJarvis(tenantId, next);
+      setMessages([...next, { role: "model", content: res.data.reply }]);
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      setErr(code === "advisor_unavailable" ? "LLM non configuré." : "Jarvis n'a pas pu répondre.");
+      setMessages(messages);
+      setInput(q);
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className={`size-1.5 rounded-full ${cls}`} />
-      {label}
-    </span>
+    <section
+      className="flex flex-col rounded-xl border bg-white p-4"
+      style={{ borderColor: "#85B7EB" }}
+    >
+      <div className="mb-3 flex items-center gap-2">
+        <span className="ti ti-sparkles text-base text-indigo-600" aria-hidden="true" />
+        <h2 className="text-sm font-medium">Demander à Jarvis</h2>
+      </div>
+
+      <div className="mb-3 flex min-h-[160px] flex-1 flex-col gap-2 overflow-y-auto">
+        {messages.length === 0 && (
+          <p className="text-[13px] text-stone-400">
+            « Combien de résas cette semaine ? », « Des avis négatifs récents ? », « Qu&apos;est-ce
+            que tu as fait aujourd&apos;hui ? »
+          </p>
+        )}
+        {messages.map((m, i) => (
+          <div
+            key={`${i}-${m.role}`}
+            className={
+              m.role === "user"
+                ? "ml-auto w-fit max-w-[88%] rounded-xl bg-stone-900 px-3 py-2 text-[13px] text-white"
+                : "w-fit max-w-[94%] rounded-xl bg-stone-100 px-3 py-2 text-[13px] text-stone-800"
+            }
+          >
+            {m.content}
+          </div>
+        ))}
+        {sending && (
+          <div className="w-fit rounded-xl bg-stone-100 px-3 py-2 text-[13px] text-stone-400">
+            …
+          </div>
+        )}
+      </div>
+
+      {err && <p className="mb-2 text-[11px] text-rose-700">{err}</p>}
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") send();
+          }}
+          placeholder="Pose ta question…"
+          className="min-w-0 flex-1 rounded-md border border-stone-300 px-3 py-1.5 text-[13px]"
+        />
+        <button
+          type="button"
+          aria-label="Parler à Jarvis"
+          title="Vocal — bientôt"
+          className="flex items-center justify-center rounded-md border border-stone-300 px-2.5 py-1.5 text-stone-500 hover:bg-stone-50"
+        >
+          <span className="ti ti-microphone text-[15px]" aria-hidden="true" />
+        </button>
+      </div>
+    </section>
   );
 }
