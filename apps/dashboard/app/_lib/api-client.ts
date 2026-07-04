@@ -1,11 +1,14 @@
 /**
  * Client HTTP léger vers l'API OKITO.
  *
- * Lit le JWT depuis localStorage (`okito_token`) côté navigateur. Si pas
- * de token, retourne 401 et la page de login s'affiche.
+ * Le JWT est résolu à chaque requête depuis la session Supabase (qui
+ * rafraîchit automatiquement un token expiré), avec repli sur le token
+ * stocké en localStorage (`okito_token`). Sans token → 401 → page de login.
  *
  * NEXT_PUBLIC_OKITO_API_URL contrôle la base ; défaut : http://localhost:3001.
  */
+
+import { getSupabase, isSupabaseConfigured } from "./supabase";
 
 const API_URL =
   (typeof process !== "undefined" && process.env.NEXT_PUBLIC_OKITO_API_URL) ||
@@ -14,6 +17,43 @@ const API_URL =
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return window.localStorage.getItem("okito_token");
+}
+
+/**
+ * Token valide pour la requête. Passe par Supabase getSession() qui renouvelle
+ * silencieusement un access token expiré (évite les 401 après ~1h de session) ;
+ * repli sur le token manuel de localStorage si Supabase n'est pas configuré.
+ */
+async function resolveToken(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  if (isSupabaseConfigured()) {
+    // On ne renvoie JAMAIS un token périmé : jwtVerify échoue côté API (401)
+    // avant le bypass dev X-Tenant-Id. getSession() peut renvoyer une session
+    // dont l'access_token est déjà expiré → on vérifie expires_at et on force
+    // un refresh si besoin ; si le refresh échoue, aucun token (l'API applique
+    // son fallback en dev, ou renvoie 401 → écran de login en prod).
+    try {
+      const sb = getSupabase();
+      const { data } = await sb.auth.getSession();
+      const session = data.session;
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (session?.access_token && (session.expires_at ?? 0) > nowSec + 30) {
+        setToken(session.access_token);
+        return session.access_token;
+      }
+      const { data: refreshed } = await sb.auth.refreshSession();
+      const token = refreshed.session?.access_token;
+      if (token) {
+        setToken(token);
+        return token;
+      }
+      clearToken();
+    } catch {
+      // pas de token valide
+    }
+    return null;
+  }
+  return getToken();
 }
 
 export function setToken(token: string): void {
@@ -48,7 +88,7 @@ export interface ApiError {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = getToken();
+  const token = await resolveToken();
   const tenantId = getCurrentTenantId();
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
