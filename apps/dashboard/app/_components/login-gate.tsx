@@ -77,24 +77,7 @@ function SupabaseGate({ children }: { children: ReactNode }) {
   if (!ready) return null;
   if (!session) return <MagicLinkForm />;
 
-  return (
-    <div>
-      <div className="mb-4 flex items-center justify-end gap-3 text-xs text-stone-500">
-        <span>{session.user.email}</span>
-        <button
-          type="button"
-          onClick={async () => {
-            await getSupabase().auth.signOut();
-            clearToken();
-          }}
-          className="hover:text-stone-900 hover:underline"
-        >
-          Se déconnecter
-        </button>
-      </div>
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }
 
 function MagicLinkForm() {
