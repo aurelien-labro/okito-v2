@@ -3,15 +3,174 @@
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { LoginGate } from "../_components/login-gate";
 import {
+  type Mailbox,
   type TenantWebhook,
   WEBHOOK_EVENTS,
   type WebhookEvent,
+  connectMailbox,
   createWebhook,
+  deleteMailbox,
   deleteWebhook,
   getCurrentTenantId,
+  listMailboxes,
   listWebhooks,
+  setMailboxStatus,
   setWebhookActive,
 } from "../_lib/api-client";
+
+const MAILBOX_STATUS_LABEL: Record<Mailbox["status"], string> = {
+  active: "Synchronisée",
+  paused: "En pause",
+  error: "Erreur",
+};
+
+const MAILBOX_STATUS_COLOR: Record<Mailbox["status"], string> = {
+  active: "bg-emerald-100 text-emerald-800",
+  paused: "bg-stone-200 text-stone-700",
+  error: "bg-rose-100 text-rose-800",
+};
+
+function MailboxesSection() {
+  const [boxes, setBoxes] = useState<Mailbox[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
+
+  const fetchBoxes = useCallback(async () => {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    try {
+      const res = await listMailboxes(tenantId);
+      setBoxes(res.data);
+      setErr(null);
+    } catch (e) {
+      const status = (e as { status?: number }).status;
+      // 404 = module non monté (OAuth Google non configuré côté API)
+      setErr(
+        status === 404
+          ? "Connexion Gmail non configurée sur l'API (variables GOOGLE_* absentes)."
+          : "Impossible de charger les boîtes.",
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBoxes();
+  }, [fetchBoxes]);
+
+  async function handleConnect() {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    setConnecting(true);
+    try {
+      const res = await connectMailbox(tenantId);
+      window.location.href = res.data.url;
+    } catch (e) {
+      alert(`Connexion impossible : ${e instanceof Error ? e.message : "erreur"}`);
+      setConnecting(false);
+    }
+  }
+
+  async function handleToggle(box: Mailbox) {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    try {
+      await setMailboxStatus(tenantId, box.id, box.status === "paused" ? "active" : "paused");
+      await fetchBoxes();
+    } catch (e) {
+      alert(`Échec : ${e instanceof Error ? e.message : "erreur"}`);
+    }
+  }
+
+  async function handleDelete(box: Mailbox) {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    if (!confirm(`Déconnecter ${box.emailAddress} ? La synchronisation s'arrêtera.`)) return;
+    try {
+      await deleteMailbox(tenantId, box.id);
+      await fetchBoxes();
+    } catch (e) {
+      alert(`Échec : ${e instanceof Error ? e.message : "erreur"}`);
+    }
+  }
+
+  return (
+    <div className="mb-10">
+      <div className="mb-4 flex items-end justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Intégrations — Email</h1>
+          <p className="mt-1 text-sm text-stone-500">
+            Connecte la boîte Gmail du commerce : chaque nouvel email entre dans le journal de
+            Jarvis (lecture seule, révocable à tout moment).
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleConnect}
+          disabled={connecting}
+          className="rounded bg-stone-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+        >
+          {connecting ? "Redirection…" : "Connecter Gmail"}
+        </button>
+      </div>
+
+      {err && (
+        <div className="mb-4 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {err}
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {boxes.length === 0 && !err ? (
+          <div className="rounded border border-stone-200 bg-white px-4 py-6 text-center text-sm text-stone-500">
+            Aucune boîte connectée.
+          </div>
+        ) : (
+          boxes.map((box) => (
+            <div
+              key={box.id}
+              className="rounded border border-stone-200 bg-white px-4 py-3 text-sm"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="truncate font-medium">{box.emailAddress}</div>
+                  <div className="mt-1 text-xs text-stone-500">
+                    {box.lastSyncAt
+                      ? `Dernière sync : ${new Date(box.lastSyncAt).toLocaleString("fr-FR")}`
+                      : "Jamais synchronisée (première sync dans les 5 min)"}
+                  </div>
+                  {box.status === "error" && box.lastError && (
+                    <div className="mt-1 text-xs text-rose-700">{box.lastError}</div>
+                  )}
+                </div>
+                <div className="flex shrink-0 items-center gap-3 text-xs">
+                  <span
+                    className={`rounded px-2 py-0.5 font-medium ${MAILBOX_STATUS_COLOR[box.status]}`}
+                  >
+                    {MAILBOX_STATUS_LABEL[box.status]}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleToggle(box)}
+                    className="text-blue-700 hover:underline"
+                  >
+                    {box.status === "paused" ? "Reprendre" : "Mettre en pause"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(box)}
+                    className="text-rose-700 hover:underline"
+                  >
+                    Déconnecter
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function IntegrationsPage() {
   return (
@@ -69,6 +228,8 @@ function IntegrationsView() {
 
   return (
     <div>
+      <MailboxesSection />
+
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Intégrations — Webhooks</h1>
         <p className="mt-1 text-sm text-stone-500">
