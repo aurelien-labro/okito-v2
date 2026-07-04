@@ -751,6 +751,30 @@ export async function chatWithJarvis(
   });
 }
 
+// --- Inbox (emails ingérés) ---------------------------------------------------
+
+export interface InboxMessage {
+  id: string;
+  channel: "email";
+  from: string | null;
+  to: string | null;
+  subject: string | null;
+  snippet: string | null;
+  receivedAt: string | null;
+  createdAt: string;
+}
+
+export async function listInbox(
+  tenantId: string,
+  opts?: { before?: string; limit?: number },
+): Promise<{ data: InboxMessage[]; nextCursor: string | null }> {
+  const params = new URLSearchParams();
+  if (opts?.before) params.set("before", opts.before);
+  if (opts?.limit) params.set("limit", String(opts.limit));
+  const q = params.toString();
+  return request(`/v1/admin/inbox/${tenantId}${q ? `?${q}` : ""}`);
+}
+
 // --- Invoices (module Admin) --------------------------------------------------
 
 export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue" | "cancelled";

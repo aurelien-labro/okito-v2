@@ -15,6 +15,7 @@ const TOP: NavItem[] = [
 // Modules du produit : ce qui existe aujourd'hui dans OKITO V2/V3. Les cases
 // à venir (Inbox, Site web, Admin, Marketing) sont grisées comme repères de roadmap.
 const MODULES: NavItem[] = [
+  { href: "/inbox", label: "Inbox", icon: "ti-inbox" },
   { href: "/reservations", label: "Agenda", icon: "ti-calendar" },
   { href: "/loyalty", label: "Clients", icon: "ti-users" },
   { href: "/admin", label: "Admin", icon: "ti-file-invoice" },
@@ -26,7 +27,6 @@ const MODULES: NavItem[] = [
 ];
 
 const COMING: { label: string; icon: string }[] = [
-  { label: "Inbox", icon: "ti-inbox" },
   { label: "Site web", icon: "ti-world" },
   { label: "Marketing", icon: "ti-speakerphone" },
 ];
