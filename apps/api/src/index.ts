@@ -15,6 +15,7 @@ import { JarvisActionService } from "./services/jarvis-action.js";
 import { JarvisAdvisorService } from "./services/jarvis-advisor.js";
 import { JarvisExecutor } from "./services/jarvis-executor.js";
 import { JarvisObserverService } from "./services/jarvis-observer.js";
+import { ReviewReplyTool } from "./services/jarvis-tools/review-reply.js";
 import { createLLMClient } from "./services/llm/index.js";
 import { LoyaltyService } from "./services/loyalty.js";
 import { NoShowService } from "./services/no-show.js";
@@ -60,7 +61,8 @@ if (env.DATABASE_URL) {
   services.eventBus = eventBus;
   const jarvisAction = new JarvisActionService(db, eventBus);
   services.jarvisAction = jarvisAction;
-  services.jarvisExecutor = new JarvisExecutor(db, jarvisAction);
+  const jarvisExecutor = new JarvisExecutor(db, jarvisAction);
+  services.jarvisExecutor = jarvisExecutor;
   services.jarvisObserver = new JarvisObserverService(db, jarvisAction);
   services.review = new ReviewService(db, eventBus);
   services.customerPrivacy = new CustomerPrivacyService(db);
@@ -104,6 +106,7 @@ if (env.DATABASE_URL) {
       webhooks: services.eventBus,
     });
     services.jarvisAdvisor = new JarvisAdvisorService(db, llm, eventBus);
+    jarvisExecutor.registerTool(new ReviewReplyTool(db, llm, notifier));
   } else {
     logger.warn("GEMINI_API_KEY absent — moteur conversationnel désactivé");
   }
