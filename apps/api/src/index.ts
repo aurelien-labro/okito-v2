@@ -22,6 +22,7 @@ import { LoyaltyService } from "./services/loyalty.js";
 import { MailboxService } from "./services/mailbox.js";
 import { NoShowService } from "./services/no-show.js";
 import { createNotifier } from "./services/notifier-factory.js";
+import { OnboardingScanService } from "./services/onboarding-scan.js";
 import { ReminderService } from "./services/reminder.js";
 import { ReservationService } from "./services/reservation.js";
 import { ReviewRequestService } from "./services/review-request.js";
@@ -120,6 +121,12 @@ if (env.DATABASE_URL) {
     });
     services.jarvisAdvisor = new JarvisAdvisorService(db, llm, eventBus);
     jarvisExecutor.registerTool(new ReviewReplyTool(db, llm, notifier));
+    services.onboardingScan = new OnboardingScanService(
+      db,
+      llm,
+      eventBus,
+      env.GOOGLE_PLACES_API_KEY,
+    );
   } else {
     logger.warn("GEMINI_API_KEY absent — moteur conversationnel désactivé");
   }

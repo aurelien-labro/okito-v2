@@ -44,6 +44,8 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   /** URL de callback enregistrée dans la console GCP, ex: http://localhost:3001/oauth/google/callback */
   GOOGLE_REDIRECT_URI: z.string().url().optional(),
+  /** Clé API Places (onboarding : scan fiche Google Business). Optionnelle. */
+  GOOGLE_PLACES_API_KEY: z.string().optional(),
   /** UUIDs Supabase Auth des utilisateurs admin (CRUD tenants), séparés par virgule. */
   ADMIN_USER_IDS: z.string().optional(),
   /** Clé secrète Stripe (sk_test_... ou sk_live_...). Active la route checkout + webhook. */
