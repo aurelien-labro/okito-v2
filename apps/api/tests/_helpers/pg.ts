@@ -205,6 +205,21 @@ async function applySchema(pglite: PGlite): Promise<void> {
       created_at timestamptz not null default now()
     );
 
+    create table jarvis_actions (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      type text not null,
+      summary text not null,
+      policy text not null,
+      status text not null,
+      payload jsonb not null default '{}',
+      result jsonb,
+      cancellable_until timestamptz,
+      created_at timestamptz not null default now(),
+      executed_at timestamptz,
+      cancelled_at timestamptz
+    );
+
     create table audit_log (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid references tenants(id) on delete set null,
