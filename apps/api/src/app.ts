@@ -17,6 +17,7 @@ import { adminJarvisBriefRoute } from "./routes/admin-jarvis-brief.js";
 import { adminLoyaltyRoute } from "./routes/admin-loyalty.js";
 import { adminMailboxesRoute, googleOAuthCallbackRoute } from "./routes/admin-mailboxes.js";
 import { adminMembersRoute } from "./routes/admin-members.js";
+import { adminOnboardingRoute } from "./routes/admin-onboarding.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
 import { adminReviewsRoute } from "./routes/admin-reviews.js";
 import { adminScheduleRulesRoute } from "./routes/admin-schedule-rules.js";
@@ -53,6 +54,7 @@ import type { LoyaltyService } from "./services/loyalty.js";
 import type { MailboxService } from "./services/mailbox.js";
 import type { NoShowService } from "./services/no-show.js";
 import type { Notifier } from "./services/notifier.js";
+import type { OnboardingScanService } from "./services/onboarding-scan.js";
 import type { ReminderService } from "./services/reminder.js";
 import type { ReservationService } from "./services/reservation.js";
 import type { ReviewRequestService } from "./services/review-request.js";
@@ -122,6 +124,8 @@ export interface AppServices {
   mailbox?: MailboxService;
   /** Sync Gmail — ajoute la function Inngest 5-min si fournie. */
   gmailSync?: GmailSyncService;
+  /** Onboarding magique — monté sur /v1/admin/onboarding si fourni (LLM requis). */
+  onboardingScan?: OnboardingScanService;
   /** Avis clients — monté sur /v1/admin/reviews et /review si REVIEW_LINK_SECRET fourni. */
   review?: ReviewService;
   /** Service de demandes d'avis (cron) — ajoute la function Inngest matinale si fourni. */
@@ -325,6 +329,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.mailbox) {
       v1Admin.route("/mailboxes", adminMailboxesRoute(services.mailbox));
+    }
+    if (services.onboardingScan) {
+      v1Admin.route("/onboarding", adminOnboardingRoute(services.onboardingScan));
     }
     if (services.review) {
       v1Admin.route("/reviews", adminReviewsRoute(services.review));
