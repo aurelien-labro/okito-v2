@@ -4,6 +4,7 @@ import { createInngestFunctions } from "../inngest/functions.js";
 import { inngest } from "../lib/inngest.js";
 import type { JarvisAdvisorService } from "../services/jarvis-advisor.js";
 import type { JarvisExecutor } from "../services/jarvis-executor.js";
+import type { JarvisObserverService } from "../services/jarvis-observer.js";
 import type { NoShowService } from "../services/no-show.js";
 import type { ReminderService } from "../services/reminder.js";
 import type { ReviewRequestService } from "../services/review-request.js";
@@ -23,6 +24,7 @@ export function inngestRoute(
   reviewRequest?: ReviewRequestService,
   jarvisExecutor?: JarvisExecutor,
   jarvisAdvisor?: JarvisAdvisorService,
+  jarvisObserver?: JarvisObserverService,
 ) {
   const app = new Hono();
   const handler = serve({
@@ -33,6 +35,7 @@ export function inngestRoute(
       reviewRequest,
       jarvisExecutor,
       jarvisAdvisor,
+      jarvisObserver,
     ),
   });
   app.all("/*", handler);

@@ -1,6 +1,7 @@
 import { type Database, type ReservationReview, schema } from "@okito/db";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { HttpError } from "../lib/errors.js";
+import type { EventBusService } from "./event-bus.js";
 
 class DuplicateReviewError extends HttpError {
   constructor() {
@@ -16,7 +17,10 @@ export interface ReviewSummary {
 
 /** Avis clients post-visite. Un avis unique par réservation. */
 export class ReviewService {
-  constructor(private readonly db: Database) {}
+  constructor(
+    private readonly db: Database,
+    private readonly bus?: EventBusService,
+  ) {}
 
   async submit(args: {
     tenantId: string;
@@ -35,6 +39,12 @@ export class ReviewService {
         })
         .returning();
       if (!row) throw new Error("reservation_reviews insert returned no row");
+      this.bus?.publish(args.tenantId, "review.submitted", {
+        reviewId: row.id,
+        reservationId: row.reservationId,
+        rating: row.rating,
+        comment: row.comment,
+      });
       return row;
     } catch (err) {
       if (isUniqueViolation(err)) throw new DuplicateReviewError();
