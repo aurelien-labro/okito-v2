@@ -7,6 +7,17 @@ import type { AppEnv } from "../lib/types.js";
 import type { JarvisAdvisorService } from "../services/jarvis-advisor.js";
 
 const uuidParam = z.string().uuid();
+const chatBodySchema = z.object({
+  messages: z
+    .array(
+      z.object({
+        role: z.enum(["user", "model"]),
+        content: z.string().min(1).max(4000),
+      }),
+    )
+    .min(1)
+    .max(20),
+});
 
 /**
  * Zone "Brief de Jarvis" du dashboard.
@@ -38,6 +49,21 @@ export function adminJarvisBriefRoute(db: Database, advisor?: JarvisAdvisorServi
       .limit(1);
     if (!row) throw new NotFoundError("Aucun brief généré pour ce tenant");
     return c.json({ data: { ...(row.payload as Record<string, unknown>), at: row.createdAt } });
+  });
+
+  // POST /v1/admin/jarvis-brief/:tenantId/chat — question au journal
+  app.post("/:tenantId/chat", async (c) => {
+    if (!advisor) {
+      throw new BadRequestError("Advisor non configuré (LLM absent)", "advisor_unavailable");
+    }
+    const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
+    const body = await c.req.json().catch(() => {
+      throw new BadRequestError("JSON invalide", "invalid_json");
+    });
+    const { messages } = parseOrThrow(chatBodySchema, body, "body");
+    const reply = await advisor.chat(tenantId, messages);
+    if (!reply) throw new BadRequestError("Le LLM n'a pas produit de réponse", "chat_empty");
+    return c.json({ data: { reply } });
   });
 
   // POST /v1/admin/jarvis-brief/:tenantId — régénérer maintenant
