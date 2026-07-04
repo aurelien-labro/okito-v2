@@ -220,6 +220,21 @@ async function applySchema(pglite: PGlite): Promise<void> {
       cancelled_at timestamptz
     );
 
+    create table tenant_mailboxes (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      provider text not null default 'gmail',
+      email_address text not null,
+      access_token text not null,
+      refresh_token text not null,
+      access_token_expires_at timestamptz not null,
+      history_id text,
+      last_sync_at timestamptz,
+      last_error text,
+      status text not null default 'active',
+      created_at timestamptz not null default now()
+    );
+
     create table audit_log (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid references tenants(id) on delete set null,

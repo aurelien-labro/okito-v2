@@ -39,6 +39,11 @@ const envSchema = z.object({
    * Twilio pour le canal WhatsApp — économie 30-40% à partir de ~1000 msg/mois.
    */
   THREE60DIALOG_API_KEY: z.string().optional(),
+  /** OAuth Google (ingestion Gmail). Les 3 requis pour activer la connexion de boîtes. */
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  /** URL de callback enregistrée dans la console GCP, ex: http://localhost:3001/oauth/google/callback */
+  GOOGLE_REDIRECT_URI: z.string().url().optional(),
   /** UUIDs Supabase Auth des utilisateurs admin (CRUD tenants), séparés par virgule. */
   ADMIN_USER_IDS: z.string().optional(),
   /** Clé secrète Stripe (sk_test_... ou sk_live_...). Active la route checkout + webhook. */

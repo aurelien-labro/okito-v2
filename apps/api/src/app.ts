@@ -15,6 +15,7 @@ import { adminIcalRoute } from "./routes/admin-ical.js";
 import { adminJarvisActionsRoute } from "./routes/admin-jarvis-actions.js";
 import { adminJarvisBriefRoute } from "./routes/admin-jarvis-brief.js";
 import { adminLoyaltyRoute } from "./routes/admin-loyalty.js";
+import { adminMailboxesRoute, googleOAuthCallbackRoute } from "./routes/admin-mailboxes.js";
 import { adminMembersRoute } from "./routes/admin-members.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
 import { adminReviewsRoute } from "./routes/admin-reviews.js";
@@ -48,6 +49,7 @@ import type { JarvisAdvisorService } from "./services/jarvis-advisor.js";
 import type { JarvisExecutor } from "./services/jarvis-executor.js";
 import type { JarvisObserverService } from "./services/jarvis-observer.js";
 import type { LoyaltyService } from "./services/loyalty.js";
+import type { MailboxService } from "./services/mailbox.js";
 import type { NoShowService } from "./services/no-show.js";
 import type { Notifier } from "./services/notifier.js";
 import type { ReminderService } from "./services/reminder.js";
@@ -115,6 +117,8 @@ export interface AppServices {
   jarvisAdvisor?: JarvisAdvisorService;
   /** Observer Jarvis — ajoute la function Inngest 10-min si fourni. */
   jarvisObserver?: JarvisObserverService;
+  /** Boîtes Gmail — monté sur /v1/admin/mailboxes + /oauth/google/callback si OAuth configuré. */
+  mailbox?: MailboxService;
   /** Avis clients — monté sur /v1/admin/reviews et /review si REVIEW_LINK_SECRET fourni. */
   review?: ReviewService;
   /** Service de demandes d'avis (cron) — ajoute la function Inngest matinale si fourni. */
@@ -316,6 +320,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     if (services.db) {
       v1Admin.route("/jarvis-brief", adminJarvisBriefRoute(services.db, services.jarvisAdvisor));
     }
+    if (services.mailbox) {
+      v1Admin.route("/mailboxes", adminMailboxesRoute(services.mailbox));
+    }
     if (services.review) {
       v1Admin.route("/reviews", adminReviewsRoute(services.review));
     }
@@ -323,6 +330,11 @@ export function createApp(env: Env, services: AppServices = {}) {
       v1Admin.route("/customers", adminCustomersRoute(services.customerPrivacy, services.audit));
     }
     app.route("/v1/admin", v1Admin);
+  }
+
+  // Callback OAuth Google — public, Google y redirige le navigateur du patron.
+  if (services.mailbox) {
+    app.route("/oauth/google/callback", googleOAuthCallbackRoute(services.mailbox, env.APP_URL));
   }
 
   // Inngest : endpoint scrape par le dashboard pour découvrir + invoquer
