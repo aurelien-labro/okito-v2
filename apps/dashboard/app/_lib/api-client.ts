@@ -711,6 +711,73 @@ export async function chatWithJarvis(
   });
 }
 
+// --- Invoices (module Admin) --------------------------------------------------
+
+export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue" | "cancelled";
+
+export interface InvoiceLine {
+  label: string;
+  quantity: number;
+  unitPriceCents: number;
+}
+
+export interface Invoice {
+  id: string;
+  tenantId: string;
+  number: string;
+  status: InvoiceStatus;
+  customerName: string;
+  customerEmail: string | null;
+  lines: InvoiceLine[];
+  amountCents: number;
+  currency: string;
+  issuedAt: string | null;
+  dueDate: string | null;
+  paidAt: string | null;
+  remindersSent: number;
+  lastReminderAt: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export async function listInvoices(
+  tenantId: string,
+  status?: InvoiceStatus,
+): Promise<{ data: Invoice[] }> {
+  const q = status ? `?status=${status}` : "";
+  return request(`/v1/admin/invoices/${tenantId}${q}`);
+}
+
+export async function createInvoice(
+  tenantId: string,
+  input: {
+    customerName: string;
+    customerEmail?: string | null;
+    lines: InvoiceLine[];
+    dueInDays?: number;
+  },
+): Promise<{ data: Invoice }> {
+  return request(`/v1/admin/invoices/${tenantId}`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function sendInvoice(tenantId: string, id: string): Promise<{ data: Invoice }> {
+  return request(`/v1/admin/invoices/${tenantId}/${id}/send`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+export async function markInvoicePaid(tenantId: string, id: string): Promise<{ data: Invoice }> {
+  return request(`/v1/admin/invoices/${tenantId}/${id}/paid`, { method: "POST" });
+}
+
+export async function cancelInvoice(tenantId: string, id: string): Promise<{ data: Invoice }> {
+  return request(`/v1/admin/invoices/${tenantId}/${id}/cancel`, { method: "POST" });
+}
+
 // --- Onboarding (diagnostic Jarvis) -------------------------------------------
 
 export interface WebsiteScan {
