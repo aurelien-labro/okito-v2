@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { serve } from "inngest/hono";
 import { createInngestFunctions } from "../inngest/functions.js";
 import { inngest } from "../lib/inngest.js";
+import type { JarvisAdvisorService } from "../services/jarvis-advisor.js";
 import type { JarvisExecutor } from "../services/jarvis-executor.js";
 import type { NoShowService } from "../services/no-show.js";
 import type { ReminderService } from "../services/reminder.js";
@@ -21,11 +22,18 @@ export function inngestRoute(
   noShow?: NoShowService,
   reviewRequest?: ReviewRequestService,
   jarvisExecutor?: JarvisExecutor,
+  jarvisAdvisor?: JarvisAdvisorService,
 ) {
   const app = new Hono();
   const handler = serve({
     client: inngest,
-    functions: createInngestFunctions(reminder, noShow, reviewRequest, jarvisExecutor),
+    functions: createInngestFunctions(
+      reminder,
+      noShow,
+      reviewRequest,
+      jarvisExecutor,
+      jarvisAdvisor,
+    ),
   });
   app.all("/*", handler);
   return app;

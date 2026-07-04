@@ -12,6 +12,7 @@ import { ConversationService } from "./services/conversation.js";
 import { CustomerPrivacyService } from "./services/customer-privacy.js";
 import { EventBusService } from "./services/event-bus.js";
 import { JarvisActionService } from "./services/jarvis-action.js";
+import { JarvisAdvisorService } from "./services/jarvis-advisor.js";
 import { JarvisExecutor } from "./services/jarvis-executor.js";
 import { createLLMClient } from "./services/llm/index.js";
 import { LoyaltyService } from "./services/loyalty.js";
@@ -100,6 +101,7 @@ if (env.DATABASE_URL) {
       scheduleRules: services.scheduleRules,
       webhooks: services.eventBus,
     });
+    services.jarvisAdvisor = new JarvisAdvisorService(db, llm, eventBus);
   } else {
     logger.warn("GEMINI_API_KEY absent — moteur conversationnel désactivé");
   }

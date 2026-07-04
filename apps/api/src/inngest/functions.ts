@@ -1,6 +1,7 @@
 import type { InngestFunction } from "inngest";
 import { inngest } from "../lib/inngest.js";
 import { logger } from "../lib/logger.js";
+import type { JarvisAdvisorService } from "../services/jarvis-advisor.js";
 import type { JarvisExecutor } from "../services/jarvis-executor.js";
 import type { NoShowService } from "../services/no-show.js";
 import type { ReminderService } from "../services/reminder.js";
@@ -24,6 +25,7 @@ export function createInngestFunctions(
   noShow?: NoShowService,
   reviewRequest?: ReviewRequestService,
   jarvisExecutor?: JarvisExecutor,
+  jarvisAdvisor?: JarvisAdvisorService,
 ): InngestFunction.Any[] {
   const dailyReminders = inngest.createFunction(
     {
@@ -90,6 +92,24 @@ export function createInngestFunctions(
       },
     );
     functions.push(runJarvisActions);
+  }
+
+  if (jarvisAdvisor) {
+    const morningBriefs = inngest.createFunction(
+      {
+        id: "jarvis-morning-briefs",
+        name: "Briefs matinaux Jarvis (8h Europe/Paris)",
+        triggers: [{ cron: "TZ=Europe/Paris 0 8 * * *" }],
+      },
+      async ({ step }) => {
+        const result = await step.run("run-for-all-tenants", async () =>
+          jarvisAdvisor.runForAllTenants(),
+        );
+        logger.info({ result }, "Inngest: jarvisMorningBriefs terminé");
+        return result;
+      },
+    );
+    functions.push(morningBriefs);
   }
 
   return functions;
