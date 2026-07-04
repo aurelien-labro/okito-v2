@@ -17,6 +17,7 @@ const TOP: NavItem[] = [
 const MODULES: NavItem[] = [
   { href: "/reservations", label: "Agenda", icon: "ti-calendar" },
   { href: "/loyalty", label: "Clients", icon: "ti-users" },
+  { href: "/admin", label: "Admin", icon: "ti-file-invoice" },
   { href: "/integrations", label: "Intégrations", icon: "ti-plug" },
   { href: "/waitlist", label: "Liste d'attente", icon: "ti-hourglass" },
   { href: "/service-catalog", label: "Prestations", icon: "ti-list-details" },
@@ -27,7 +28,6 @@ const MODULES: NavItem[] = [
 const COMING: { label: string; icon: string }[] = [
   { label: "Inbox", icon: "ti-inbox" },
   { label: "Site web", icon: "ti-world" },
-  { label: "Admin", icon: "ti-file-invoice" },
   { label: "Marketing", icon: "ti-speakerphone" },
 ];
 
