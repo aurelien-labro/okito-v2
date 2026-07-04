@@ -54,8 +54,10 @@ function BriefBanner() {
       const res = await getJarvisBrief(tenantId);
       setBrief(res.data);
       setState("ready");
-    } catch (e) {
-      setState((e as { status?: number }).status === 404 ? "empty" : "unavailable");
+    } catch {
+      // Pas de brief encore (404) ou session/API indisponible : on invite juste
+      // à générer. Le vrai cas "LLM absent" est détecté à la régénération.
+      setState("empty");
     }
   }, []);
 
