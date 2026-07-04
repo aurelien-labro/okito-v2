@@ -696,6 +696,21 @@ export async function regenerateJarvisBrief(tenantId: string): Promise<{ data: J
   return request(`/v1/admin/jarvis-brief/${tenantId}`, { method: "POST" });
 }
 
+export interface JarvisChatMessage {
+  role: "user" | "model";
+  content: string;
+}
+
+export async function chatWithJarvis(
+  tenantId: string,
+  messages: JarvisChatMessage[],
+): Promise<{ data: { reply: string } }> {
+  return request(`/v1/admin/jarvis-brief/${tenantId}/chat`, {
+    method: "POST",
+    body: JSON.stringify({ messages }),
+  });
+}
+
 // --- Mailboxes (Gmail) --------------------------------------------------------
 
 export type MailboxStatus = "active" | "paused" | "error";

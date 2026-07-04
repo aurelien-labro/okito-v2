@@ -93,6 +93,31 @@ describe("JarvisAdvisorService", () => {
     expect(await advisor.generateBrief(tenantId)).toBeNull();
   });
 
+  it("chat : injecte le journal en contexte système et relaie la conversation", async () => {
+    await ctx.db.insert(schema.events).values([
+      { tenantId, type: "reservation.created", payload: { id: "r1" } },
+      { tenantId, type: "email.received", payload: { subject: "Devis" } },
+    ]);
+    const llm = fakeLLM("Tu as eu 1 résa et 1 email cette semaine.");
+    const advisor = new JarvisAdvisorService(ctx.db, llm);
+
+    const reply = await advisor.chat(tenantId, [{ role: "user", content: "Résume ma semaine" }]);
+
+    expect(reply).toContain("1 résa");
+    const req = llm.complete.mock.calls[0]?.[0] as {
+      system: string;
+      messages: Array<{ role: string; content: string }>;
+    };
+    expect(req.system).toContain("reservation.created : 1");
+    expect(req.system).toContain("email.received : 1");
+    expect(req.messages).toEqual([{ role: "user", content: "Résume ma semaine" }]);
+  });
+
+  it("chat : LLM muet → null", async () => {
+    const advisor = new JarvisAdvisorService(ctx.db, fakeLLM(null));
+    expect(await advisor.chat(tenantId, [{ role: "user", content: "?" }])).toBeNull();
+  });
+
   it("runForAllTenants : un tenant en échec ne bloque pas les autres", async () => {
     const [other] = await ctx.db
       .insert(schema.tenants)

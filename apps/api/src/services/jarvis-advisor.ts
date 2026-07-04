@@ -27,6 +27,16 @@ Règles :
 - Termine par UNE recommandation actionnable si les données le justifient, sinon rien.
 - N'invente jamais un chiffre : si le journal est vide, dis-le simplement.`;
 
+const CHAT_SYSTEM_PROMPT = `Tu es Jarvis, l'assistant de pilotage d'un commerce.
+Le patron te pose des questions sur son activité ; tu réponds à partir du
+journal d'événements fourni ci-dessous.
+
+Règles :
+- Français, tutoiement, direct et concret. 100 mots maximum.
+- Appuie-toi uniquement sur le journal : n'invente jamais un chiffre.
+- Si le journal ne permet pas de répondre, dis-le et propose ce que tu peux voir.
+- Termine par une suggestion actionnable seulement si elle est évidente.`;
+
 /**
  * Advisor Jarvis (fondation V3) : génère le brief matinal de chaque tenant
  * à partir du journal d'événements (event bus, dernières 24 h).
@@ -84,6 +94,45 @@ export class JarvisAdvisorService {
       "jarvis",
     );
     return brief;
+  }
+
+  /**
+   * Chat avec le patron : mêmes données que le brief (journal 7 jours en
+   * comptes + 20 événements récents + actions en attente), injectées en
+   * contexte système, puis la conversation. Retourne null si le LLM est muet.
+   */
+  async chat(
+    tenantId: string,
+    messages: Array<{ role: "user" | "model"; content: string }>,
+    now = new Date(),
+  ): Promise<string | null> {
+    const since = new Date(now.getTime() - 7 * 24 * 3600_000);
+    const events = await this.db
+      .select()
+      .from(schema.events)
+      .where(and(eq(schema.events.tenantId, tenantId), gte(schema.events.createdAt, since)))
+      .orderBy(desc(schema.events.createdAt))
+      .limit(200);
+    const pendingApprovals = await this.db
+      .select()
+      .from(schema.jarvisActions)
+      .where(
+        and(
+          eq(schema.jarvisActions.tenantId, tenantId),
+          eq(schema.jarvisActions.status, "awaiting_approval"),
+        ),
+      );
+
+    const response = await this.llm.complete({
+      system: `${CHAT_SYSTEM_PROMPT}
+
+Données du commerce (journal des 7 derniers jours) :
+${buildContext(events, pendingApprovals.length)}`,
+      messages: messages.slice(-12),
+      temperature: 0.3,
+      maxOutputTokens: 500,
+    });
+    return response.text?.trim() || null;
   }
 
   /** Un passage sur tous les tenants actifs. Appelé par le cron Inngest. */
