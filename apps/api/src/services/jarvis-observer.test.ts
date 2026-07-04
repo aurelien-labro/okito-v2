@@ -69,6 +69,31 @@ describe("JarvisObserverService", () => {
     expect(await actions.list(tenantId)).toHaveLength(1);
   });
 
+  it("facture overdue → propose invoice.remind (idempotent)", async () => {
+    await ctx.db.insert(schema.events).values({
+      tenantId,
+      type: "invoice.overdue",
+      payload: {
+        invoiceId: "inv-1",
+        number: "2026-0007",
+        amountCents: 89000,
+        currency: "EUR",
+        customerName: "Traiteur Lebon",
+      },
+    });
+
+    const first = await observer.runOnce();
+    expect(first.actionsProposed).toBe(1);
+    const [action] = await actions.list(tenantId);
+    expect(action).toMatchObject({ type: "invoice.remind", policy: "auto_cancellable" });
+    expect(action?.summary).toContain("2026-0007");
+    expect(action?.summary).toContain("890.00 EUR");
+
+    const second = await observer.runOnce();
+    expect(second.actionsProposed).toBe(0);
+    expect(await actions.list(tenantId)).toHaveLength(1);
+  });
+
   it("ignore les événements hors fenêtre", async () => {
     await ctx.db.insert(schema.events).values({
       tenantId,

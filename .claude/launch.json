@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "okito-api",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@okito/api", "dev"],
+      "port": 3001
+    },
+    {
+      "name": "okito-dashboard",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@okito/dashboard", "dev"],
+      "port": 3000
+    }
+  ]
+}

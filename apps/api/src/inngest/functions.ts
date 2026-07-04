@@ -2,6 +2,7 @@ import type { InngestFunction } from "inngest";
 import { inngest } from "../lib/inngest.js";
 import { logger } from "../lib/logger.js";
 import type { GmailSyncService } from "../services/gmail-sync.js";
+import type { InvoiceOverdueRunner } from "../services/invoice-overdue-runner.js";
 import type { JarvisAdvisorService } from "../services/jarvis-advisor.js";
 import type { JarvisExecutor } from "../services/jarvis-executor.js";
 import type { JarvisObserverService } from "../services/jarvis-observer.js";
@@ -30,6 +31,7 @@ export function createInngestFunctions(
   jarvisAdvisor?: JarvisAdvisorService,
   jarvisObserver?: JarvisObserverService,
   gmailSync?: GmailSyncService,
+  invoiceOverdue?: InvoiceOverdueRunner,
 ): InngestFunction.Any[] {
   const dailyReminders = inngest.createFunction(
     {
@@ -150,6 +152,22 @@ export function createInngestFunctions(
       },
     );
     functions.push(syncGmail);
+  }
+
+  if (invoiceOverdue) {
+    const markOverdue = inngest.createFunction(
+      {
+        id: "invoices-mark-overdue",
+        name: "Factures échues → overdue (chaque heure)",
+        triggers: [{ cron: "15 * * * *" }],
+      },
+      async ({ step }) => {
+        const result = await step.run("mark-overdue", async () => invoiceOverdue.runOnce());
+        if (result.marked > 0) logger.info({ result }, "Inngest: invoicesMarkOverdue terminé");
+        return result;
+      },
+    );
+    functions.push(markOverdue);
   }
 
   return functions;

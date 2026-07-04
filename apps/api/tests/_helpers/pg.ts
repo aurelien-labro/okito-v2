@@ -235,6 +235,27 @@ async function applySchema(pglite: PGlite): Promise<void> {
       created_at timestamptz not null default now()
     );
 
+    create table invoices (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      number text not null,
+      status text not null default 'draft',
+      customer_name text not null,
+      customer_email text,
+      lines jsonb not null default '[]',
+      amount_cents integer not null default 0,
+      currency text not null default 'EUR',
+      issued_at timestamptz,
+      due_date timestamptz,
+      paid_at timestamptz,
+      reminders_sent integer not null default 0,
+      last_reminder_at timestamptz,
+      notes text,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      unique (tenant_id, number)
+    );
+
     create table audit_log (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid references tenants(id) on delete set null,
