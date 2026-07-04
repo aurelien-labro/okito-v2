@@ -18,6 +18,7 @@ import { JarvisObserverService } from "./services/jarvis-observer.js";
 import { ReviewReplyTool } from "./services/jarvis-tools/review-reply.js";
 import { createLLMClient } from "./services/llm/index.js";
 import { LoyaltyService } from "./services/loyalty.js";
+import { MailboxService } from "./services/mailbox.js";
 import { NoShowService } from "./services/no-show.js";
 import { createNotifier } from "./services/notifier-factory.js";
 import { ReminderService } from "./services/reminder.js";
@@ -65,6 +66,15 @@ if (env.DATABASE_URL) {
   services.jarvisExecutor = jarvisExecutor;
   services.jarvisObserver = new JarvisObserverService(db, jarvisAction);
   services.review = new ReviewService(db, eventBus);
+  if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI) {
+    services.mailbox = new MailboxService(db, {
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
+      redirectUri: env.GOOGLE_REDIRECT_URI,
+    });
+  } else {
+    logger.warn("OAuth Google absent — connexion de boîtes Gmail désactivée");
+  }
   services.customerPrivacy = new CustomerPrivacyService(db);
   services.db = db;
 
