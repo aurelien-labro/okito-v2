@@ -711,6 +711,48 @@ export async function chatWithJarvis(
   });
 }
 
+// --- Onboarding (diagnostic Jarvis) -------------------------------------------
+
+export interface WebsiteScan {
+  url: string;
+  reachable: boolean;
+  httpStatus: number | null;
+  responseTimeMs: number | null;
+  https: boolean;
+  title: string | null;
+  metaDescription: string | null;
+  hasViewportMeta: boolean;
+  htmlBytes: number | null;
+  error?: string;
+}
+
+export interface GoogleBusinessScan {
+  found: boolean;
+  name: string | null;
+  rating: number | null;
+  reviewCount: number | null;
+  address: string | null;
+  openNow: boolean | null;
+  error?: string;
+}
+
+export interface OnboardingDiagnostic {
+  text: string;
+  website: WebsiteScan | null;
+  business: GoogleBusinessScan | null;
+  generatedAt: string;
+}
+
+export async function runOnboardingDiagnostic(
+  tenantId: string,
+  input: { websiteUrl?: string; businessQuery?: string },
+): Promise<{ data: OnboardingDiagnostic }> {
+  return request(`/v1/admin/onboarding/${tenantId}/diagnostic`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 // --- Mailboxes (Gmail) --------------------------------------------------------
 
 export type MailboxStatus = "active" | "paused" | "error";

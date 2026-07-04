@@ -7,6 +7,7 @@ import { TenantSwitcher } from "./tenant-switcher";
 const NAV = [
   { href: "/", label: "Vue d'ensemble" },
   { href: "/jarvis", label: "Jarvis" },
+  { href: "/onboarding", label: "Diagnostic" },
   { href: "/reservations", label: "Réservations" },
   { href: "/tenants", label: "Tenants" },
   { href: "/audit", label: "Audit" },
