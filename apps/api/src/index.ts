@@ -11,6 +11,7 @@ import { ChatService } from "./services/chat.js";
 import { ConversationService } from "./services/conversation.js";
 import { CustomerPrivacyService } from "./services/customer-privacy.js";
 import { EventBusService } from "./services/event-bus.js";
+import { GmailSyncService } from "./services/gmail-sync.js";
 import { JarvisActionService } from "./services/jarvis-action.js";
 import { JarvisAdvisorService } from "./services/jarvis-advisor.js";
 import { JarvisExecutor } from "./services/jarvis-executor.js";
@@ -67,11 +68,13 @@ if (env.DATABASE_URL) {
   services.jarvisObserver = new JarvisObserverService(db, jarvisAction);
   services.review = new ReviewService(db, eventBus);
   if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI) {
-    services.mailbox = new MailboxService(db, {
+    const mailbox = new MailboxService(db, {
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
       redirectUri: env.GOOGLE_REDIRECT_URI,
     });
+    services.mailbox = mailbox;
+    services.gmailSync = new GmailSyncService(db, mailbox, eventBus);
   } else {
     logger.warn("OAuth Google absent — connexion de boîtes Gmail désactivée");
   }

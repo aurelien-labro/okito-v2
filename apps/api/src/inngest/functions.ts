@@ -1,6 +1,7 @@
 import type { InngestFunction } from "inngest";
 import { inngest } from "../lib/inngest.js";
 import { logger } from "../lib/logger.js";
+import type { GmailSyncService } from "../services/gmail-sync.js";
 import type { JarvisAdvisorService } from "../services/jarvis-advisor.js";
 import type { JarvisExecutor } from "../services/jarvis-executor.js";
 import type { JarvisObserverService } from "../services/jarvis-observer.js";
@@ -28,6 +29,7 @@ export function createInngestFunctions(
   jarvisExecutor?: JarvisExecutor,
   jarvisAdvisor?: JarvisAdvisorService,
   jarvisObserver?: JarvisObserverService,
+  gmailSync?: GmailSyncService,
 ): InngestFunction.Any[] {
   const dailyReminders = inngest.createFunction(
     {
@@ -130,6 +132,24 @@ export function createInngestFunctions(
       },
     );
     functions.push(observeEvents);
+  }
+
+  if (gmailSync) {
+    const syncGmail = inngest.createFunction(
+      {
+        id: "gmail-sync",
+        name: "Sync boîtes Gmail (toutes les 5 min)",
+        triggers: [{ cron: "*/5 * * * *" }],
+      },
+      async ({ step }) => {
+        const result = await step.run("run-once", async () => gmailSync.runOnce());
+        if (result.emailsIngested > 0 || result.errors > 0) {
+          logger.info({ result }, "Inngest: gmailSync terminé");
+        }
+        return result;
+      },
+    );
+    functions.push(syncGmail);
   }
 
   return functions;
