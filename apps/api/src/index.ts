@@ -14,6 +14,7 @@ import { EventBusService } from "./services/event-bus.js";
 import { JarvisActionService } from "./services/jarvis-action.js";
 import { JarvisAdvisorService } from "./services/jarvis-advisor.js";
 import { JarvisExecutor } from "./services/jarvis-executor.js";
+import { JarvisObserverService } from "./services/jarvis-observer.js";
 import { createLLMClient } from "./services/llm/index.js";
 import { LoyaltyService } from "./services/loyalty.js";
 import { NoShowService } from "./services/no-show.js";
@@ -60,7 +61,8 @@ if (env.DATABASE_URL) {
   const jarvisAction = new JarvisActionService(db, eventBus);
   services.jarvisAction = jarvisAction;
   services.jarvisExecutor = new JarvisExecutor(db, jarvisAction);
-  services.review = new ReviewService(db);
+  services.jarvisObserver = new JarvisObserverService(db, jarvisAction);
+  services.review = new ReviewService(db, eventBus);
   services.customerPrivacy = new CustomerPrivacyService(db);
   services.db = db;
 

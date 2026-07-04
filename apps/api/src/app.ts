@@ -46,6 +46,7 @@ import type { BusinessEventEmitter } from "./services/event-bus.js";
 import type { JarvisActionService } from "./services/jarvis-action.js";
 import type { JarvisAdvisorService } from "./services/jarvis-advisor.js";
 import type { JarvisExecutor } from "./services/jarvis-executor.js";
+import type { JarvisObserverService } from "./services/jarvis-observer.js";
 import type { LoyaltyService } from "./services/loyalty.js";
 import type { NoShowService } from "./services/no-show.js";
 import type { Notifier } from "./services/notifier.js";
@@ -112,6 +113,8 @@ export interface AppServices {
   jarvisExecutor?: JarvisExecutor;
   /** Advisor Jarvis — ajoute la function Inngest brief matinal si fourni. */
   jarvisAdvisor?: JarvisAdvisorService;
+  /** Observer Jarvis — ajoute la function Inngest 10-min si fourni. */
+  jarvisObserver?: JarvisObserverService;
   /** Avis clients — monté sur /v1/admin/reviews et /review si REVIEW_LINK_SECRET fourni. */
   review?: ReviewService;
   /** Service de demandes d'avis (cron) — ajoute la function Inngest matinale si fourni. */
@@ -333,6 +336,7 @@ export function createApp(env: Env, services: AppServices = {}) {
         services.reviewRequest,
         services.jarvisExecutor,
         services.jarvisAdvisor,
+        services.jarvisObserver,
       ),
     );
   }

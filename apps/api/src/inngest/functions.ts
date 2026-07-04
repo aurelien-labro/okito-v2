@@ -3,6 +3,7 @@ import { inngest } from "../lib/inngest.js";
 import { logger } from "../lib/logger.js";
 import type { JarvisAdvisorService } from "../services/jarvis-advisor.js";
 import type { JarvisExecutor } from "../services/jarvis-executor.js";
+import type { JarvisObserverService } from "../services/jarvis-observer.js";
 import type { NoShowService } from "../services/no-show.js";
 import type { ReminderService } from "../services/reminder.js";
 import type { ReviewRequestService } from "../services/review-request.js";
@@ -26,6 +27,7 @@ export function createInngestFunctions(
   reviewRequest?: ReviewRequestService,
   jarvisExecutor?: JarvisExecutor,
   jarvisAdvisor?: JarvisAdvisorService,
+  jarvisObserver?: JarvisObserverService,
 ): InngestFunction.Any[] {
   const dailyReminders = inngest.createFunction(
     {
@@ -110,6 +112,24 @@ export function createInngestFunctions(
       },
     );
     functions.push(morningBriefs);
+  }
+
+  if (jarvisObserver) {
+    const observeEvents = inngest.createFunction(
+      {
+        id: "jarvis-observer",
+        name: "Observer Jarvis (toutes les 10 min)",
+        triggers: [{ cron: "*/10 * * * *" }],
+      },
+      async ({ step }) => {
+        const result = await step.run("run-once", async () => jarvisObserver.runOnce());
+        if (result.actionsProposed > 0) {
+          logger.info({ result }, "Inngest: jarvisObserver terminé");
+        }
+        return result;
+      },
+    );
+    functions.push(observeEvents);
   }
 
   return functions;
