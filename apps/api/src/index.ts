@@ -12,10 +12,13 @@ import { ConversationService } from "./services/conversation.js";
 import { CustomerPrivacyService } from "./services/customer-privacy.js";
 import { EventBusService } from "./services/event-bus.js";
 import { GmailSyncService } from "./services/gmail-sync.js";
+import { InvoiceOverdueRunner } from "./services/invoice-overdue-runner.js";
+import { InvoiceService } from "./services/invoice.js";
 import { JarvisActionService } from "./services/jarvis-action.js";
 import { JarvisAdvisorService } from "./services/jarvis-advisor.js";
 import { JarvisExecutor } from "./services/jarvis-executor.js";
 import { JarvisObserverService } from "./services/jarvis-observer.js";
+import { InvoiceRemindTool } from "./services/jarvis-tools/invoice-remind.js";
 import { ReviewReplyTool } from "./services/jarvis-tools/review-reply.js";
 import { createLLMClient } from "./services/llm/index.js";
 import { LoyaltyService } from "./services/loyalty.js";
@@ -68,6 +71,9 @@ if (env.DATABASE_URL) {
   services.jarvisExecutor = jarvisExecutor;
   services.jarvisObserver = new JarvisObserverService(db, jarvisAction);
   services.review = new ReviewService(db, eventBus);
+  const invoice = new InvoiceService(db, eventBus);
+  services.invoice = invoice;
+  services.invoiceOverdue = new InvoiceOverdueRunner(db, invoice);
   if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI) {
     const mailbox = new MailboxService(db, {
       clientId: env.GOOGLE_CLIENT_ID,
@@ -121,6 +127,7 @@ if (env.DATABASE_URL) {
     });
     services.jarvisAdvisor = new JarvisAdvisorService(db, llm, eventBus);
     jarvisExecutor.registerTool(new ReviewReplyTool(db, llm, notifier));
+    jarvisExecutor.registerTool(new InvoiceRemindTool(db, llm, notifier, invoice));
     services.onboardingScan = new OnboardingScanService(
       db,
       llm,

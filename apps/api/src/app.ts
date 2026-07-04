@@ -12,6 +12,7 @@ import { metricsMiddleware } from "./middleware/metrics.js";
 import { adminAuditRoute } from "./routes/admin-audit.js";
 import { adminCustomersRoute } from "./routes/admin-customers.js";
 import { adminIcalRoute } from "./routes/admin-ical.js";
+import { adminInvoicesRoute } from "./routes/admin-invoices.js";
 import { adminJarvisActionsRoute } from "./routes/admin-jarvis-actions.js";
 import { adminJarvisBriefRoute } from "./routes/admin-jarvis-brief.js";
 import { adminLoyaltyRoute } from "./routes/admin-loyalty.js";
@@ -46,6 +47,8 @@ import type { ChatService } from "./services/chat.js";
 import type { CustomerPrivacyService } from "./services/customer-privacy.js";
 import type { BusinessEventEmitter } from "./services/event-bus.js";
 import type { GmailSyncService } from "./services/gmail-sync.js";
+import type { InvoiceOverdueRunner } from "./services/invoice-overdue-runner.js";
+import type { InvoiceService } from "./services/invoice.js";
 import type { JarvisActionService } from "./services/jarvis-action.js";
 import type { JarvisAdvisorService } from "./services/jarvis-advisor.js";
 import type { JarvisExecutor } from "./services/jarvis-executor.js";
@@ -124,6 +127,10 @@ export interface AppServices {
   mailbox?: MailboxService;
   /** Sync Gmail — ajoute la function Inngest 5-min si fournie. */
   gmailSync?: GmailSyncService;
+  /** Factures clients — monté sur /v1/admin/invoices si fourni. */
+  invoice?: InvoiceService;
+  /** Runner cron overdue — ajoute la function Inngest horaire si fourni. */
+  invoiceOverdue?: InvoiceOverdueRunner;
   /** Onboarding magique — monté sur /v1/admin/onboarding si fourni (LLM requis). */
   onboardingScan?: OnboardingScanService;
   /** Avis clients — monté sur /v1/admin/reviews et /review si REVIEW_LINK_SECRET fourni. */
@@ -324,6 +331,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     if (services.jarvisAction) {
       v1Admin.route("/jarvis-actions", adminJarvisActionsRoute(services.jarvisAction));
     }
+    if (services.invoice) {
+      v1Admin.route("/invoices", adminInvoicesRoute(services.invoice));
+    }
     if (services.db) {
       v1Admin.route("/jarvis-brief", adminJarvisBriefRoute(services.db, services.jarvisAdvisor));
     }
@@ -360,6 +370,7 @@ export function createApp(env: Env, services: AppServices = {}) {
         services.jarvisAdvisor,
         services.jarvisObserver,
         services.gmailSync,
+        services.invoiceOverdue,
       ),
     );
   }
