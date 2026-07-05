@@ -46,6 +46,8 @@ export const supplierInvoices = pgTable(
 
     amountCents: integer("amount_cents").notNull(),
     currency: text("currency").notNull().default("EUR"),
+    /** Taux de TVA en basis points (2000 = 20%). Montants stockes TTC. */
+    vatRateBps: integer("vat_rate_bps").notNull().default(2000),
     /** Catégorie compta libre : "matières premières", "loyer", "énergie"… */
     category: text("category"),
 

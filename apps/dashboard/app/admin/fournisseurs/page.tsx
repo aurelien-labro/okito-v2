@@ -189,6 +189,9 @@ function SupplierInvoicesView() {
               Factures clients
             </Link>
             <span className="font-semibold text-stone-900">Fournisseurs</span>
+            <Link href="/admin/tva" className="text-stone-500 hover:text-stone-800 hover:underline">
+              TVA
+            </Link>
           </div>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">Factures fournisseurs</h1>
           <p className="mt-1 text-sm text-stone-500">

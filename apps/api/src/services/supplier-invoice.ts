@@ -14,6 +14,8 @@ export interface SupplierInvoiceCreateInput {
   invoiceNumber?: string | null;
   amountCents: number;
   currency?: string;
+  /** Taux de TVA en basis points (2000 = 20%). */
+  vatRateBps?: number;
   category?: string | null;
   invoiceDate?: Date | null;
   dueDate?: Date | null;
@@ -67,6 +69,7 @@ export class SupplierInvoiceService {
         invoiceNumber: input.invoiceNumber ?? null,
         amountCents: input.amountCents,
         currency: input.currency ?? "EUR",
+        vatRateBps: input.vatRateBps ?? 2000,
         category: input.category ?? null,
         invoiceDate: input.invoiceDate ?? null,
         dueDate: input.dueDate ?? null,

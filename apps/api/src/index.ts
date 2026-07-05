@@ -47,6 +47,7 @@ import { SupplierInvoiceService } from "./services/supplier-invoice.js";
 import { TableService } from "./services/table.js";
 import { TenantMemberService } from "./services/tenant-member.js";
 import { TenantService } from "./services/tenant.js";
+import { VatReportService } from "./services/vat-report.js";
 import { WaitlistService } from "./services/waitlist.js";
 import { WebhookDispatchService } from "./services/webhook-dispatch.js";
 import { WebhookService } from "./services/webhook.js";
@@ -88,6 +89,7 @@ if (env.DATABASE_URL) {
   const invoice = new InvoiceService(db, eventBus);
   services.invoice = invoice;
   services.invoiceOverdue = new InvoiceOverdueRunner(db, invoice);
+  services.vatReport = new VatReportService(db);
   if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI) {
     const mailbox = new MailboxService(db, {
       clientId: env.GOOGLE_CLIENT_ID,

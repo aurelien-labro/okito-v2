@@ -14,6 +14,8 @@ export interface InvoiceCreateInput {
   customerEmail?: string | null;
   lines: InvoiceLine[];
   currency?: string;
+  /** Taux de TVA en basis points (2000 = 20%). */
+  vatRateBps?: number;
   dueInDays?: number;
   notes?: string | null;
 }
@@ -54,6 +56,7 @@ export class InvoiceService {
         lines: input.lines,
         amountCents,
         currency: input.currency ?? "EUR",
+        vatRateBps: input.vatRateBps ?? 2000,
         notes: input.notes ?? null,
       })
       .returning();

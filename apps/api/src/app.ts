@@ -34,6 +34,7 @@ import { adminStatsRoute } from "./routes/admin-stats.js";
 import { adminSupplierInvoicesRoute } from "./routes/admin-supplier-invoices.js";
 import { adminTablesRoute } from "./routes/admin-tables.js";
 import { adminTenantsRoute } from "./routes/admin-tenants.js";
+import { adminVatReportRoute } from "./routes/admin-vat-report.js";
 import { adminWaitlistRoute } from "./routes/admin-waitlist.js";
 import { adminWebhooksRoute } from "./routes/admin-webhooks.js";
 import { chatRoute } from "./routes/chat.js";
@@ -86,6 +87,7 @@ import type { SupplierInvoiceService } from "./services/supplier-invoice.js";
 import type { TableService } from "./services/table.js";
 import type { TenantMemberService } from "./services/tenant-member.js";
 import type { TenantService } from "./services/tenant.js";
+import type { VatReportService } from "./services/vat-report.js";
 import type { WaitlistService } from "./services/waitlist.js";
 import type { WebhookService } from "./services/webhook.js";
 
@@ -160,6 +162,8 @@ export interface AppServices {
   invoice?: InvoiceService;
   /** Runner cron overdue — ajoute la function Inngest horaire si fourni. */
   invoiceOverdue?: InvoiceOverdueRunner;
+  /** Rapport TVA mensuel — monté sur /v1/admin/vat-report si fourni. */
+  vatReport?: VatReportService;
   /** Factures fournisseurs — monté sur /v1/admin/supplier-invoices si fourni. */
   supplierInvoice?: SupplierInvoiceService;
   /** Extraction LLM des factures fournisseurs — active POST /extract si fournie. */
@@ -371,6 +375,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.invoice) {
       v1Admin.route("/invoices", adminInvoicesRoute(services.invoice));
+    }
+    if (services.vatReport) {
+      v1Admin.route("/vat-report", adminVatReportRoute(services.vatReport));
     }
     if (services.supplierInvoice) {
       v1Admin.route(
