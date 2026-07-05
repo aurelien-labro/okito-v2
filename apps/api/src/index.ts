@@ -4,6 +4,7 @@ import { getDb } from "@okito/db";
 import { type AppServices, createApp } from "./app.js";
 import { loadEnv } from "./lib/env.js";
 import { logger } from "./lib/logger.js";
+import { SecretBox } from "./lib/secret-box.js";
 import { initSentry } from "./lib/sentry.js";
 import { AuditLogService } from "./services/audit-log.js";
 import { CapacityService } from "./services/capacity.js";
@@ -13,6 +14,8 @@ import { CustomerPrivacyService } from "./services/customer-privacy.js";
 import { CustomerTimelineService } from "./services/customer-timeline.js";
 import { EventBusService } from "./services/event-bus.js";
 import { GmailSyncService } from "./services/gmail-sync.js";
+import { ImapMailboxService } from "./services/imap-mailbox.js";
+import { ImapSyncService } from "./services/imap-sync.js";
 import { InboxService } from "./services/inbox.js";
 import { InvoiceOverdueRunner } from "./services/invoice-overdue-runner.js";
 import { InvoiceService } from "./services/invoice.js";
@@ -91,6 +94,13 @@ if (env.DATABASE_URL) {
     services.gmailSync = new GmailSyncService(db, mailbox, eventBus);
   } else {
     logger.warn("OAuth Google absent — connexion de boîtes Gmail désactivée");
+  }
+  if (env.MAILBOX_ENC_KEY) {
+    const imapMailbox = new ImapMailboxService(db, new SecretBox(env.MAILBOX_ENC_KEY));
+    services.imapMailbox = imapMailbox;
+    services.imapSync = new ImapSyncService(db, imapMailbox, eventBus);
+  } else {
+    logger.warn("MAILBOX_ENC_KEY absente — boîtes IMAP/Yahoo désactivées");
   }
   services.customerPrivacy = new CustomerPrivacyService(db);
   services.db = db;

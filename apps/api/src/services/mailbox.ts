@@ -90,6 +90,10 @@ export class MailboxService {
     });
     if (!box) throw new NotFoundError("Boîte introuvable");
 
+    if (!box.refreshToken || !box.accessTokenExpiresAt || !box.accessToken) {
+      throw new BadRequestError("Boîte non-OAuth (IMAP) — pas de token", "not_oauth_mailbox");
+    }
+
     if (box.accessTokenExpiresAt.getTime() > Date.now() + 60_000) {
       return box.accessToken;
     }
@@ -217,6 +221,9 @@ export class MailboxService {
 }
 
 function toSafe(row: TenantMailbox): SafeMailbox {
-  const { accessToken: _a, refreshToken: _r, ...safe } = row;
-  return safe;
+  const { accessToken: _a, refreshToken: _r, ...rest } = row;
+  // list() renvoie aussi les boîtes IMAP du tenant : leur passwordEnc ne sort jamais.
+  const config = (rest.config ?? {}) as Record<string, unknown>;
+  const { passwordEnc: _p, ...safeConfig } = config;
+  return { ...rest, config: safeConfig };
 }

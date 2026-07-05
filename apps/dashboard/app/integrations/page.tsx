@@ -8,6 +8,7 @@ import {
   type TenantWebhook,
   WEBHOOK_EVENTS,
   type WebhookEvent,
+  connectImapMailbox,
   connectMailbox,
   createWebhook,
   deleteMailbox,
@@ -59,9 +60,10 @@ const EMAIL_PROVIDERS: EmailProvider[] = [
   {
     id: "yahoo",
     name: "Yahoo Mail",
-    description: "Boîtes Yahoo Mail personnelles et professionnelles.",
+    description:
+      "Boîtes Yahoo Mail via IMAP. Nécessite un mot de passe d'application (Compte Yahoo → Sécurité).",
     logo: <YahooLogo />,
-    available: false,
+    available: true,
   },
   {
     id: "imap",
@@ -69,9 +71,15 @@ const EMAIL_PROVIDERS: EmailProvider[] = [
     description:
       "N'importe quelle boîte (OVH, Gandi, Infomaniak…) via IMAP : serveur, port, identifiants.",
     logo: <ImapLogo />,
-    available: false,
+    available: true,
   },
 ];
+
+const PROVIDER_LOGO: Record<string, React.ReactNode> = {
+  gmail: <GmailLogo />,
+  yahoo: <YahooLogo />,
+  imap: <ImapLogo />,
+};
 
 function GmailLogo() {
   return (
@@ -117,6 +125,7 @@ function MailboxesSection() {
   const [err, setErr] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [search, setSearch] = useState("");
+  const [imapForm, setImapForm] = useState<"imap" | "yahoo" | null>(null);
 
   const fetchBoxes = useCallback(async () => {
     const tenantId = getCurrentTenantId();
@@ -219,9 +228,15 @@ function MailboxesSection() {
           <ProviderCard
             key={p.id}
             provider={p}
-            connectedCount={p.id === "gmail" ? boxes.length : 0}
+            connectedCount={boxes.filter((b) => b.provider === p.id).length}
             connecting={p.id === "gmail" && connecting}
-            onConnect={p.id === "gmail" ? handleConnect : undefined}
+            onConnect={
+              p.id === "gmail"
+                ? handleConnect
+                : p.id === "yahoo" || p.id === "imap"
+                  ? () => setImapForm(imapForm === p.id ? null : (p.id as "imap" | "yahoo"))
+                  : undefined
+            }
           />
         ))}
         {providers.length === 0 && (
@@ -230,6 +245,17 @@ function MailboxesSection() {
           </div>
         )}
       </div>
+
+      {imapForm && (
+        <ImapConnectForm
+          provider={imapForm}
+          onCancel={() => setImapForm(null)}
+          onConnected={async () => {
+            setImapForm(null);
+            await fetchBoxes();
+          }}
+        />
+      )}
 
       {boxes.length > 0 && (
         <div className="mt-6">
@@ -242,7 +268,7 @@ function MailboxesSection() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
-                    <GmailLogo />
+                    {PROVIDER_LOGO[box.provider] ?? <ImapLogo />}
                     <div className="min-w-0">
                       <div className="truncate font-medium">{box.emailAddress}</div>
                       <div className="mt-0.5 text-xs text-stone-500">
@@ -283,6 +309,151 @@ function MailboxesSection() {
         </div>
       )}
     </div>
+  );
+}
+
+function ImapConnectForm({
+  provider,
+  onCancel,
+  onConnected,
+}: {
+  provider: "imap" | "yahoo";
+  onCancel: () => void;
+  onConnected: () => Promise<void>;
+}) {
+  const [host, setHost] = useState("");
+  const [port, setPort] = useState("993");
+  const [user, setUser] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const isYahoo = provider === "yahoo";
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await connectImapMailbox(tenantId, {
+        provider,
+        host: isYahoo ? undefined : host.trim(),
+        port: isYahoo ? undefined : Number.parseInt(port, 10) || 993,
+        user: user.trim(),
+        password,
+      });
+      await onConnected();
+    } catch (ex) {
+      const code = (ex as { code?: string }).code;
+      setErr(
+        code === "imap_unavailable"
+          ? "Boîtes IMAP non activées côté API (variable MAILBOX_ENC_KEY absente)."
+          : ex instanceof Error
+            ? ex.message
+            : "Connexion impossible.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-4 rounded-lg border border-stone-200 bg-white p-4">
+      <div className="mb-3 flex items-center gap-2">
+        {isYahoo ? <YahooLogo /> : <ImapLogo />}
+        <h3 className="text-sm font-semibold">
+          {isYahoo ? "Connecter une boîte Yahoo Mail" : "Connecter une boîte IMAP"}
+        </h3>
+      </div>
+      {isYahoo && (
+        <p className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          Yahoo exige un <strong>mot de passe d'application</strong> (pas ton mot de passe habituel)
+          : Compte Yahoo → Sécurité → Générer un mot de passe d'application.
+        </p>
+      )}
+      <div className="grid gap-3 md:grid-cols-4">
+        {!isYahoo && (
+          <>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-stone-500" htmlFor="imap-host">
+                Serveur IMAP
+              </label>
+              <input
+                id="imap-host"
+                type="text"
+                required
+                value={host}
+                onChange={(e) => setHost(e.target.value)}
+                placeholder="imap.mondomaine.fr"
+                className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-stone-500" htmlFor="imap-port">
+                Port
+              </label>
+              <input
+                id="imap-port"
+                type="text"
+                inputMode="numeric"
+                value={port}
+                onChange={(e) => setPort(e.target.value)}
+                className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+              />
+            </div>
+          </>
+        )}
+        <div>
+          <label className="mb-1 block text-xs font-medium text-stone-500" htmlFor="imap-user">
+            Adresse email
+          </label>
+          <input
+            id="imap-user"
+            type="email"
+            required
+            value={user}
+            onChange={(e) => setUser(e.target.value)}
+            placeholder={isYahoo ? "boulangerie@yahoo.fr" : "contact@mondomaine.fr"}
+            className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-stone-500" htmlFor="imap-pass">
+            {isYahoo ? "Mot de passe d'application" : "Mot de passe"}
+          </label>
+          <input
+            id="imap-pass"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+          />
+        </div>
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          type="submit"
+          disabled={busy}
+          className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+        >
+          {busy ? "Vérification…" : "Connecter"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded border border-stone-300 px-4 py-2 text-sm text-stone-600 hover:bg-stone-100"
+        >
+          Annuler
+        </button>
+        {err && <div className="text-sm text-rose-700">{err}</div>}
+      </div>
+      <p className="mt-2 text-[11px] text-stone-400">
+        Le mot de passe est chiffré (AES-256) et ne ressort jamais de l'API. Seuls les nouveaux
+        emails reçus après la connexion sont lus.
+      </p>
+    </form>
   );
 }
 

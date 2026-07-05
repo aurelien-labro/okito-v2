@@ -1,4 +1,4 @@
-import { index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { tenants } from "./tenants.js";
 
 /**
@@ -23,9 +23,17 @@ export const tenantMailboxes = pgTable(
     /** Adresse de la boîte connectée (renseignée après l'échange OAuth). */
     emailAddress: text("email_address").notNull(),
 
-    accessToken: text("access_token").notNull(),
-    refreshToken: text("refresh_token").notNull(),
-    accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }).notNull(),
+    /** Tokens OAuth (gmail, bientôt outlook) — null pour les boîtes IMAP. */
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
+
+    /**
+     * Réglages spécifiques au provider. Pour imap/yahoo :
+     * { host, port, secure, user, passwordEnc (AES-256-GCM), uidValidity, lastUid }.
+     * passwordEnc ne sort JAMAIS par l'API (retiré dans SafeMailbox).
+     */
+    config: jsonb("config").notNull().default({}),
 
     /** Curseur Gmail users.history.list — null tant qu'aucune sync n'a eu lieu. */
     historyId: text("history_id"),
