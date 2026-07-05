@@ -22,6 +22,7 @@ import { JarvisExecutor } from "./services/jarvis-executor.js";
 import { JarvisObserverService } from "./services/jarvis-observer.js";
 import { InvoiceRemindTool } from "./services/jarvis-tools/invoice-remind.js";
 import { ReviewReplyTool } from "./services/jarvis-tools/review-reply.js";
+import { SupplierInvoicePayReminderTool } from "./services/jarvis-tools/supplier-invoice-pay-reminder.js";
 import { createLLMClient } from "./services/llm/index.js";
 import { LoyaltyService } from "./services/loyalty.js";
 import { MailboxService } from "./services/mailbox.js";
@@ -73,14 +74,15 @@ if (env.DATABASE_URL) {
   services.jarvisAction = jarvisAction;
   const jarvisExecutor = new JarvisExecutor(db, jarvisAction);
   services.jarvisExecutor = jarvisExecutor;
-  services.jarvisObserver = new JarvisObserverService(db, jarvisAction);
+  const supplierInvoice = new SupplierInvoiceService(db, eventBus);
+  services.supplierInvoice = supplierInvoice;
+  services.jarvisObserver = new JarvisObserverService(db, jarvisAction, 2, supplierInvoice);
   services.review = new ReviewService(db, eventBus);
   services.inbox = new InboxService(db);
   services.customerTimeline = new CustomerTimelineService(db);
   const invoice = new InvoiceService(db, eventBus);
   services.invoice = invoice;
   services.invoiceOverdue = new InvoiceOverdueRunner(db, invoice);
-  services.supplierInvoice = new SupplierInvoiceService(db, eventBus);
   if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI) {
     const mailbox = new MailboxService(db, {
       clientId: env.GOOGLE_CLIENT_ID,
@@ -116,6 +118,9 @@ if (env.DATABASE_URL) {
     );
   }
   services.noShow = new NoShowService(db, services.audit, 120, services.eventBus);
+  // Rappel d'échéance fournisseur : texte déterministe, pas besoin de LLM —
+  // enregistré même si GEMINI_API_KEY est absent.
+  jarvisExecutor.registerTool(new SupplierInvoicePayReminderTool(db, notifier, supplierInvoice));
 
   if (env.GEMINI_API_KEY) {
     const llm = createLLMClient(env);
