@@ -19,6 +19,7 @@ import {
   listReservations,
   regenerateJarvisBrief,
 } from "./_lib/api-client";
+import { speak, useVoiceInput } from "./_lib/use-voice";
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -342,9 +343,9 @@ function ChatPanel() {
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  async function send() {
+  async function send(text?: string, fromVoice = false) {
     const tenantId = getCurrentTenantId();
-    const q = input.trim();
+    const q = (text ?? input).trim();
     if (!tenantId || !q || sending) return;
     const next: JarvisChatMessage[] = [...messages, { role: "user", content: q }];
     setMessages(next);
@@ -354,6 +355,8 @@ function ChatPanel() {
     try {
       const res = await chatWithJarvis(tenantId, next);
       setMessages([...next, { role: "model", content: res.data.reply }]);
+      // Question dictée → réponse lue à voix haute.
+      if (fromVoice) speak(res.data.reply);
     } catch (e) {
       const code = (e as { code?: string }).code;
       setErr(code === "advisor_unavailable" ? "LLM non configuré." : "Jarvis n'a pas pu répondre.");
@@ -363,6 +366,11 @@ function ChatPanel() {
       setSending(false);
     }
   }
+
+  const voice = useVoiceInput({
+    onInterim: setInput,
+    onFinal: (text) => send(text, true),
+  });
 
   return (
     <section
@@ -414,9 +422,21 @@ function ChatPanel() {
         />
         <button
           type="button"
-          aria-label="Parler à Jarvis"
-          title="Vocal — bientôt"
-          className="flex items-center justify-center rounded-md border border-stone-300 px-2.5 py-1.5 text-stone-500 hover:bg-stone-50"
+          onClick={voice.toggle}
+          disabled={!voice.supported}
+          aria-label={voice.listening ? "Arrêter l'écoute" : "Parler à Jarvis"}
+          title={
+            voice.supported
+              ? voice.listening
+                ? "J'écoute… clique pour arrêter"
+                : "Dicter ta question"
+              : "Vocal non supporté par ce navigateur (utilise Chrome, Edge ou Safari)"
+          }
+          className={`flex items-center justify-center rounded-md border px-2.5 py-1.5 ${
+            voice.listening
+              ? "animate-pulse border-rose-400 bg-rose-50 text-rose-600"
+              : "border-stone-300 text-stone-500 hover:bg-stone-50 disabled:opacity-40"
+          }`}
         >
           <span className="ti ti-microphone text-[15px]" aria-hidden="true" />
         </button>

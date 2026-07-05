@@ -15,6 +15,7 @@ import {
   listJarvisActions,
   regenerateJarvisBrief,
 } from "../_lib/api-client";
+import { speak, useVoiceInput } from "../_lib/use-voice";
 
 const STATUS_LABEL: Record<JarvisActionStatus, string> = {
   awaiting_approval: "À valider",
@@ -280,9 +281,9 @@ function JarvisChat() {
   const [sending, setSending] = useState(false);
   const [chatErr, setChatErr] = useState<string | null>(null);
 
-  async function handleSend() {
+  async function handleSend(text?: string, fromVoice = false) {
     const tenantId = getCurrentTenantId();
-    const question = input.trim();
+    const question = (text ?? input).trim();
     if (!tenantId || !question || sending) return;
 
     const next: JarvisChatMessage[] = [...messages, { role: "user", content: question }];
@@ -293,6 +294,7 @@ function JarvisChat() {
     try {
       const res = await chatWithJarvis(tenantId, next);
       setMessages([...next, { role: "model", content: res.data.reply }]);
+      if (fromVoice) speak(res.data.reply);
     } catch (e) {
       const code = (e as { code?: string }).code;
       setChatErr(
@@ -306,6 +308,11 @@ function JarvisChat() {
       setSending(false);
     }
   }
+
+  const voice = useVoiceInput({
+    onInterim: setInput,
+    onFinal: (text) => handleSend(text, true),
+  });
 
   return (
     <div className="mb-8 rounded-lg border border-stone-200 bg-white p-5">
@@ -347,7 +354,27 @@ function JarvisChat() {
         />
         <button
           type="button"
-          onClick={handleSend}
+          onClick={voice.toggle}
+          disabled={!voice.supported}
+          aria-label={voice.listening ? "Arrêter l'écoute" : "Dicter ta question"}
+          title={
+            voice.supported
+              ? voice.listening
+                ? "J'écoute… clique pour arrêter"
+                : "Dicter ta question"
+              : "Vocal non supporté par ce navigateur (utilise Chrome, Edge ou Safari)"
+          }
+          className={`flex items-center justify-center rounded border px-2.5 py-1.5 ${
+            voice.listening
+              ? "animate-pulse border-rose-400 bg-rose-50 text-rose-600"
+              : "border-stone-300 text-stone-500 hover:bg-stone-50 disabled:opacity-40"
+          }`}
+        >
+          <span className="ti ti-microphone text-[15px]" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={() => handleSend()}
           disabled={sending || input.trim().length === 0}
           className="rounded bg-stone-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
         >
