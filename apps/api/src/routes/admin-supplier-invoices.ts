@@ -18,6 +18,7 @@ const createSchema = z.object({
   invoiceNumber: z.string().min(1).max(100).nullable().optional(),
   amountCents: z.number().int().positive().max(100_000_000),
   currency: z.string().length(3).optional(),
+  vatRateBps: z.number().int().min(0).max(3000).optional(),
   category: z.string().min(1).max(100).nullable().optional(),
   invoiceDate: z.coerce.date().nullable().optional(),
   dueDate: z.coerce.date().nullable().optional(),

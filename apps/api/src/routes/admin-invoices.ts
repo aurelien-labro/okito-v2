@@ -19,6 +19,7 @@ const createSchema = z.object({
   customerEmail: z.string().email().nullable().optional(),
   lines: z.array(lineSchema).min(1),
   currency: z.string().length(3).optional(),
+  vatRateBps: z.number().int().min(0).max(3000).optional(),
   dueInDays: z.number().int().min(1).max(365).optional(),
   notes: z.string().max(2000).nullable().optional(),
 });

@@ -964,6 +964,31 @@ export async function transitionSupplierInvoice(
   return request(`/v1/admin/supplier-invoices/${tenantId}/${id}/${action}`, { method: "POST" });
 }
 
+// --- Rapport TVA --------------------------------------------------------------
+
+export interface VatRateLine {
+  rateBps: number;
+  grossCents: number;
+  netCents: number;
+  vatCents: number;
+  count: number;
+}
+
+export interface VatReport {
+  period: { year: number; month: number; fromIso: string; toIso: string };
+  sales: { lines: VatRateLine[]; totalVatCents: number; totalGrossCents: number };
+  purchases: { lines: VatRateLine[]; totalVatCents: number; totalGrossCents: number };
+  netVatCents: number;
+}
+
+export async function getVatReport(
+  tenantId: string,
+  year: number,
+  month: number,
+): Promise<{ data: VatReport }> {
+  return request(`/v1/admin/vat-report/${tenantId}?year=${year}&month=${month}`);
+}
+
 // --- Onboarding (diagnostic Jarvis) -------------------------------------------
 
 export interface WebsiteScan {

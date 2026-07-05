@@ -38,6 +38,8 @@ export const invoices = pgTable(
     /** Total TTC en centimes (somme des lignes). Stocké pour tri/filtre rapides. */
     amountCents: integer("amount_cents").notNull().default(0),
     currency: text("currency").notNull().default("EUR"),
+    /** Taux de TVA en basis points (2000 = 20%). Montants stockes TTC. */
+    vatRateBps: integer("vat_rate_bps").notNull().default(2000),
 
     issuedAt: timestamp("issued_at", { withTimezone: true }),
     dueDate: timestamp("due_date", { withTimezone: true }),

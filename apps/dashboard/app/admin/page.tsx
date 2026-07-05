@@ -95,6 +95,9 @@ function AdminView() {
           >
             Fournisseurs
           </Link>
+          <Link href="/admin/tva" className="text-stone-500 hover:text-stone-800 hover:underline">
+            TVA
+          </Link>
         </div>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Admin — Factures</h1>
         <p className="mt-1 text-sm text-stone-500">
