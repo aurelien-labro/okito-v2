@@ -129,7 +129,7 @@ if (env.DATABASE_URL) {
       scheduleRules: services.scheduleRules,
       webhooks: services.eventBus,
     });
-    services.jarvisAdvisor = new JarvisAdvisorService(db, llm, eventBus);
+    services.jarvisAdvisor = new JarvisAdvisorService(db, llm, eventBus, notifier);
     jarvisExecutor.registerTool(new ReviewReplyTool(db, llm, notifier));
     jarvisExecutor.registerTool(new InvoiceRemindTool(db, llm, notifier, invoice));
     services.onboardingScan = new OnboardingScanService(
