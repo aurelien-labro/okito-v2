@@ -12,6 +12,7 @@ import {
   getCurrentTenantId,
   getJarvisBrief,
   getReviewSummary,
+  listInvoices,
   listJarvisActions,
   listReservations,
   regenerateJarvisBrief,
@@ -149,6 +150,7 @@ function BriefBanner() {
 function Indicators() {
   const [reservations, setReservations] = useState<number | null>(null);
   const [reviews, setReviews] = useState<ReviewSummary | null>(null);
+  const [revenueCents, setRevenueCents] = useState<number | null>(null);
 
   useEffect(() => {
     const tenantId = getCurrentTenantId();
@@ -159,11 +161,34 @@ function Indicators() {
     getReviewSummary(tenantId)
       .then((r) => setReviews(r.data))
       .catch(() => setReviews(null));
+    // Chiffre du jour = somme des factures encaissées aujourd'hui.
+    listInvoices(tenantId, "paid")
+      .then((r) => {
+        const today = todayIso();
+        const sum = r.data
+          .filter((inv) => inv.paidAt?.slice(0, 10) === today)
+          .reduce((acc, inv) => acc + inv.amountCents, 0);
+        setRevenueCents(sum);
+      })
+      .catch(() => setRevenueCents(null));
   }, []);
+
+  const revenue =
+    revenueCents === null
+      ? null
+      : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(
+          revenueCents / 100,
+        );
 
   return (
     <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <Metric label="Chiffre du jour" value="—" sub="bientôt" muted href="/settings" />
+      <Metric
+        label="Chiffre du jour"
+        value={revenue ?? "—"}
+        sub={revenue ? "factures encaissées" : "bientôt"}
+        muted={revenueCents === null}
+        href="/admin"
+      />
       <Metric label="Visites site" value="—" sub="bientôt" muted href="/integrations" />
       <Metric
         label="Réservations"
