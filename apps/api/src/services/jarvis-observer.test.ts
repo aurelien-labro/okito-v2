@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createTestDb } from "../../tests/_helpers/pg.js";
 import { JarvisActionService } from "./jarvis-action.js";
 import { JarvisObserverService } from "./jarvis-observer.js";
+import { SupplierInvoiceService } from "./supplier-invoice.js";
 
 describe("JarvisObserverService", () => {
   let ctx: Awaited<ReturnType<typeof createTestDb>>;
@@ -90,6 +91,37 @@ describe("JarvisObserverService", () => {
     expect(action?.summary).toContain("890.00 EUR");
 
     const second = await observer.runOnce();
+    expect(second.actionsProposed).toBe(0);
+    expect(await actions.list(tenantId)).toHaveLength(1);
+  });
+
+  it("échéance fournisseur sous 3 jours → propose supplier_invoice.pay_reminder (idempotent)", async () => {
+    const supplierInvoices = new SupplierInvoiceService(ctx.db);
+    const withRule = new JarvisObserverService(ctx.db, actions, 2, supplierInvoices);
+    const now = new Date("2026-07-05T12:00:00Z");
+    await supplierInvoices.create(tenantId, {
+      supplierName: "Metro",
+      amountCents: 45050,
+      dueDate: new Date("2026-07-07T12:00:00Z"),
+    });
+    await supplierInvoices.create(tenantId, {
+      supplierName: "EDF",
+      amountCents: 20000,
+      dueDate: new Date("2026-07-25T12:00:00Z"), // hors fenêtre
+    });
+
+    const first = await withRule.runOnce(now);
+    expect(first.actionsProposed).toBe(1);
+    const [action] = await actions.list(tenantId);
+    expect(action).toMatchObject({
+      type: "supplier_invoice.pay_reminder",
+      policy: "auto_cancellable",
+      status: "scheduled",
+    });
+    expect(action?.summary).toContain("Metro");
+    expect(action?.summary).toContain("450.50 EUR");
+
+    const second = await withRule.runOnce(now);
     expect(second.actionsProposed).toBe(0);
     expect(await actions.list(tenantId)).toHaveLength(1);
   });

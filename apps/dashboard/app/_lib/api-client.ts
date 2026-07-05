@@ -882,6 +882,88 @@ export async function cancelInvoice(tenantId: string, id: string): Promise<{ dat
   return request(`/v1/admin/invoices/${tenantId}/${id}/cancel`, { method: "POST" });
 }
 
+// --- Factures fournisseurs ----------------------------------------------------
+
+export type SupplierInvoiceStatus = "received" | "approved" | "paid" | "disputed" | "cancelled";
+
+export interface SupplierInvoice {
+  id: string;
+  tenantId: string;
+  supplierName: string;
+  invoiceNumber: string | null;
+  status: SupplierInvoiceStatus;
+  amountCents: number;
+  currency: string;
+  category: string | null;
+  invoiceDate: string | null;
+  dueDate: string | null;
+  paidAt: string | null;
+  source: "manual" | "upload" | "email";
+  extracted: Record<string, unknown> | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface SupplierInvoiceExtraction {
+  supplierName: string;
+  invoiceNumber: string | null;
+  amountCents: number;
+  currency: string;
+  invoiceDate: string | null;
+  dueDate: string | null;
+  category: string | null;
+  confidence: number;
+}
+
+export interface SupplierInvoiceCreateInput {
+  supplierName: string;
+  invoiceNumber?: string | null;
+  amountCents: number;
+  currency?: string;
+  category?: string | null;
+  invoiceDate?: string | null;
+  dueDate?: string | null;
+  notes?: string | null;
+  source?: "manual" | "upload";
+  extracted?: Record<string, unknown> | null;
+}
+
+export async function listSupplierInvoices(
+  tenantId: string,
+  status?: SupplierInvoiceStatus,
+): Promise<{ data: SupplierInvoice[] }> {
+  const q = status ? `?status=${status}` : "";
+  return request(`/v1/admin/supplier-invoices/${tenantId}${q}`);
+}
+
+export async function createSupplierInvoice(
+  tenantId: string,
+  input: SupplierInvoiceCreateInput,
+): Promise<{ data: SupplierInvoice }> {
+  return request(`/v1/admin/supplier-invoices/${tenantId}`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function extractSupplierInvoice(
+  tenantId: string,
+  file: { mimeType: string; dataBase64: string },
+): Promise<{ data: SupplierInvoiceExtraction }> {
+  return request(`/v1/admin/supplier-invoices/${tenantId}/extract`, {
+    method: "POST",
+    body: JSON.stringify(file),
+  });
+}
+
+export async function transitionSupplierInvoice(
+  tenantId: string,
+  id: string,
+  action: "approve" | "paid" | "dispute" | "cancel",
+): Promise<{ data: SupplierInvoice }> {
+  return request(`/v1/admin/supplier-invoices/${tenantId}/${id}/${action}`, { method: "POST" });
+}
+
 // --- Onboarding (diagnostic Jarvis) -------------------------------------------
 
 export interface WebsiteScan {
