@@ -10,6 +10,7 @@ import { createAdminMiddleware } from "./middleware/admin.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import { metricsMiddleware } from "./middleware/metrics.js";
 import { adminAuditRoute } from "./routes/admin-audit.js";
+import { adminCustomerTimelineRoute } from "./routes/admin-customer-timeline.js";
 import { adminCustomersRoute } from "./routes/admin-customers.js";
 import { adminIcalRoute } from "./routes/admin-ical.js";
 import { adminInboxRoute } from "./routes/admin-inbox.js";
@@ -46,6 +47,7 @@ import type { AuditLogService } from "./services/audit-log.js";
 import type { CapacityService } from "./services/capacity.js";
 import type { ChatService } from "./services/chat.js";
 import type { CustomerPrivacyService } from "./services/customer-privacy.js";
+import type { CustomerTimelineService } from "./services/customer-timeline.js";
 import type { BusinessEventEmitter } from "./services/event-bus.js";
 import type { GmailSyncService } from "./services/gmail-sync.js";
 import type { InboxService } from "./services/inbox.js";
@@ -131,6 +133,8 @@ export interface AppServices {
   gmailSync?: GmailSyncService;
   /** Inbox unifiée — monté sur /v1/admin/inbox si fourni. */
   inbox?: InboxService;
+  /** Fiche client 360° — monté sur /v1/admin/customer-360 si fourni. */
+  customerTimeline?: CustomerTimelineService;
   /** Factures clients — monté sur /v1/admin/invoices si fourni. */
   invoice?: InvoiceService;
   /** Runner cron overdue — ajoute la function Inngest horaire si fourni. */
@@ -340,6 +344,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.inbox) {
       v1Admin.route("/inbox", adminInboxRoute(services.inbox));
+    }
+    if (services.customerTimeline) {
+      v1Admin.route("/customer-360", adminCustomerTimelineRoute(services.customerTimeline));
     }
     if (services.db) {
       v1Admin.route("/jarvis-brief", adminJarvisBriefRoute(services.db, services.jarvisAdvisor));
