@@ -31,10 +31,92 @@ const MAILBOX_STATUS_COLOR: Record<Mailbox["status"], string> = {
   error: "bg-rose-100 text-rose-800",
 };
 
+/** Catalogue des fournisseurs email, façon n8n : une carte par intégration. */
+interface EmailProvider {
+  id: string;
+  name: string;
+  description: string;
+  logo: React.ReactNode;
+  available: boolean;
+}
+
+const EMAIL_PROVIDERS: EmailProvider[] = [
+  {
+    id: "gmail",
+    name: "Gmail",
+    description:
+      "Connecte la boîte Gmail du commerce en OAuth. Chaque email entre dans le journal de Jarvis (lecture seule, révocable).",
+    logo: <GmailLogo />,
+    available: true,
+  },
+  {
+    id: "outlook",
+    name: "Outlook / Microsoft 365",
+    description: "Boîtes Outlook.com et Microsoft 365 professionnelles, via OAuth Microsoft Graph.",
+    logo: <OutlookLogo />,
+    available: false,
+  },
+  {
+    id: "yahoo",
+    name: "Yahoo Mail",
+    description: "Boîtes Yahoo Mail personnelles et professionnelles.",
+    logo: <YahooLogo />,
+    available: false,
+  },
+  {
+    id: "imap",
+    name: "IMAP générique",
+    description:
+      "N'importe quelle boîte (OVH, Gandi, Infomaniak…) via IMAP : serveur, port, identifiants.",
+    logo: <ImapLogo />,
+    available: false,
+  },
+];
+
+function GmailLogo() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-7 w-7" aria-hidden="true">
+      <path fill="#EA4335" d="M12 11.1 3.2 4.4h17.6L12 11.1Z" />
+      <path fill="#FBBC04" d="M2 5.4v13.2h3.6V8.2L2 5.4Z" />
+      <path fill="#34A853" d="M18.4 8.2v10.4H22V5.4l-3.6 2.8Z" />
+      <path fill="#4285F4" d="M5.6 18.6h12.8V8.2L12 13.1 5.6 8.2v10.4Z" opacity=".9" />
+    </svg>
+  );
+}
+
+function OutlookLogo() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-7 w-7" aria-hidden="true">
+      <rect x="2" y="5" width="12" height="14" rx="2" fill="#0F6CBD" />
+      <text x="8" y="16" textAnchor="middle" fontSize="9" fontWeight="700" fill="#fff">
+        O
+      </text>
+      <rect x="12" y="7" width="10" height="10" rx="1.5" fill="#28A8EA" />
+      <path d="M12 7h10L17 12.5 12 7Z" fill="#50D9FF" />
+    </svg>
+  );
+}
+
+function YahooLogo() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-7 w-7" aria-hidden="true">
+      <rect x="2" y="2" width="20" height="20" rx="4" fill="#5F01D1" />
+      <text x="12" y="16.5" textAnchor="middle" fontSize="12" fontWeight="800" fill="#fff">
+        Y!
+      </text>
+    </svg>
+  );
+}
+
+function ImapLogo() {
+  return <span className="ti ti-server-2 text-[26px] text-stone-500" aria-hidden="true" />;
+}
+
 function MailboxesSection() {
   const [boxes, setBoxes] = useState<Mailbox[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
+  const [search, setSearch] = useState("");
 
   const fetchBoxes = useCallback(async () => {
     const tenantId = getCurrentTenantId();
@@ -94,24 +176,36 @@ function MailboxesSection() {
     }
   }
 
+  const q = search.trim().toLowerCase();
+  const providers = q
+    ? EMAIL_PROVIDERS.filter(
+        (p) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q),
+      )
+    : EMAIL_PROVIDERS;
+
   return (
     <div className="mb-10">
-      <div className="mb-4 flex items-end justify-between">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Intégrations — Email</h1>
           <p className="mt-1 text-sm text-stone-500">
-            Connecte la boîte Gmail du commerce : chaque nouvel email entre dans le journal de
-            Jarvis (lecture seule, révocable à tout moment).
+            Branche les boîtes du commerce : chaque email entre dans le journal de Jarvis, qui trie,
+            résume et répondra bientôt tout seul.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleConnect}
-          disabled={connecting}
-          className="rounded bg-stone-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
-        >
-          {connecting ? "Redirection…" : "Connecter Gmail"}
-        </button>
+        <div className="relative">
+          <span
+            className="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-sm text-stone-400"
+            aria-hidden="true"
+          />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher une intégration…"
+            className="w-64 rounded-lg border border-stone-300 py-2 pl-9 pr-3 text-sm focus:border-stone-500 focus:outline-none"
+          />
+        </div>
       </div>
 
       {err && (
@@ -120,53 +214,136 @@ function MailboxesSection() {
         </div>
       )}
 
-      <div className="space-y-3">
-        {boxes.length === 0 && !err ? (
-          <div className="rounded border border-stone-200 bg-white px-4 py-6 text-center text-sm text-stone-500">
-            Aucune boîte connectée.
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {providers.map((p) => (
+          <ProviderCard
+            key={p.id}
+            provider={p}
+            connectedCount={p.id === "gmail" ? boxes.length : 0}
+            connecting={p.id === "gmail" && connecting}
+            onConnect={p.id === "gmail" ? handleConnect : undefined}
+          />
+        ))}
+        {providers.length === 0 && (
+          <div className="col-span-full rounded-lg border border-stone-200 bg-white px-4 py-8 text-center text-sm text-stone-500">
+            Aucune intégration ne correspond à « {search} ».
           </div>
-        ) : (
-          boxes.map((box) => (
-            <div
-              key={box.id}
-              className="rounded border border-stone-200 bg-white px-4 py-3 text-sm"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="truncate font-medium">{box.emailAddress}</div>
-                  <div className="mt-1 text-xs text-stone-500">
-                    {box.lastSyncAt
-                      ? `Dernière sync : ${new Date(box.lastSyncAt).toLocaleString("fr-FR")}`
-                      : "Jamais synchronisée (première sync dans les 5 min)"}
+        )}
+      </div>
+
+      {boxes.length > 0 && (
+        <div className="mt-6">
+          <h2 className="mb-3 text-sm font-semibold text-stone-700">Boîtes connectées</h2>
+          <div className="space-y-3">
+            {boxes.map((box) => (
+              <div
+                key={box.id}
+                className="rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <GmailLogo />
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{box.emailAddress}</div>
+                      <div className="mt-0.5 text-xs text-stone-500">
+                        {box.lastSyncAt
+                          ? `Dernière sync : ${new Date(box.lastSyncAt).toLocaleString("fr-FR")}`
+                          : "Jamais synchronisée (première sync dans les 5 min)"}
+                      </div>
+                      {box.status === "error" && box.lastError && (
+                        <div className="mt-1 text-xs text-rose-700">{box.lastError}</div>
+                      )}
+                    </div>
                   </div>
-                  {box.status === "error" && box.lastError && (
-                    <div className="mt-1 text-xs text-rose-700">{box.lastError}</div>
-                  )}
-                </div>
-                <div className="flex shrink-0 items-center gap-3 text-xs">
-                  <span
-                    className={`rounded px-2 py-0.5 font-medium ${MAILBOX_STATUS_COLOR[box.status]}`}
-                  >
-                    {MAILBOX_STATUS_LABEL[box.status]}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleToggle(box)}
-                    className="text-blue-700 hover:underline"
-                  >
-                    {box.status === "paused" ? "Reprendre" : "Mettre en pause"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(box)}
-                    className="text-rose-700 hover:underline"
-                  >
-                    Déconnecter
-                  </button>
+                  <div className="flex shrink-0 items-center gap-3 text-xs">
+                    <span
+                      className={`rounded px-2 py-0.5 font-medium ${MAILBOX_STATUS_COLOR[box.status]}`}
+                    >
+                      {MAILBOX_STATUS_LABEL[box.status]}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleToggle(box)}
+                      className="text-blue-700 hover:underline"
+                    >
+                      {box.status === "paused" ? "Reprendre" : "Mettre en pause"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(box)}
+                      className="text-rose-700 hover:underline"
+                    >
+                      Déconnecter
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProviderCard({
+  provider,
+  connectedCount,
+  connecting,
+  onConnect,
+}: {
+  provider: EmailProvider;
+  connectedCount: number;
+  connecting: boolean;
+  onConnect?: () => void;
+}) {
+  const connected = connectedCount > 0;
+  return (
+    <div
+      className={`flex flex-col rounded-lg border bg-white p-4 transition ${
+        provider.available
+          ? "border-stone-200 hover:border-stone-400 hover:shadow-sm"
+          : "border-stone-200 opacity-70"
+      }`}
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-stone-100 bg-stone-50">
+          {provider.logo}
+        </div>
+        {connected ? (
+          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-800">
+            {connectedCount} connectée{connectedCount > 1 ? "s" : ""}
+          </span>
+        ) : provider.available ? (
+          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">
+            Disponible
+          </span>
+        ) : (
+          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-400">
+            Bientôt
+          </span>
+        )}
+      </div>
+      <div className="mt-3 text-sm font-semibold text-stone-900">{provider.name}</div>
+      <p className="mt-1 flex-1 text-xs leading-relaxed text-stone-500">{provider.description}</p>
+      <div className="mt-4">
+        {provider.available && onConnect ? (
+          <button
+            type="button"
+            onClick={onConnect}
+            disabled={connecting}
+            className="w-full rounded bg-stone-900 px-3 py-2 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+          >
+            {connecting ? "Redirection…" : connected ? "Ajouter une boîte" : "Connecter"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="w-full cursor-not-allowed rounded border border-stone-200 px-3 py-2 text-xs font-medium text-stone-400"
+          >
+            Bientôt disponible
+          </button>
         )}
       </div>
     </div>
