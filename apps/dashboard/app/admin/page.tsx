@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { LoginGate } from "../_components/login-gate";
 import {
@@ -86,7 +87,16 @@ function AdminView() {
   return (
     <div className="mx-auto max-w-5xl">
       <div className="mb-5">
-        <h1 className="text-2xl font-semibold tracking-tight">Admin — Factures</h1>
+        <div className="flex items-center gap-3 text-sm">
+          <span className="font-semibold text-stone-900">Factures clients</span>
+          <Link
+            href="/admin/fournisseurs"
+            className="text-stone-500 hover:text-stone-800 hover:underline"
+          >
+            Fournisseurs
+          </Link>
+        </div>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight">Admin — Factures</h1>
         <p className="mt-1 text-sm text-stone-500">
           Émets tes factures ; Jarvis relance automatiquement les impayés (tu peux annuler pendant
           24 h).
