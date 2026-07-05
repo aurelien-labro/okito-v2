@@ -3,6 +3,7 @@
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { LoginGate } from "../_components/login-gate";
 import {
+  API_URL,
   type Mailbox,
   type TenantWebhook,
   WEBHOOK_EVENTS,
@@ -172,6 +173,47 @@ function MailboxesSection() {
   );
 }
 
+function TrackerSection() {
+  const [copied, setCopied] = useState(false);
+  const tenantId = getCurrentTenantId();
+  if (!tenantId) return null;
+
+  const snippet = `<script src="${API_URL}/v1/track/${tenantId}/script.js" defer></script>`;
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(snippet);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard indisponible (HTTP non sécurisé) : l'utilisateur copiera à la main.
+    }
+  }
+
+  return (
+    <div className="mb-10">
+      <h2 className="text-2xl font-semibold tracking-tight">Tracker de visites</h2>
+      <p className="mt-1 text-sm text-stone-500">
+        Colle cette ligne dans le <code>&lt;head&gt;</code> de ton site : chaque visite alimente la
+        carte « Visites site » et le journal de Jarvis. Aucune donnée personnelle collectée (ni IP,
+        ni cookie tiers).
+      </p>
+      <div className="mt-3 flex items-center gap-2">
+        <code className="min-w-0 flex-1 overflow-x-auto rounded border border-stone-200 bg-white px-3 py-2 text-xs text-stone-800">
+          {snippet}
+        </code>
+        <button
+          type="button"
+          onClick={copy}
+          className="shrink-0 rounded bg-stone-900 px-3 py-2 text-xs font-medium text-white hover:bg-stone-700"
+        >
+          {copied ? "Copié !" : "Copier"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function IntegrationsPage() {
   return (
     <LoginGate>
@@ -229,6 +271,8 @@ function IntegrationsView() {
   return (
     <div>
       <MailboxesSection />
+
+      <TrackerSection />
 
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Intégrations — Webhooks</h1>

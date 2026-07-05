@@ -8,10 +8,12 @@ import {
   type JarvisBrief,
   type JarvisChatMessage,
   type ReviewSummary,
+  type SiteAnalytics,
   chatWithJarvis,
   getCurrentTenantId,
   getJarvisBrief,
   getReviewSummary,
+  getSiteAnalytics,
   listInvoices,
   listJarvisActions,
   listReservations,
@@ -151,10 +153,14 @@ function Indicators() {
   const [reservations, setReservations] = useState<number | null>(null);
   const [reviews, setReviews] = useState<ReviewSummary | null>(null);
   const [revenueCents, setRevenueCents] = useState<number | null>(null);
+  const [visits, setVisits] = useState<SiteAnalytics | null>(null);
 
   useEffect(() => {
     const tenantId = getCurrentTenantId();
     if (!tenantId) return;
+    getSiteAnalytics(tenantId)
+      .then((r) => setVisits(r.data))
+      .catch(() => setVisits(null));
     listReservations(todayIso())
       .then((r) => setReservations(r.data.length))
       .catch(() => setReservations(null));
@@ -189,7 +195,13 @@ function Indicators() {
         muted={revenueCents === null}
         href="/admin"
       />
-      <Metric label="Visites site" value="—" sub="bientôt" muted href="/integrations" />
+      <Metric
+        label="Visites site"
+        value={visits === null ? "—" : String(visits.today)}
+        sub={visits === null ? "connecter le tracker" : `${visits.last7Days} sur 7 jours`}
+        muted={visits === null}
+        href="/integrations"
+      />
       <Metric
         label="Réservations"
         value={reservations === null ? "—" : String(reservations)}
