@@ -1030,6 +1030,22 @@ export async function connectMailbox(tenantId: string): Promise<{ data: { url: s
   return request(`/v1/admin/mailboxes/${tenantId}/connect`, { method: "POST" });
 }
 
+export async function connectImapMailbox(
+  tenantId: string,
+  input: {
+    provider: "imap" | "yahoo";
+    host?: string;
+    port?: number;
+    user: string;
+    password: string;
+  },
+): Promise<{ data: Mailbox }> {
+  return request(`/v1/admin/mailboxes/${tenantId}/imap`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 export async function setMailboxStatus(
   tenantId: string,
   id: string,

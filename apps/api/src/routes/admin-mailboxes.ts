@@ -2,29 +2,65 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { BadRequestError, HttpError } from "../lib/errors.js";
 import type { AppEnv } from "../lib/types.js";
+import type { ImapMailboxService } from "../services/imap-mailbox.js";
 import type { MailboxService } from "../services/mailbox.js";
 
 const uuidParam = z.string().uuid();
 
-/** Connexion et gestion des boîtes Gmail d'un tenant (module Inbox V3). */
-export function adminMailboxesRoute(service: MailboxService) {
-  const app = new Hono<AppEnv>();
+const imapConnectSchema = z.object({
+  provider: z.enum(["imap", "yahoo"]),
+  host: z.string().min(1).max(255).optional(),
+  port: z.number().int().min(1).max(65535).optional(),
+  secure: z.boolean().optional(),
+  user: z.string().min(1).max(255),
+  password: z.string().min(1).max(1024),
+});
 
-  // GET /v1/admin/mailboxes/:tenantId — jamais de tokens dans la réponse
+/**
+ * Connexion et gestion des boîtes email d'un tenant (module Inbox V3).
+ * Gmail (OAuth) et IMAP/Yahoo (identifiants chiffrés) sont indépendants :
+ * chaque service est optionnel selon la config de l'instance.
+ */
+export function adminMailboxesRoute(gmail?: MailboxService, imap?: ImapMailboxService) {
+  const app = new Hono<AppEnv>();
+  const anyService = gmail ?? imap;
+
+  // GET /v1/admin/mailboxes/:tenantId — jamais de tokens ni mot de passe dans la réponse
   app.get("/:tenantId", async (c) => {
+    if (!anyService) throw new BadRequestError("Aucun provider email configuré");
     const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
-    return c.json({ data: await service.list(tenantId) });
+    return c.json({ data: await anyService.list(tenantId) });
   });
 
   // POST /v1/admin/mailboxes/:tenantId/connect — URL de consentement Google
   app.post("/:tenantId/connect", (c) => {
+    if (!gmail) {
+      throw new BadRequestError("OAuth Google non configuré", "gmail_unavailable");
+    }
     const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
-    const { url } = service.buildAuthUrl(tenantId);
+    const { url } = gmail.buildAuthUrl(tenantId);
     return c.json({ data: { url } });
+  });
+
+  // POST /v1/admin/mailboxes/:tenantId/imap — connexion IMAP/Yahoo par identifiants
+  app.post("/:tenantId/imap", async (c) => {
+    if (!imap) {
+      throw new BadRequestError(
+        "Boîtes IMAP non configurées (MAILBOX_ENC_KEY absente)",
+        "imap_unavailable",
+      );
+    }
+    const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
+    const body = await c.req.json().catch(() => {
+      throw new BadRequestError("JSON invalide", "invalid_json");
+    });
+    const input = parseOrThrow(imapConnectSchema, body, "body");
+    return c.json({ data: await imap.addMailbox(tenantId, input) }, 201);
   });
 
   // PATCH /v1/admin/mailboxes/:tenantId/:id — pause / reprise
   app.patch("/:tenantId/:id", async (c) => {
+    if (!anyService) throw new BadRequestError("Aucun provider email configuré");
     const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
     const id = parseOrThrow(uuidParam, c.req.param("id"), "id");
     const body = await c.req.json().catch(() => {
@@ -35,14 +71,15 @@ export function adminMailboxesRoute(service: MailboxService) {
       body,
       "body",
     );
-    return c.json({ data: await service.setStatus(tenantId, id, status) });
+    return c.json({ data: await anyService.setStatus(tenantId, id, status) });
   });
 
   // DELETE /v1/admin/mailboxes/:tenantId/:id
   app.delete("/:tenantId/:id", async (c) => {
+    if (!anyService) throw new BadRequestError("Aucun provider email configuré");
     const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
     const id = parseOrThrow(uuidParam, c.req.param("id"), "id");
-    await service.remove(tenantId, id);
+    await anyService.remove(tenantId, id);
     return c.json({ data: { ok: true } });
   });
 

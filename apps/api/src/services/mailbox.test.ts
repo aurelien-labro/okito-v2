@@ -112,7 +112,7 @@ describe("MailboxService", () => {
       where: (m, { eq }) => eq(m.id, box.id),
     });
     expect(updated?.accessToken).toBe("at-neuf");
-    expect(updated?.accessTokenExpiresAt.getTime()).toBeGreaterThan(Date.now());
+    expect(updated?.accessTokenExpiresAt?.getTime()).toBeGreaterThan(Date.now());
   });
 
   it("getFreshAccessToken : token encore valide → pas d'appel réseau", async () => {

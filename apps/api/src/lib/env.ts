@@ -46,6 +46,11 @@ const envSchema = z.object({
   GOOGLE_REDIRECT_URI: z.string().url().optional(),
   /** Clé API Places (onboarding : scan fiche Google Business). Optionnelle. */
   GOOGLE_PLACES_API_KEY: z.string().optional(),
+  /** Clé AES-256 (64 hex) chiffrant les mots de passe IMAP. Active les boîtes IMAP/Yahoo. */
+  MAILBOX_ENC_KEY: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/i)
+    .optional(),
   /** UUIDs Supabase Auth des utilisateurs admin (CRUD tenants), séparés par virgule. */
   ADMIN_USER_IDS: z.string().optional(),
   /** Clé secrète Stripe (sk_test_... ou sk_live_...). Active la route checkout + webhook. */

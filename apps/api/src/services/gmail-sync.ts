@@ -1,5 +1,5 @@
 import { type Database, schema } from "@okito/db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import type { EventBusService } from "./event-bus.js";
 import type { MailboxService } from "./mailbox.js";
@@ -40,7 +40,12 @@ export class GmailSyncService {
     const boxes = await this.db
       .select()
       .from(schema.tenantMailboxes)
-      .where(eq(schema.tenantMailboxes.status, "active"));
+      .where(
+        and(
+          eq(schema.tenantMailboxes.status, "active"),
+          eq(schema.tenantMailboxes.provider, "gmail"),
+        ),
+      );
 
     for (const box of boxes) {
       result.mailboxesProcessed++;

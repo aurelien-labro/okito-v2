@@ -53,6 +53,8 @@ import type { CustomerPrivacyService } from "./services/customer-privacy.js";
 import type { CustomerTimelineService } from "./services/customer-timeline.js";
 import { type BusinessEventEmitter, EventBusService } from "./services/event-bus.js";
 import type { GmailSyncService } from "./services/gmail-sync.js";
+import type { ImapMailboxService } from "./services/imap-mailbox.js";
+import type { ImapSyncService } from "./services/imap-sync.js";
 import type { InboxService } from "./services/inbox.js";
 import type { InvoiceOverdueRunner } from "./services/invoice-overdue-runner.js";
 import type { InvoiceService } from "./services/invoice.js";
@@ -136,6 +138,10 @@ export interface AppServices {
   mailbox?: MailboxService;
   /** Sync Gmail — ajoute la function Inngest 5-min si fournie. */
   gmailSync?: GmailSyncService;
+  /** Boîtes IMAP/Yahoo — active POST /mailboxes/:tenantId/imap si fourni. */
+  imapMailbox?: ImapMailboxService;
+  /** Sync IMAP — ajoute la function Inngest 5-min si fournie. */
+  imapSync?: ImapSyncService;
   /** Inbox unifiée — monté sur /v1/admin/inbox si fourni. */
   inbox?: InboxService;
   /** Fiche client 360° — monté sur /v1/admin/customer-360 si fourni. */
@@ -372,8 +378,8 @@ export function createApp(env: Env, services: AppServices = {}) {
       v1Admin.route("/jarvis-brief", adminJarvisBriefRoute(services.db, services.jarvisAdvisor));
       v1Admin.route("/site-analytics", adminSiteAnalyticsRoute(services.db));
     }
-    if (services.mailbox) {
-      v1Admin.route("/mailboxes", adminMailboxesRoute(services.mailbox));
+    if (services.mailbox || services.imapMailbox) {
+      v1Admin.route("/mailboxes", adminMailboxesRoute(services.mailbox, services.imapMailbox));
     }
     if (services.onboardingScan) {
       v1Admin.route("/onboarding", adminOnboardingRoute(services.onboardingScan));
@@ -406,6 +412,7 @@ export function createApp(env: Env, services: AppServices = {}) {
         services.jarvisObserver,
         services.gmailSync,
         services.invoiceOverdue,
+        services.imapSync,
       ),
     );
   }
