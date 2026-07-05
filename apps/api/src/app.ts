@@ -18,7 +18,11 @@ import { adminInvoicesRoute } from "./routes/admin-invoices.js";
 import { adminJarvisActionsRoute } from "./routes/admin-jarvis-actions.js";
 import { adminJarvisBriefRoute } from "./routes/admin-jarvis-brief.js";
 import { adminLoyaltyRoute } from "./routes/admin-loyalty.js";
-import { adminMailboxesRoute, googleOAuthCallbackRoute } from "./routes/admin-mailboxes.js";
+import {
+  adminMailboxesRoute,
+  googleOAuthCallbackRoute,
+  microsoftOAuthCallbackRoute,
+} from "./routes/admin-mailboxes.js";
 import { adminMembersRoute } from "./routes/admin-members.js";
 import { adminOnboardingRoute } from "./routes/admin-onboarding.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
@@ -53,6 +57,7 @@ import type { CustomerPrivacyService } from "./services/customer-privacy.js";
 import type { CustomerTimelineService } from "./services/customer-timeline.js";
 import { type BusinessEventEmitter, EventBusService } from "./services/event-bus.js";
 import type { GmailSyncService } from "./services/gmail-sync.js";
+import type { GraphSyncService } from "./services/graph-sync.js";
 import type { ImapMailboxService } from "./services/imap-mailbox.js";
 import type { ImapSyncService } from "./services/imap-sync.js";
 import type { InboxService } from "./services/inbox.js";
@@ -64,6 +69,7 @@ import type { JarvisExecutor } from "./services/jarvis-executor.js";
 import type { JarvisObserverService } from "./services/jarvis-observer.js";
 import type { LoyaltyService } from "./services/loyalty.js";
 import type { MailboxService } from "./services/mailbox.js";
+import type { MicrosoftMailboxService } from "./services/microsoft-mailbox.js";
 import type { NoShowService } from "./services/no-show.js";
 import type { Notifier } from "./services/notifier.js";
 import type { OnboardingScanService } from "./services/onboarding-scan.js";
@@ -142,6 +148,10 @@ export interface AppServices {
   imapMailbox?: ImapMailboxService;
   /** Sync IMAP — ajoute la function Inngest 5-min si fournie. */
   imapSync?: ImapSyncService;
+  /** Boîtes Outlook/365 — monté sur connect-outlook + /oauth/microsoft/callback si fourni. */
+  microsoftMailbox?: MicrosoftMailboxService;
+  /** Sync Graph — ajoute la function Inngest 5-min si fournie. */
+  graphSync?: GraphSyncService;
   /** Inbox unifiée — monté sur /v1/admin/inbox si fourni. */
   inbox?: InboxService;
   /** Fiche client 360° — monté sur /v1/admin/customer-360 si fourni. */
@@ -378,8 +388,11 @@ export function createApp(env: Env, services: AppServices = {}) {
       v1Admin.route("/jarvis-brief", adminJarvisBriefRoute(services.db, services.jarvisAdvisor));
       v1Admin.route("/site-analytics", adminSiteAnalyticsRoute(services.db));
     }
-    if (services.mailbox || services.imapMailbox) {
-      v1Admin.route("/mailboxes", adminMailboxesRoute(services.mailbox, services.imapMailbox));
+    if (services.mailbox || services.imapMailbox || services.microsoftMailbox) {
+      v1Admin.route(
+        "/mailboxes",
+        adminMailboxesRoute(services.mailbox, services.imapMailbox, services.microsoftMailbox),
+      );
     }
     if (services.onboardingScan) {
       v1Admin.route("/onboarding", adminOnboardingRoute(services.onboardingScan));
@@ -398,6 +411,14 @@ export function createApp(env: Env, services: AppServices = {}) {
     app.route("/oauth/google/callback", googleOAuthCallbackRoute(services.mailbox, env.APP_URL));
   }
 
+  // Callback OAuth Microsoft — public, Microsoft y redirige le navigateur du patron.
+  if (services.microsoftMailbox) {
+    app.route(
+      "/oauth/microsoft/callback",
+      microsoftOAuthCallbackRoute(services.microsoftMailbox, env.APP_URL),
+    );
+  }
+
   // Inngest : endpoint scrape par le dashboard pour découvrir + invoquer
   // les functions (cron rappels J-1, future events).
   if (services.reminder) {
@@ -413,6 +434,7 @@ export function createApp(env: Env, services: AppServices = {}) {
         services.gmailSync,
         services.invoiceOverdue,
         services.imapSync,
+        services.graphSync,
       ),
     );
   }

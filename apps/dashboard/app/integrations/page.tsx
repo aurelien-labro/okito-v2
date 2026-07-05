@@ -10,6 +10,7 @@ import {
   type WebhookEvent,
   connectImapMailbox,
   connectMailbox,
+  connectOutlookMailbox,
   createWebhook,
   deleteMailbox,
   deleteWebhook,
@@ -55,7 +56,7 @@ const EMAIL_PROVIDERS: EmailProvider[] = [
     name: "Outlook / Microsoft 365",
     description: "Boîtes Outlook.com et Microsoft 365 professionnelles, via OAuth Microsoft Graph.",
     logo: <OutlookLogo />,
-    available: false,
+    available: true,
   },
   {
     id: "yahoo",
@@ -77,6 +78,7 @@ const EMAIL_PROVIDERS: EmailProvider[] = [
 
 const PROVIDER_LOGO: Record<string, React.ReactNode> = {
   gmail: <GmailLogo />,
+  outlook: <OutlookLogo />,
   yahoo: <YahooLogo />,
   imap: <ImapLogo />,
 };
@@ -162,6 +164,22 @@ function MailboxesSection() {
     }
   }
 
+  async function handleConnectOutlook() {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    try {
+      const res = await connectOutlookMailbox(tenantId);
+      window.location.href = res.data.url;
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      alert(
+        code === "outlook_unavailable"
+          ? "OAuth Microsoft non configuré côté API (variables MICROSOFT_* absentes — voir portail Azure)."
+          : `Connexion impossible : ${e instanceof Error ? e.message : "erreur"}`,
+      );
+    }
+  }
+
   async function handleToggle(box: Mailbox) {
     const tenantId = getCurrentTenantId();
     if (!tenantId) return;
@@ -233,9 +251,11 @@ function MailboxesSection() {
             onConnect={
               p.id === "gmail"
                 ? handleConnect
-                : p.id === "yahoo" || p.id === "imap"
-                  ? () => setImapForm(imapForm === p.id ? null : (p.id as "imap" | "yahoo"))
-                  : undefined
+                : p.id === "outlook"
+                  ? handleConnectOutlook
+                  : p.id === "yahoo" || p.id === "imap"
+                    ? () => setImapForm(imapForm === p.id ? null : (p.id as "imap" | "yahoo"))
+                    : undefined
             }
           />
         ))}
