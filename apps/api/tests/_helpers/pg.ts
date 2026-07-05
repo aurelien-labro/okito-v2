@@ -256,6 +256,28 @@ async function applySchema(pglite: PGlite): Promise<void> {
       unique (tenant_id, number)
     );
 
+    create table supplier_invoices (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      supplier_name text not null,
+      invoice_number text,
+      status text not null default 'received',
+      amount_cents integer not null,
+      currency text not null default 'EUR',
+      category text,
+      invoice_date timestamptz,
+      due_date timestamptz,
+      paid_at timestamptz,
+      source text not null default 'manual',
+      extracted jsonb,
+      notes text,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+    create unique index supplier_invoices_tenant_supplier_number_uniq
+      on supplier_invoices (tenant_id, supplier_name, invoice_number)
+      where invoice_number is not null;
+
     create table audit_log (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid references tenants(id) on delete set null,

@@ -27,6 +27,7 @@ import { adminScheduleRulesRoute } from "./routes/admin-schedule-rules.js";
 import { adminServiceCatalogRoute } from "./routes/admin-service-catalog.js";
 import { adminSiteAnalyticsRoute } from "./routes/admin-site-analytics.js";
 import { adminStatsRoute } from "./routes/admin-stats.js";
+import { adminSupplierInvoicesRoute } from "./routes/admin-supplier-invoices.js";
 import { adminTablesRoute } from "./routes/admin-tables.js";
 import { adminTenantsRoute } from "./routes/admin-tenants.js";
 import { adminWaitlistRoute } from "./routes/admin-waitlist.js";
@@ -72,6 +73,7 @@ import type { ScheduleRuleService } from "./services/schedule-rule.js";
 import type { ServiceCatalogService } from "./services/service-catalog.js";
 import type { StatsService } from "./services/stats.js";
 import type { SubscriptionService } from "./services/subscription.js";
+import type { SupplierInvoiceService } from "./services/supplier-invoice.js";
 import type { TableService } from "./services/table.js";
 import type { TenantMemberService } from "./services/tenant-member.js";
 import type { TenantService } from "./services/tenant.js";
@@ -141,6 +143,8 @@ export interface AppServices {
   invoice?: InvoiceService;
   /** Runner cron overdue — ajoute la function Inngest horaire si fourni. */
   invoiceOverdue?: InvoiceOverdueRunner;
+  /** Factures fournisseurs — monté sur /v1/admin/supplier-invoices si fourni. */
+  supplierInvoice?: SupplierInvoiceService;
   /** Onboarding magique — monté sur /v1/admin/onboarding si fourni (LLM requis). */
   onboardingScan?: OnboardingScanService;
   /** Avis clients — monté sur /v1/admin/reviews et /review si REVIEW_LINK_SECRET fourni. */
@@ -348,6 +352,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.invoice) {
       v1Admin.route("/invoices", adminInvoicesRoute(services.invoice));
+    }
+    if (services.supplierInvoice) {
+      v1Admin.route("/supplier-invoices", adminSupplierInvoicesRoute(services.supplierInvoice));
     }
     if (services.inbox) {
       v1Admin.route("/inbox", adminInboxRoute(services.inbox));

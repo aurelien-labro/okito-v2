@@ -36,6 +36,7 @@ import { ScheduleRuleService } from "./services/schedule-rule.js";
 import { ServiceCatalogService } from "./services/service-catalog.js";
 import { StatsService } from "./services/stats.js";
 import { SubscriptionService } from "./services/subscription.js";
+import { SupplierInvoiceService } from "./services/supplier-invoice.js";
 import { TableService } from "./services/table.js";
 import { TenantMemberService } from "./services/tenant-member.js";
 import { TenantService } from "./services/tenant.js";
@@ -78,6 +79,7 @@ if (env.DATABASE_URL) {
   const invoice = new InvoiceService(db, eventBus);
   services.invoice = invoice;
   services.invoiceOverdue = new InvoiceOverdueRunner(db, invoice);
+  services.supplierInvoice = new SupplierInvoiceService(db, eventBus);
   if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI) {
     const mailbox = new MailboxService(db, {
       clientId: env.GOOGLE_CLIENT_ID,
