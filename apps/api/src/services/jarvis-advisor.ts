@@ -3,6 +3,7 @@ import type { LLMClient } from "@okito/shared/llm";
 import { and, desc, eq, gte } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import type { EventBusService } from "./event-bus.js";
+import type { Notifier } from "./notifier.js";
 
 export interface JarvisBrief {
   tenantId: string;
@@ -14,6 +15,7 @@ export interface JarvisBrief {
 export interface AdvisorRunResult {
   tenantsProcessed: number;
   briefsGenerated: number;
+  briefsNotified: number;
 }
 
 const SYSTEM_PROMPT = `Tu es Jarvis, l'assistant de pilotage d'un commerce.
@@ -50,6 +52,7 @@ export class JarvisAdvisorService {
     private readonly db: Database,
     private readonly llm: LLMClient,
     private readonly bus?: EventBusService,
+    private readonly notifier?: Notifier,
     private readonly windowHours = 24,
   ) {}
 
@@ -137,9 +140,9 @@ ${buildContext(events, pendingApprovals.length)}`,
 
   /** Un passage sur tous les tenants actifs. Appelé par le cron Inngest. */
   async runForAllTenants(now = new Date()): Promise<AdvisorRunResult> {
-    const result: AdvisorRunResult = { tenantsProcessed: 0, briefsGenerated: 0 };
+    const result: AdvisorRunResult = { tenantsProcessed: 0, briefsGenerated: 0, briefsNotified: 0 };
     const tenants = await this.db.query.tenants.findMany({
-      columns: { id: true },
+      columns: { id: true, name: true, contactPhone: true },
       where: (t, { eq: whereEq }) => whereEq(t.status, "active"),
     });
 
@@ -147,13 +150,46 @@ ${buildContext(events, pendingApprovals.length)}`,
       result.tenantsProcessed++;
       try {
         const brief = await this.generateBrief(tenant.id, now);
-        if (brief) result.briefsGenerated++;
+        if (brief) {
+          result.briefsGenerated++;
+          if (await this.notifyBrief(tenant, brief, now)) result.briefsNotified++;
+        }
       } catch (err) {
         // Un tenant en échec (quota LLM, etc.) ne bloque pas les autres.
         logger.error({ err, tenantId: tenant.id }, "Jarvis: échec génération brief");
       }
     }
     return result;
+  }
+
+  /**
+   * Pousse le brief en WhatsApp au patron (tenant.contactPhone). Uniquement
+   * sur le passage cron : la régénération manuelle depuis le dashboard ne
+   * renotifie pas. Un envoi en échec ne fait jamais échouer le tenant.
+   */
+  private async notifyBrief(
+    tenant: { id: string; name: string; contactPhone: string | null },
+    brief: JarvisBrief,
+    now: Date,
+  ): Promise<boolean> {
+    if (!this.notifier || !tenant.contactPhone) return false;
+    const date = now.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" });
+    try {
+      const sent = await this.notifier.send({
+        tenantId: tenant.id,
+        channel: "whatsapp",
+        to: tenant.contactPhone,
+        body: `Brief Jarvis du ${date} — ${tenant.name}\n\n${brief.text}`,
+        context: { type: "jarvis_brief" },
+      });
+      if (!sent.delivered) {
+        logger.warn({ tenantId: tenant.id, error: sent.error }, "Jarvis: brief WhatsApp refusé");
+      }
+      return sent.delivered;
+    } catch (err) {
+      logger.error({ err, tenantId: tenant.id }, "Jarvis: échec envoi brief WhatsApp");
+      return false;
+    }
   }
 }
 

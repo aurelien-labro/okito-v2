@@ -5,6 +5,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTestDb } from "../../tests/_helpers/pg.js";
 import { EventBusService } from "./event-bus.js";
 import { JarvisAdvisorService } from "./jarvis-advisor.js";
+import type { Notifier } from "./notifier.js";
+
+function fakeNotifier(delivered = true): Notifier & { send: ReturnType<typeof vi.fn> } {
+  return {
+    send: vi.fn().mockResolvedValue({ delivered, provider: "fake" }),
+    notifyReservationCreated: vi.fn(),
+    notifyReservationCancelled: vi.fn(),
+  };
+}
 
 function fakeLLM(text: string | null): LLMClient & { complete: ReturnType<typeof vi.fn> } {
   const response: LLMResponse = {
@@ -137,5 +146,51 @@ describe("JarvisAdvisorService", () => {
     const result = await advisor.runForAllTenants();
 
     expect(result).toMatchObject({ tenantsProcessed: 2, briefsGenerated: 1 });
+  });
+
+  it("runForAllTenants : pousse le brief en WhatsApp au contactPhone du tenant", async () => {
+    await ctx.db
+      .update(schema.tenants)
+      .set({ contactPhone: "+33612345678" })
+      .where(eq(schema.tenants.id, tenantId));
+    const notifier = fakeNotifier();
+    const advisor = new JarvisAdvisorService(ctx.db, fakeLLM("Ton brief."), undefined, notifier);
+
+    const result = await advisor.runForAllTenants();
+
+    expect(result).toMatchObject({ briefsGenerated: 1, briefsNotified: 1 });
+    expect(notifier.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId,
+        channel: "whatsapp",
+        to: "+33612345678",
+        body: expect.stringContaining("Ton brief."),
+        context: { type: "jarvis_brief" },
+      }),
+    );
+  });
+
+  it("runForAllTenants : pas de contactPhone → brief généré mais rien envoyé", async () => {
+    const notifier = fakeNotifier();
+    const advisor = new JarvisAdvisorService(ctx.db, fakeLLM("Brief."), undefined, notifier);
+
+    const result = await advisor.runForAllTenants();
+
+    expect(result).toMatchObject({ briefsGenerated: 1, briefsNotified: 0 });
+    expect(notifier.send).not.toHaveBeenCalled();
+  });
+
+  it("runForAllTenants : un envoi WhatsApp en échec ne fait pas échouer le run", async () => {
+    await ctx.db
+      .update(schema.tenants)
+      .set({ contactPhone: "+33612345678" })
+      .where(eq(schema.tenants.id, tenantId));
+    const notifier = fakeNotifier();
+    notifier.send.mockRejectedValue(new Error("provider down"));
+    const advisor = new JarvisAdvisorService(ctx.db, fakeLLM("Brief."), undefined, notifier);
+
+    const result = await advisor.runForAllTenants();
+
+    expect(result).toMatchObject({ briefsGenerated: 1, briefsNotified: 0 });
   });
 });
