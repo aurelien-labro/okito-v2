@@ -751,6 +751,35 @@ export async function chatWithJarvis(
   });
 }
 
+// --- Fiche client 360° --------------------------------------------------------
+
+export interface TimelineEntry {
+  kind: "reservation" | "review" | "email";
+  at: string;
+  title: string;
+  detail: string | null;
+}
+
+export interface CustomerProfile {
+  phone: string;
+  name: string;
+  email: string | null;
+  visitCount: number;
+  cancelledCount: number;
+  noShowCount: number;
+  firstSeen: string | null;
+  lastSeen: string | null;
+  averageRating: number | null;
+  timeline: TimelineEntry[];
+}
+
+export async function getCustomer360(
+  tenantId: string,
+  phone: string,
+): Promise<{ data: CustomerProfile }> {
+  return request(`/v1/admin/customer-360/${tenantId}/${encodeURIComponent(phone)}`);
+}
+
 // --- Inbox (emails ingérés) ---------------------------------------------------
 
 export interface InboxMessage {
