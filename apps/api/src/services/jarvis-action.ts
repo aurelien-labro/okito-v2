@@ -12,6 +12,7 @@ const DEFAULT_POLICIES: Record<string, JarvisPolicy> = {
   "reminder.send": "auto",
   "review.reply": "auto_cancellable",
   "invoice.remind": "auto_cancellable",
+  "supplier_invoice.pay_reminder": "auto_cancellable",
   "email.reply": "auto_cancellable",
 };
 const FALLBACK_POLICY: JarvisPolicy = "approval";
