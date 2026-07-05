@@ -4,6 +4,7 @@ import { BadRequestError, HttpError } from "../lib/errors.js";
 import type { AppEnv } from "../lib/types.js";
 import type { ImapMailboxService } from "../services/imap-mailbox.js";
 import type { MailboxService } from "../services/mailbox.js";
+import type { MicrosoftMailboxService } from "../services/microsoft-mailbox.js";
 
 const uuidParam = z.string().uuid();
 
@@ -21,7 +22,11 @@ const imapConnectSchema = z.object({
  * Gmail (OAuth) et IMAP/Yahoo (identifiants chiffrés) sont indépendants :
  * chaque service est optionnel selon la config de l'instance.
  */
-export function adminMailboxesRoute(gmail?: MailboxService, imap?: ImapMailboxService) {
+export function adminMailboxesRoute(
+  gmail?: MailboxService,
+  imap?: ImapMailboxService,
+  microsoft?: MicrosoftMailboxService,
+) {
   const app = new Hono<AppEnv>();
   const anyService = gmail ?? imap;
 
@@ -39,6 +44,19 @@ export function adminMailboxesRoute(gmail?: MailboxService, imap?: ImapMailboxSe
     }
     const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
     const { url } = gmail.buildAuthUrl(tenantId);
+    return c.json({ data: { url } });
+  });
+
+  // POST /v1/admin/mailboxes/:tenantId/connect-outlook — URL de consentement Microsoft
+  app.post("/:tenantId/connect-outlook", (c) => {
+    if (!microsoft) {
+      throw new BadRequestError(
+        "OAuth Microsoft non configuré (variables MICROSOFT_* absentes)",
+        "outlook_unavailable",
+      );
+    }
+    const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
+    const { url } = microsoft.buildAuthUrl(tenantId);
     return c.json({ data: { url } });
   });
 
@@ -102,6 +120,31 @@ export function googleOAuthCallbackRoute(service: MailboxService, appUrl: string
     try {
       const mailbox = await service.handleCallback(code, state);
       // Retour au dashboard : la page Intégrations affichera la boîte connectée.
+      return c.redirect(`${appUrl}/integrations?mailbox=${mailbox.id}`);
+    } catch (err) {
+      if (err instanceof HttpError) return c.text(err.message, err.status as 400);
+      throw err;
+    }
+  });
+
+  return app;
+}
+
+/**
+ * Callback OAuth Microsoft — public (Microsoft y redirige le navigateur).
+ * Monté sur /oauth/microsoft/callback, hors middleware admin.
+ */
+export function microsoftOAuthCallbackRoute(service: MicrosoftMailboxService, appUrl: string) {
+  const app = new Hono<AppEnv>();
+
+  app.get("/", async (c) => {
+    const code = c.req.query("code");
+    const state = c.req.query("state");
+    if (!code || !state) {
+      return c.text("Paramètres OAuth manquants", 400);
+    }
+    try {
+      const mailbox = await service.handleCallback(code, state);
       return c.redirect(`${appUrl}/integrations?mailbox=${mailbox.id}`);
     } catch (err) {
       if (err instanceof HttpError) return c.text(err.message, err.status as 400);

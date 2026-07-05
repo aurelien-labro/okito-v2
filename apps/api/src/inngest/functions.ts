@@ -2,6 +2,7 @@ import type { InngestFunction } from "inngest";
 import { inngest } from "../lib/inngest.js";
 import { logger } from "../lib/logger.js";
 import type { GmailSyncService } from "../services/gmail-sync.js";
+import type { GraphSyncService } from "../services/graph-sync.js";
 import type { ImapSyncService } from "../services/imap-sync.js";
 import type { InvoiceOverdueRunner } from "../services/invoice-overdue-runner.js";
 import type { JarvisAdvisorService } from "../services/jarvis-advisor.js";
@@ -34,6 +35,7 @@ export function createInngestFunctions(
   gmailSync?: GmailSyncService,
   invoiceOverdue?: InvoiceOverdueRunner,
   imapSync?: ImapSyncService,
+  graphSync?: GraphSyncService,
 ): InngestFunction.Any[] {
   const dailyReminders = inngest.createFunction(
     {
@@ -172,6 +174,24 @@ export function createInngestFunctions(
       },
     );
     functions.push(syncImap);
+  }
+
+  if (graphSync) {
+    const syncGraph = inngest.createFunction(
+      {
+        id: "graph-sync",
+        name: "Sync boîtes Outlook/365 (toutes les 5 min)",
+        triggers: [{ cron: "*/5 * * * *" }],
+      },
+      async ({ step }) => {
+        const result = await step.run("run-once", async () => graphSync.runOnce());
+        if (result.emailsIngested > 0 || result.errors > 0) {
+          logger.info({ result }, "Inngest: graphSync terminé");
+        }
+        return result;
+      },
+    );
+    functions.push(syncGraph);
   }
 
   if (invoiceOverdue) {

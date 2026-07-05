@@ -46,6 +46,11 @@ const envSchema = z.object({
   GOOGLE_REDIRECT_URI: z.string().url().optional(),
   /** Clé API Places (onboarding : scan fiche Google Business). Optionnelle. */
   GOOGLE_PLACES_API_KEY: z.string().optional(),
+  /** OAuth Microsoft (ingestion Outlook/365). Les 3 requis pour activer la connexion. */
+  MICROSOFT_CLIENT_ID: z.string().optional(),
+  MICROSOFT_CLIENT_SECRET: z.string().optional(),
+  /** URL de callback enregistrée dans le portail Azure, ex: http://localhost:3001/oauth/microsoft/callback */
+  MICROSOFT_REDIRECT_URI: z.string().url().optional(),
   /** Clé AES-256 (64 hex) chiffrant les mots de passe IMAP. Active les boîtes IMAP/Yahoo. */
   MAILBOX_ENC_KEY: z
     .string()

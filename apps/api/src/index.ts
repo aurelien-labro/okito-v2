@@ -14,6 +14,7 @@ import { CustomerPrivacyService } from "./services/customer-privacy.js";
 import { CustomerTimelineService } from "./services/customer-timeline.js";
 import { EventBusService } from "./services/event-bus.js";
 import { GmailSyncService } from "./services/gmail-sync.js";
+import { GraphSyncService } from "./services/graph-sync.js";
 import { ImapMailboxService } from "./services/imap-mailbox.js";
 import { ImapSyncService } from "./services/imap-sync.js";
 import { InboxService } from "./services/inbox.js";
@@ -28,6 +29,7 @@ import { ReviewReplyTool } from "./services/jarvis-tools/review-reply.js";
 import { createLLMClient } from "./services/llm/index.js";
 import { LoyaltyService } from "./services/loyalty.js";
 import { MailboxService } from "./services/mailbox.js";
+import { MicrosoftMailboxService } from "./services/microsoft-mailbox.js";
 import { NoShowService } from "./services/no-show.js";
 import { createNotifier } from "./services/notifier-factory.js";
 import { OnboardingScanService } from "./services/onboarding-scan.js";
@@ -101,6 +103,17 @@ if (env.DATABASE_URL) {
     services.imapSync = new ImapSyncService(db, imapMailbox, eventBus);
   } else {
     logger.warn("MAILBOX_ENC_KEY absente — boîtes IMAP/Yahoo désactivées");
+  }
+  if (env.MICROSOFT_CLIENT_ID && env.MICROSOFT_CLIENT_SECRET && env.MICROSOFT_REDIRECT_URI) {
+    const microsoftMailbox = new MicrosoftMailboxService(db, {
+      clientId: env.MICROSOFT_CLIENT_ID,
+      clientSecret: env.MICROSOFT_CLIENT_SECRET,
+      redirectUri: env.MICROSOFT_REDIRECT_URI,
+    });
+    services.microsoftMailbox = microsoftMailbox;
+    services.graphSync = new GraphSyncService(db, microsoftMailbox, eventBus);
+  } else {
+    logger.warn("OAuth Microsoft absent — connexion de boîtes Outlook/365 désactivée");
   }
   services.customerPrivacy = new CustomerPrivacyService(db);
   services.db = db;

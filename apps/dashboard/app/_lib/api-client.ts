@@ -948,6 +948,10 @@ export async function connectMailbox(tenantId: string): Promise<{ data: { url: s
   return request(`/v1/admin/mailboxes/${tenantId}/connect`, { method: "POST" });
 }
 
+export async function connectOutlookMailbox(tenantId: string): Promise<{ data: { url: string } }> {
+  return request(`/v1/admin/mailboxes/${tenantId}/connect-outlook`, { method: "POST" });
+}
+
 export async function connectImapMailbox(
   tenantId: string,
   input: {
