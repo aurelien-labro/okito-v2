@@ -3,6 +3,11 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { BadRequestError, HttpError } from "../lib/errors.js";
 import type { AppEnv } from "../lib/types.js";
+import {
+  EXTRACTION_MAX_BYTES,
+  EXTRACTION_MIME_TYPES,
+  type SupplierInvoiceExtractionService,
+} from "../services/supplier-invoice-extraction.js";
 import type { SupplierInvoiceService } from "../services/supplier-invoice.js";
 
 const uuidParam = z.string().uuid();
@@ -17,10 +22,21 @@ const createSchema = z.object({
   invoiceDate: z.coerce.date().nullable().optional(),
   dueDate: z.coerce.date().nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
+  source: z.enum(["manual", "upload", "email"]).optional(),
+  extracted: z.record(z.unknown()).nullable().optional(),
+});
+
+const extractSchema = z.object({
+  mimeType: z.enum(EXTRACTION_MIME_TYPES),
+  /** Fichier en base64, sans préfixe data:. */
+  dataBase64: z.string().min(1),
 });
 
 /** Factures fournisseurs d'un tenant (module Admin, volet achats). */
-export function adminSupplierInvoicesRoute(service: SupplierInvoiceService) {
+export function adminSupplierInvoicesRoute(
+  service: SupplierInvoiceService,
+  extraction?: SupplierInvoiceExtractionService,
+) {
   const app = new Hono<AppEnv>();
 
   app.onError((err, c) => {
@@ -42,6 +58,22 @@ export function adminSupplierInvoicesRoute(service: SupplierInvoiceService) {
     const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
     const input = parseOrThrow(createSchema, await readJson(c), "body");
     return c.json({ data: await service.create(tenantId, input) }, 201);
+  });
+
+  // POST /v1/admin/supplier-invoices/:tenantId/extract — upload → proposition
+  // extraite par le LLM. Ne crée rien : le patron valide puis POST /:tenantId
+  // avec source="upload" et le brut dans extracted.
+  app.post("/:tenantId/extract", async (c) => {
+    if (!extraction) {
+      throw new BadRequestError("Extraction non configurée (LLM absent)", "extraction_unavailable");
+    }
+    parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
+    const { mimeType, dataBase64 } = parseOrThrow(extractSchema, await readJson(c), "body");
+    // Borne AVANT tout décodage — 4/3 = overhead base64.
+    if (dataBase64.length > (EXTRACTION_MAX_BYTES * 4) / 3) {
+      throw new BadRequestError("Fichier trop lourd (6 Mo max)", "file_too_large");
+    }
+    return c.json({ data: await extraction.extract({ mimeType, dataBase64 }) });
   });
 
   // POST /v1/admin/supplier-invoices/:tenantId/:id/approve

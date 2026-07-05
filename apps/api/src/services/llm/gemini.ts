@@ -68,13 +68,18 @@ export class GeminiClient implements LLMClient {
   }
 }
 
-function mapMessages(messages: LLMMessage[]): { role: string; parts: { text: string }[] }[] {
+type GeminiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
+
+function mapMessages(messages: LLMMessage[]): { role: string; parts: GeminiPart[] }[] {
   return messages
     .filter((m) => m.role !== "system")
-    .map((m) => ({
-      role: m.role === "user" ? "user" : "model",
-      parts: [{ text: m.content }],
-    }));
+    .map((m) => {
+      const parts: GeminiPart[] = [{ text: m.content }];
+      for (const a of m.attachments ?? []) {
+        parts.push({ inlineData: { mimeType: a.mimeType, data: a.dataBase64 } });
+      }
+      return { role: m.role === "user" ? "user" : "model", parts };
+    });
 }
 
 function mapTool(t: LLMToolDefinition): FunctionDeclaration {
