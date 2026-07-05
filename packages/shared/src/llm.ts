@@ -6,9 +6,17 @@
 
 export type LLMRole = "user" | "model" | "system";
 
+/** Pièce jointe binaire (image, PDF) pour les modèles multimodaux. */
+export interface LLMAttachment {
+  mimeType: string;
+  dataBase64: string;
+}
+
 export interface LLMMessage {
   role: LLMRole;
   content: string;
+  /** Optionnel — ignoré par les providers non multimodaux. */
+  attachments?: LLMAttachment[];
 }
 
 export interface LLMToolDefinition {

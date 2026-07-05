@@ -94,4 +94,26 @@ describe("adminSupplierInvoicesRoute", () => {
       "cancelled",
     );
   });
+
+  it("extract : 400 extraction_unavailable si LLM absent", async () => {
+    const res = await app.request(`/${tenantId}/extract`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mimeType: "application/pdf", dataBase64: "JVBERi0=" }),
+    });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: { code: string } };
+    expect(body.error.code).toBe("extraction_unavailable");
+  });
+
+  it("POST accepte source=upload avec le brut extrait", async () => {
+    const res = await createOne({
+      source: "upload",
+      extracted: { confidence: 0.9, supplierName: "Metro" },
+    });
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { data: { source: string; extracted: unknown } };
+    expect(body.data.source).toBe("upload");
+    expect(body.data.extracted).toMatchObject({ confidence: 0.9 });
+  });
 });

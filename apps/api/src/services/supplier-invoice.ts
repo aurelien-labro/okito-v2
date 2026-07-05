@@ -18,6 +18,10 @@ export interface SupplierInvoiceCreateInput {
   invoiceDate?: Date | null;
   dueDate?: Date | null;
   notes?: string | null;
+  /** Provenance : saisie manuelle (défaut), upload extrait par LLM, email. */
+  source?: "manual" | "upload" | "email";
+  /** Brut de l'extraction LLM, gardé pour audit quand source != manual. */
+  extracted?: Record<string, unknown> | null;
 }
 
 /**
@@ -67,7 +71,8 @@ export class SupplierInvoiceService {
         invoiceDate: input.invoiceDate ?? null,
         dueDate: input.dueDate ?? null,
         notes: input.notes ?? null,
-        source: "manual",
+        source: input.source ?? "manual",
+        extracted: input.extracted ?? null,
       })
       .returning();
     if (!row) throw new Error("insert supplier invoice failed");

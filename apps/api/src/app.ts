@@ -73,6 +73,7 @@ import type { ScheduleRuleService } from "./services/schedule-rule.js";
 import type { ServiceCatalogService } from "./services/service-catalog.js";
 import type { StatsService } from "./services/stats.js";
 import type { SubscriptionService } from "./services/subscription.js";
+import type { SupplierInvoiceExtractionService } from "./services/supplier-invoice-extraction.js";
 import type { SupplierInvoiceService } from "./services/supplier-invoice.js";
 import type { TableService } from "./services/table.js";
 import type { TenantMemberService } from "./services/tenant-member.js";
@@ -145,6 +146,8 @@ export interface AppServices {
   invoiceOverdue?: InvoiceOverdueRunner;
   /** Factures fournisseurs — monté sur /v1/admin/supplier-invoices si fourni. */
   supplierInvoice?: SupplierInvoiceService;
+  /** Extraction LLM des factures fournisseurs — active POST /extract si fournie. */
+  supplierInvoiceExtraction?: SupplierInvoiceExtractionService;
   /** Onboarding magique — monté sur /v1/admin/onboarding si fourni (LLM requis). */
   onboardingScan?: OnboardingScanService;
   /** Avis clients — monté sur /v1/admin/reviews et /review si REVIEW_LINK_SECRET fourni. */
@@ -354,7 +357,10 @@ export function createApp(env: Env, services: AppServices = {}) {
       v1Admin.route("/invoices", adminInvoicesRoute(services.invoice));
     }
     if (services.supplierInvoice) {
-      v1Admin.route("/supplier-invoices", adminSupplierInvoicesRoute(services.supplierInvoice));
+      v1Admin.route(
+        "/supplier-invoices",
+        adminSupplierInvoicesRoute(services.supplierInvoice, services.supplierInvoiceExtraction),
+      );
     }
     if (services.inbox) {
       v1Admin.route("/inbox", adminInboxRoute(services.inbox));

@@ -36,6 +36,7 @@ import { ScheduleRuleService } from "./services/schedule-rule.js";
 import { ServiceCatalogService } from "./services/service-catalog.js";
 import { StatsService } from "./services/stats.js";
 import { SubscriptionService } from "./services/subscription.js";
+import { SupplierInvoiceExtractionService } from "./services/supplier-invoice-extraction.js";
 import { SupplierInvoiceService } from "./services/supplier-invoice.js";
 import { TableService } from "./services/table.js";
 import { TenantMemberService } from "./services/tenant-member.js";
@@ -134,6 +135,7 @@ if (env.DATABASE_URL) {
     services.jarvisAdvisor = new JarvisAdvisorService(db, llm, eventBus, notifier);
     jarvisExecutor.registerTool(new ReviewReplyTool(db, llm, notifier));
     jarvisExecutor.registerTool(new InvoiceRemindTool(db, llm, notifier, invoice));
+    services.supplierInvoiceExtraction = new SupplierInvoiceExtractionService(llm);
     services.onboardingScan = new OnboardingScanService(
       db,
       llm,
