@@ -10,7 +10,7 @@
 
 import { getSupabase, isSupabaseConfigured } from "./supabase";
 
-const API_URL =
+export const API_URL =
   (typeof process !== "undefined" && process.env.NEXT_PUBLIC_OKITO_API_URL) ||
   "http://localhost:3001";
 
@@ -468,6 +468,17 @@ export interface ReviewSummary {
 
 export async function getReviewSummary(tenantId: string): Promise<{ data: ReviewSummary }> {
   return request(`/v1/admin/reviews/${tenantId}/summary`);
+}
+
+// --- Analytics site ----------------------------------------------------------
+
+export interface SiteAnalytics {
+  today: number;
+  last7Days: number;
+}
+
+export async function getSiteAnalytics(tenantId: string): Promise<{ data: SiteAnalytics }> {
+  return request(`/v1/admin/site-analytics/${tenantId}`);
 }
 
 // --- Webhooks sortants ------------------------------------------------------

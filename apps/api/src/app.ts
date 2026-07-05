@@ -25,6 +25,7 @@ import { adminRemindersRoute } from "./routes/admin-reminders.js";
 import { adminReviewsRoute } from "./routes/admin-reviews.js";
 import { adminScheduleRulesRoute } from "./routes/admin-schedule-rules.js";
 import { adminServiceCatalogRoute } from "./routes/admin-service-catalog.js";
+import { adminSiteAnalyticsRoute } from "./routes/admin-site-analytics.js";
 import { adminStatsRoute } from "./routes/admin-stats.js";
 import { adminTablesRoute } from "./routes/admin-tables.js";
 import { adminTenantsRoute } from "./routes/admin-tenants.js";
@@ -40,6 +41,7 @@ import { portalRoute } from "./routes/portal.js";
 import { reservationsRoute } from "./routes/reservations.js";
 import { reviewRoute } from "./routes/review.js";
 import { stripeWebhookRoute } from "./routes/stripe-webhook.js";
+import { trackRoute } from "./routes/track.js";
 import { vapiLlmRoute } from "./routes/vapi-llm.js";
 import { whatsappWebhookRoute } from "./routes/whatsapp-webhook.js";
 import { widgetRoute } from "./routes/widget.js";
@@ -48,7 +50,7 @@ import type { CapacityService } from "./services/capacity.js";
 import type { ChatService } from "./services/chat.js";
 import type { CustomerPrivacyService } from "./services/customer-privacy.js";
 import type { CustomerTimelineService } from "./services/customer-timeline.js";
-import type { BusinessEventEmitter } from "./services/event-bus.js";
+import { type BusinessEventEmitter, EventBusService } from "./services/event-bus.js";
 import type { GmailSyncService } from "./services/gmail-sync.js";
 import type { InboxService } from "./services/inbox.js";
 import type { InvoiceOverdueRunner } from "./services/invoice-overdue-runner.js";
@@ -273,6 +275,11 @@ export function createApp(env: Env, services: AppServices = {}) {
     app.route("/v1/widget", widgetRoute(services.chat, services.tenant));
   }
 
+  // Tracker analytics site — public, chaque visite devient un event site.visit.
+  if (services.db && services.eventBus instanceof EventBusService) {
+    app.route("/v1/track", trackRoute(services.db, services.eventBus, env.PUBLIC_API_URL));
+  }
+
   // Webhook WhatsApp inbound (Twilio + 360dialog).
   // En prod, activer TWILIO_VALIDATE_WEBHOOK=true pour exiger X-Twilio-Signature.
   if (services.chat && services.db) {
@@ -350,6 +357,7 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.db) {
       v1Admin.route("/jarvis-brief", adminJarvisBriefRoute(services.db, services.jarvisAdvisor));
+      v1Admin.route("/site-analytics", adminSiteAnalyticsRoute(services.db));
     }
     if (services.mailbox) {
       v1Admin.route("/mailboxes", adminMailboxesRoute(services.mailbox));
