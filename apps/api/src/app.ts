@@ -239,7 +239,13 @@ export function createApp(env: Env, services: AppServices = {}) {
 
   if (services.reservation || services.chat) {
     const v1 = new Hono<AppEnv>();
-    v1.use("*", createAuthMiddleware(env));
+    // Auth scopée aux routes de ce sous-app uniquement : un use("*") ici
+    // intercepterait aussi les routes publiques montées plus bas sur /v1
+    // (track, widget, webhooks WhatsApp) car le sous-app est monté en premier.
+    v1.use("/reservations", createAuthMiddleware(env));
+    v1.use("/reservations/*", createAuthMiddleware(env));
+    v1.use("/chat", createAuthMiddleware(env));
+    v1.use("/chat/*", createAuthMiddleware(env));
     if (services.reservation)
       v1.route(
         "/reservations",
