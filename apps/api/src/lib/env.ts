@@ -53,6 +53,12 @@ const envSchema = z.object({
    * Requiert que l'API Business Profile soit validée par Google pour le projet.
    */
   GOOGLE_BUSINESS_REDIRECT_URI: z.string().url().optional(),
+  /**
+   * URL de callback OAuth pour Google Calendar (import des créneaux occupés).
+   * Réutilise GOOGLE_CLIENT_ID/SECRET, redirect URI dédiée (scope
+   * calendar.readonly). Ex: http://localhost:3001/oauth/google-calendar/callback.
+   */
+  GOOGLE_CALENDAR_REDIRECT_URI: z.string().url().optional(),
   /** OAuth Microsoft (ingestion Outlook/365). Les 3 requis pour activer la connexion. */
   MICROSOFT_CLIENT_ID: z.string().optional(),
   MICROSOFT_CLIENT_SECRET: z.string().optional(),

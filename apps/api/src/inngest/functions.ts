@@ -1,6 +1,7 @@
 import type { InngestFunction } from "inngest";
 import { inngest } from "../lib/inngest.js";
 import { logger } from "../lib/logger.js";
+import type { CalendarSyncService } from "../services/calendar-sync.js";
 import type { GmailSyncService } from "../services/gmail-sync.js";
 import type { GoogleReviewsSyncService } from "../services/google-reviews-sync.js";
 import type { GraphSyncService } from "../services/graph-sync.js";
@@ -38,6 +39,7 @@ export function createInngestFunctions(
   imapSync?: ImapSyncService,
   graphSync?: GraphSyncService,
   googleReviewsSync?: GoogleReviewsSyncService,
+  calendarSync?: CalendarSyncService,
 ): InngestFunction.Any[] {
   const dailyReminders = inngest.createFunction(
     {
@@ -212,6 +214,24 @@ export function createInngestFunctions(
       },
     );
     functions.push(syncGoogleReviews);
+  }
+
+  if (calendarSync) {
+    const syncCalendars = inngest.createFunction(
+      {
+        id: "calendar-sync",
+        name: "Sync agendas Google (toutes les 15 min)",
+        triggers: [{ cron: "*/15 * * * *" }],
+      },
+      async ({ step }) => {
+        const result = await step.run("run-once", async () => calendarSync.runOnce());
+        if (result.eventsImported > 0 || result.errors > 0) {
+          logger.info({ result }, "Inngest: calendarSync terminé");
+        }
+        return result;
+      },
+    );
+    functions.push(syncCalendars);
   }
 
   if (invoiceOverdue) {

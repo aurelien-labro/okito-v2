@@ -7,6 +7,7 @@ import { logger } from "./lib/logger.js";
 import { SecretBox } from "./lib/secret-box.js";
 import { initSentry } from "./lib/sentry.js";
 import { AuditLogService } from "./services/audit-log.js";
+import { CalendarSyncService } from "./services/calendar-sync.js";
 import { CapacityService } from "./services/capacity.js";
 import { ChatService } from "./services/chat.js";
 import { ConversationService } from "./services/conversation.js";
@@ -15,6 +16,7 @@ import { CustomerTimelineService } from "./services/customer-timeline.js";
 import { EventBusService } from "./services/event-bus.js";
 import { GmailSyncService } from "./services/gmail-sync.js";
 import { GoogleBusinessService } from "./services/google-business.js";
+import { GoogleCalendarService } from "./services/google-calendar.js";
 import { GoogleReviewsSyncService } from "./services/google-reviews-sync.js";
 import { GraphSyncService } from "./services/graph-sync.js";
 import { ImapMailboxService } from "./services/imap-mailbox.js";
@@ -132,6 +134,17 @@ if (env.DATABASE_URL) {
     services.googleReviewsSync = new GoogleReviewsSyncService(db, googleBusiness, eventBus);
   } else {
     logger.warn("OAuth Google Business absent — avis Google désactivés");
+  }
+  if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALENDAR_REDIRECT_URI) {
+    const googleCalendar = new GoogleCalendarService(db, {
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
+      redirectUri: env.GOOGLE_CALENDAR_REDIRECT_URI,
+    });
+    services.googleCalendar = googleCalendar;
+    services.calendarSync = new CalendarSyncService(db, googleCalendar, eventBus);
+  } else {
+    logger.warn("OAuth Google Calendar absent — import d'agenda désactivé");
   }
   services.customerPrivacy = new CustomerPrivacyService(db);
   services.db = db;

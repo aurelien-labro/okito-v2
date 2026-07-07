@@ -299,6 +299,23 @@ async function applySchema(pglite: PGlite): Promise<void> {
     create unique index tenant_google_business_location_uniq
       on tenant_google_business (tenant_id, location_name);
 
+    create table tenant_calendars (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      calendar_id text not null,
+      calendar_summary text not null,
+      access_token text not null,
+      refresh_token text not null,
+      access_token_expires_at timestamptz not null,
+      events_cursor timestamptz,
+      last_sync_at timestamptz,
+      last_error text,
+      status text not null default 'active',
+      created_at timestamptz not null default now()
+    );
+    create unique index tenant_calendars_calendar_uniq
+      on tenant_calendars (tenant_id, calendar_id);
+
     create table audit_log (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid references tenants(id) on delete set null,
