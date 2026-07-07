@@ -8,6 +8,8 @@ import { SecretBox } from "./lib/secret-box.js";
 import { initSentry } from "./lib/sentry.js";
 import { AuditLogService } from "./services/audit-log.js";
 import { CalendarSyncService } from "./services/calendar-sync.js";
+import { BankConnectionService } from "./services/bank-connection.js";
+import { BankSyncService } from "./services/bank-sync.js";
 import { CapacityService } from "./services/capacity.js";
 import { ChatService } from "./services/chat.js";
 import { ConversationService } from "./services/conversation.js";
@@ -117,8 +119,12 @@ if (env.DATABASE_URL) {
     const stripeAccount = new StripeAccountService(db, secretBox);
     services.stripeAccount = stripeAccount;
     services.stripeSync = new StripeSyncService(db, stripeAccount, eventBus);
+    // La connexion bancaire réutilise la même clé de chiffrement (secrets au repos).
+    const bankConnection = new BankConnectionService(db, secretBox);
+    services.bankConnection = bankConnection;
+    services.bankSync = new BankSyncService(db, bankConnection, eventBus);
   } else {
-    logger.warn("MAILBOX_ENC_KEY absente — boîtes IMAP/Yahoo + Stripe désactivés");
+    logger.warn("MAILBOX_ENC_KEY absente — boîtes IMAP/Yahoo + Stripe + banque désactivés");
   }
   if (env.MICROSOFT_CLIENT_ID && env.MICROSOFT_CLIENT_SECRET && env.MICROSOFT_REDIRECT_URI) {
     const microsoftMailbox = new MicrosoftMailboxService(db, {
