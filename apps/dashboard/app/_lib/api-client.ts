@@ -1090,6 +1090,46 @@ export async function deleteMailbox(tenantId: string, id: string): Promise<void>
   await request(`/v1/admin/mailboxes/${tenantId}/${id}`, { method: "DELETE" });
 }
 
+// --- Google Business (avis Google) ------------------------------------------
+
+export interface GoogleBusinessConnection {
+  id: string;
+  tenantId: string;
+  accountName: string;
+  locationName: string;
+  locationTitle: string;
+  reviewCursor: string | null;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  status: MailboxStatus;
+  createdAt: string;
+}
+
+export async function listGoogleBusiness(
+  tenantId: string,
+): Promise<{ data: GoogleBusinessConnection[] }> {
+  return request(`/v1/admin/google-business/${tenantId}`);
+}
+
+export async function connectGoogleBusiness(tenantId: string): Promise<{ data: { url: string } }> {
+  return request(`/v1/admin/google-business/${tenantId}/connect`, { method: "POST" });
+}
+
+export async function setGoogleBusinessStatus(
+  tenantId: string,
+  id: string,
+  status: "active" | "paused",
+): Promise<{ data: GoogleBusinessConnection }> {
+  return request(`/v1/admin/google-business/${tenantId}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function deleteGoogleBusiness(tenantId: string, id: string): Promise<void> {
+  await request(`/v1/admin/google-business/${tenantId}/${id}`, { method: "DELETE" });
+}
+
 // --- Reminders --------------------------------------------------------------
 
 export interface ReminderRunResult {

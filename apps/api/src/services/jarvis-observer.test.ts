@@ -137,4 +137,49 @@ describe("JarvisObserverService", () => {
     const result = await observer.runOnce();
     expect(result).toMatchObject({ eventsScanned: 0, actionsProposed: 0 });
   });
+
+  async function googleReviewEvent(payload: Record<string, unknown>) {
+    await ctx.db.insert(schema.events).values({
+      tenantId,
+      type: "google.review.submitted",
+      payload,
+    });
+  }
+
+  it("avis Google (positif ou négatif) → propose google.review.reply, idempotent", async () => {
+    await googleReviewEvent({
+      googleReviewName: "accounts/1/locations/1/reviews/A",
+      connectionId: "conn-1",
+      rating: 5,
+      comment: "Génial !",
+      hasReply: false,
+    });
+
+    const result = await observer.runOnce();
+    expect(result).toMatchObject({ eventsScanned: 1, actionsProposed: 1 });
+    const [action] = await actions.list(tenantId);
+    expect(action).toMatchObject({
+      type: "google.review.reply",
+      policy: "auto_cancellable",
+      status: "scheduled",
+      payload: { googleReviewName: "accounts/1/locations/1/reviews/A", connectionId: "conn-1" },
+    });
+
+    const second = await observer.runOnce();
+    expect(second.actionsProposed).toBe(0);
+    expect(await actions.list(tenantId)).toHaveLength(1);
+  });
+
+  it("avis Google déjà répondu (hasReply) → aucune proposition", async () => {
+    await googleReviewEvent({
+      googleReviewName: "r/B",
+      connectionId: "conn-1",
+      rating: 4,
+      hasReply: true,
+    });
+
+    const result = await observer.runOnce();
+    expect(result).toMatchObject({ eventsScanned: 1, actionsProposed: 0 });
+    expect(await actions.list(tenantId)).toHaveLength(0);
+  });
 });

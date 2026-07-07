@@ -14,6 +14,8 @@ import { CustomerPrivacyService } from "./services/customer-privacy.js";
 import { CustomerTimelineService } from "./services/customer-timeline.js";
 import { EventBusService } from "./services/event-bus.js";
 import { GmailSyncService } from "./services/gmail-sync.js";
+import { GoogleBusinessService } from "./services/google-business.js";
+import { GoogleReviewsSyncService } from "./services/google-reviews-sync.js";
 import { GraphSyncService } from "./services/graph-sync.js";
 import { ImapMailboxService } from "./services/imap-mailbox.js";
 import { ImapSyncService } from "./services/imap-sync.js";
@@ -24,6 +26,7 @@ import { JarvisActionService } from "./services/jarvis-action.js";
 import { JarvisAdvisorService } from "./services/jarvis-advisor.js";
 import { JarvisExecutor } from "./services/jarvis-executor.js";
 import { JarvisObserverService } from "./services/jarvis-observer.js";
+import { GoogleReviewReplyTool } from "./services/jarvis-tools/google-review-reply.js";
 import { InvoiceRemindTool } from "./services/jarvis-tools/invoice-remind.js";
 import { ReviewReplyTool } from "./services/jarvis-tools/review-reply.js";
 import { SupplierInvoicePayReminderTool } from "./services/jarvis-tools/supplier-invoice-pay-reminder.js";
@@ -119,6 +122,17 @@ if (env.DATABASE_URL) {
   } else {
     logger.warn("OAuth Microsoft absent — connexion de boîtes Outlook/365 désactivée");
   }
+  if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_BUSINESS_REDIRECT_URI) {
+    const googleBusiness = new GoogleBusinessService(db, {
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
+      redirectUri: env.GOOGLE_BUSINESS_REDIRECT_URI,
+    });
+    services.googleBusiness = googleBusiness;
+    services.googleReviewsSync = new GoogleReviewsSyncService(db, googleBusiness, eventBus);
+  } else {
+    logger.warn("OAuth Google Business absent — avis Google désactivés");
+  }
   services.customerPrivacy = new CustomerPrivacyService(db);
   services.db = db;
 
@@ -165,6 +179,9 @@ if (env.DATABASE_URL) {
     services.jarvisAdvisor = new JarvisAdvisorService(db, llm, eventBus, notifier);
     jarvisExecutor.registerTool(new ReviewReplyTool(db, llm, notifier));
     jarvisExecutor.registerTool(new InvoiceRemindTool(db, llm, notifier, invoice));
+    if (services.googleBusiness) {
+      jarvisExecutor.registerTool(new GoogleReviewReplyTool(llm, services.googleBusiness));
+    }
     services.supplierInvoiceExtraction = new SupplierInvoiceExtractionService(llm);
     services.onboardingScan = new OnboardingScanService(
       db,

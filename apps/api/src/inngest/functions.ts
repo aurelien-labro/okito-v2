@@ -2,6 +2,7 @@ import type { InngestFunction } from "inngest";
 import { inngest } from "../lib/inngest.js";
 import { logger } from "../lib/logger.js";
 import type { GmailSyncService } from "../services/gmail-sync.js";
+import type { GoogleReviewsSyncService } from "../services/google-reviews-sync.js";
 import type { GraphSyncService } from "../services/graph-sync.js";
 import type { ImapSyncService } from "../services/imap-sync.js";
 import type { InvoiceOverdueRunner } from "../services/invoice-overdue-runner.js";
@@ -36,6 +37,7 @@ export function createInngestFunctions(
   invoiceOverdue?: InvoiceOverdueRunner,
   imapSync?: ImapSyncService,
   graphSync?: GraphSyncService,
+  googleReviewsSync?: GoogleReviewsSyncService,
 ): InngestFunction.Any[] {
   const dailyReminders = inngest.createFunction(
     {
@@ -192,6 +194,24 @@ export function createInngestFunctions(
       },
     );
     functions.push(syncGraph);
+  }
+
+  if (googleReviewsSync) {
+    const syncGoogleReviews = inngest.createFunction(
+      {
+        id: "google-reviews-sync",
+        name: "Sync avis Google Business (toutes les 15 min)",
+        triggers: [{ cron: "*/15 * * * *" }],
+      },
+      async ({ step }) => {
+        const result = await step.run("run-once", async () => googleReviewsSync.runOnce());
+        if (result.reviewsIngested > 0 || result.errors > 0) {
+          logger.info({ result }, "Inngest: googleReviewsSync terminé");
+        }
+        return result;
+      },
+    );
+    functions.push(syncGoogleReviews);
   }
 
   if (invoiceOverdue) {

@@ -11,6 +11,7 @@ const DEFAULT_POLICIES: Record<string, JarvisPolicy> = {
   "reservation.confirm": "auto",
   "reminder.send": "auto",
   "review.reply": "auto_cancellable",
+  "google.review.reply": "auto_cancellable",
   "invoice.remind": "auto_cancellable",
   "supplier_invoice.pay_reminder": "auto_cancellable",
   "email.reply": "auto_cancellable",
