@@ -36,6 +36,7 @@ import { adminScheduleRulesRoute } from "./routes/admin-schedule-rules.js";
 import { adminServiceCatalogRoute } from "./routes/admin-service-catalog.js";
 import { adminSiteAnalyticsRoute } from "./routes/admin-site-analytics.js";
 import { adminStatsRoute } from "./routes/admin-stats.js";
+import { adminStripeAnalyticsRoute, adminStripeRoute } from "./routes/admin-stripe.js";
 import { adminSupplierInvoicesRoute } from "./routes/admin-supplier-invoices.js";
 import { adminTablesRoute } from "./routes/admin-tables.js";
 import { adminTenantsRoute } from "./routes/admin-tenants.js";
@@ -90,6 +91,8 @@ import type { ReviewService } from "./services/review.js";
 import type { ScheduleRuleService } from "./services/schedule-rule.js";
 import type { ServiceCatalogService } from "./services/service-catalog.js";
 import type { StatsService } from "./services/stats.js";
+import type { StripeAccountService } from "./services/stripe-account.js";
+import type { StripeSyncService } from "./services/stripe-sync.js";
 import type { SubscriptionService } from "./services/subscription.js";
 import type { SupplierInvoiceExtractionService } from "./services/supplier-invoice-extraction.js";
 import type { SupplierInvoiceService } from "./services/supplier-invoice.js";
@@ -171,6 +174,10 @@ export interface AppServices {
   googleCalendar?: GoogleCalendarService;
   /** Sync agenda Google — ajoute la function Inngest 15-min si fournie. */
   calendarSync?: CalendarSyncService;
+  /** Comptes Stripe du commerce — monté sur /v1/admin/stripe si MAILBOX_ENC_KEY configurée. */
+  stripeAccount?: StripeAccountService;
+  /** Sync paiements Stripe — ajoute la function Inngest 15-min si fournie. */
+  stripeSync?: StripeSyncService;
   /** Inbox unifiée — monté sur /v1/admin/inbox si fourni. */
   inbox?: InboxService;
   /** Fiche client 360° — monté sur /v1/admin/customer-360 si fourni. */
@@ -430,6 +437,12 @@ export function createApp(env: Env, services: AppServices = {}) {
     if (services.googleCalendar) {
       v1Admin.route("/calendars", adminCalendarsRoute(services.googleCalendar));
     }
+    if (services.stripeAccount) {
+      v1Admin.route("/stripe", adminStripeRoute(services.stripeAccount));
+    }
+    if (services.db) {
+      v1Admin.route("/stripe-analytics", adminStripeAnalyticsRoute(services.db));
+    }
     if (services.onboardingScan) {
       v1Admin.route("/onboarding", adminOnboardingRoute(services.onboardingScan));
     }
@@ -489,6 +502,7 @@ export function createApp(env: Env, services: AppServices = {}) {
         services.graphSync,
         services.googleReviewsSync,
         services.calendarSync,
+        services.stripeSync,
       ),
     );
   }
