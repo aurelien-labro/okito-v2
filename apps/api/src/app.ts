@@ -10,6 +10,7 @@ import { createAdminMiddleware } from "./middleware/admin.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import { metricsMiddleware } from "./middleware/metrics.js";
 import { adminAuditRoute } from "./routes/admin-audit.js";
+import { adminCalendarsRoute, googleCalendarCallbackRoute } from "./routes/admin-calendars.js";
 import { adminCustomerTimelineRoute } from "./routes/admin-customer-timeline.js";
 import { adminCustomersRoute } from "./routes/admin-customers.js";
 import {
@@ -56,6 +57,7 @@ import { vapiLlmRoute } from "./routes/vapi-llm.js";
 import { whatsappWebhookRoute } from "./routes/whatsapp-webhook.js";
 import { widgetRoute } from "./routes/widget.js";
 import type { AuditLogService } from "./services/audit-log.js";
+import type { CalendarSyncService } from "./services/calendar-sync.js";
 import type { CapacityService } from "./services/capacity.js";
 import type { ChatService } from "./services/chat.js";
 import type { CustomerPrivacyService } from "./services/customer-privacy.js";
@@ -63,6 +65,7 @@ import type { CustomerTimelineService } from "./services/customer-timeline.js";
 import { type BusinessEventEmitter, EventBusService } from "./services/event-bus.js";
 import type { GmailSyncService } from "./services/gmail-sync.js";
 import type { GoogleBusinessService } from "./services/google-business.js";
+import type { GoogleCalendarService } from "./services/google-calendar.js";
 import type { GoogleReviewsSyncService } from "./services/google-reviews-sync.js";
 import type { GraphSyncService } from "./services/graph-sync.js";
 import type { ImapMailboxService } from "./services/imap-mailbox.js";
@@ -164,6 +167,10 @@ export interface AppServices {
   googleBusiness?: GoogleBusinessService;
   /** Sync avis Google — ajoute la function Inngest 15-min si fournie. */
   googleReviewsSync?: GoogleReviewsSyncService;
+  /** Agendas Google — monté sur /v1/admin/calendars + callback si OAuth configuré. */
+  googleCalendar?: GoogleCalendarService;
+  /** Sync agenda Google — ajoute la function Inngest 15-min si fournie. */
+  calendarSync?: CalendarSyncService;
   /** Inbox unifiée — monté sur /v1/admin/inbox si fourni. */
   inbox?: InboxService;
   /** Fiche client 360° — monté sur /v1/admin/customer-360 si fourni. */
@@ -420,6 +427,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     if (services.googleBusiness) {
       v1Admin.route("/google-business", adminGoogleBusinessRoute(services.googleBusiness));
     }
+    if (services.googleCalendar) {
+      v1Admin.route("/calendars", adminCalendarsRoute(services.googleCalendar));
+    }
     if (services.onboardingScan) {
       v1Admin.route("/onboarding", adminOnboardingRoute(services.onboardingScan));
     }
@@ -453,6 +463,14 @@ export function createApp(env: Env, services: AppServices = {}) {
     );
   }
 
+  // Callback OAuth Google Calendar — public, Google y redirige le navigateur du patron.
+  if (services.googleCalendar) {
+    app.route(
+      "/oauth/google-calendar/callback",
+      googleCalendarCallbackRoute(services.googleCalendar, env.APP_URL),
+    );
+  }
+
   // Inngest : endpoint scrape par le dashboard pour découvrir + invoquer
   // les functions (cron rappels J-1, future events).
   if (services.reminder) {
@@ -470,6 +488,7 @@ export function createApp(env: Env, services: AppServices = {}) {
         services.imapSync,
         services.graphSync,
         services.googleReviewsSync,
+        services.calendarSync,
       ),
     );
   }
