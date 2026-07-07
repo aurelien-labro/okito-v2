@@ -13,6 +13,7 @@ import type { JarvisObserverService } from "../services/jarvis-observer.js";
 import type { NoShowService } from "../services/no-show.js";
 import type { ReminderService } from "../services/reminder.js";
 import type { ReviewRequestService } from "../services/review-request.js";
+import type { StripeSyncService } from "../services/stripe-sync.js";
 
 /**
  * Functions Inngest exposées par l'API.
@@ -40,6 +41,7 @@ export function createInngestFunctions(
   graphSync?: GraphSyncService,
   googleReviewsSync?: GoogleReviewsSyncService,
   calendarSync?: CalendarSyncService,
+  stripeSync?: StripeSyncService,
 ): InngestFunction.Any[] {
   const dailyReminders = inngest.createFunction(
     {
@@ -232,6 +234,24 @@ export function createInngestFunctions(
       },
     );
     functions.push(syncCalendars);
+  }
+
+  if (stripeSync) {
+    const syncStripe = inngest.createFunction(
+      {
+        id: "stripe-sync",
+        name: "Sync paiements Stripe (toutes les 15 min)",
+        triggers: [{ cron: "*/15 * * * *" }],
+      },
+      async ({ step }) => {
+        const result = await step.run("run-once", async () => stripeSync.runOnce());
+        if (result.paymentsIngested > 0 || result.errors > 0) {
+          logger.info({ result }, "Inngest: stripeSync terminé");
+        }
+        return result;
+      },
+    );
+    functions.push(syncStripe);
   }
 
   if (invoiceOverdue) {

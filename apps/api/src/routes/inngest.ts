@@ -14,6 +14,7 @@ import type { JarvisObserverService } from "../services/jarvis-observer.js";
 import type { NoShowService } from "../services/no-show.js";
 import type { ReminderService } from "../services/reminder.js";
 import type { ReviewRequestService } from "../services/review-request.js";
+import type { StripeSyncService } from "../services/stripe-sync.js";
 
 /**
  * Endpoint Inngest. À monter sur `/api/inngest` :
@@ -37,6 +38,7 @@ export function inngestRoute(
   graphSync?: GraphSyncService,
   googleReviewsSync?: GoogleReviewsSyncService,
   calendarSync?: CalendarSyncService,
+  stripeSync?: StripeSyncService,
 ) {
   const app = new Hono();
   const handler = serve({
@@ -54,6 +56,7 @@ export function inngestRoute(
       graphSync,
       googleReviewsSync,
       calendarSync,
+      stripeSync,
     ),
   });
   app.all("/*", handler);

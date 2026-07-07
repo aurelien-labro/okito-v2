@@ -46,6 +46,8 @@ import { ReviewService } from "./services/review.js";
 import { ScheduleRuleService } from "./services/schedule-rule.js";
 import { ServiceCatalogService } from "./services/service-catalog.js";
 import { StatsService } from "./services/stats.js";
+import { StripeAccountService } from "./services/stripe-account.js";
+import { StripeSyncService } from "./services/stripe-sync.js";
 import { SubscriptionService } from "./services/subscription.js";
 import { SupplierInvoiceExtractionService } from "./services/supplier-invoice-extraction.js";
 import { SupplierInvoiceService } from "./services/supplier-invoice.js";
@@ -107,11 +109,16 @@ if (env.DATABASE_URL) {
     logger.warn("OAuth Google absent — connexion de boîtes Gmail désactivée");
   }
   if (env.MAILBOX_ENC_KEY) {
-    const imapMailbox = new ImapMailboxService(db, new SecretBox(env.MAILBOX_ENC_KEY));
+    const secretBox = new SecretBox(env.MAILBOX_ENC_KEY);
+    const imapMailbox = new ImapMailboxService(db, secretBox);
     services.imapMailbox = imapMailbox;
     services.imapSync = new ImapSyncService(db, imapMailbox, eventBus);
+    // Stripe réutilise la même clé de chiffrement (secrets au repos).
+    const stripeAccount = new StripeAccountService(db, secretBox);
+    services.stripeAccount = stripeAccount;
+    services.stripeSync = new StripeSyncService(db, stripeAccount, eventBus);
   } else {
-    logger.warn("MAILBOX_ENC_KEY absente — boîtes IMAP/Yahoo désactivées");
+    logger.warn("MAILBOX_ENC_KEY absente — boîtes IMAP/Yahoo + Stripe désactivés");
   }
   if (env.MICROSOFT_CLIENT_ID && env.MICROSOFT_CLIENT_SECRET && env.MICROSOFT_REDIRECT_URI) {
     const microsoftMailbox = new MicrosoftMailboxService(db, {
