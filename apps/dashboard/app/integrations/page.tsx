@@ -721,6 +721,139 @@ function GoogleBusinessSection() {
   );
 }
 
+/**
+ * Catalogue « écosystème » : les intégrations métier de la vision OS du commerce
+ * (paiements, compta, ventes en ligne, agenda, pub, canaux). Toutes en
+ * « Bientôt » pour l'instant — chacune sera approfondie dans sa propre itération.
+ * Pur affichage : aucune n'appelle l'API tant qu'elle n'est pas branchée.
+ */
+interface EcosystemGroup {
+  category: string;
+  items: { name: string; description: string; icon: string }[];
+}
+
+const ECOSYSTEM: EcosystemGroup[] = [
+  {
+    category: "Paiements & compta",
+    items: [
+      {
+        name: "Stripe",
+        description:
+          "Encaissements en ligne : chaque paiement alimente le chiffre du jour et la TVA collectée.",
+        icon: "ti-credit-card",
+      },
+      {
+        name: "Connexion bancaire",
+        description:
+          "Bridge / Powens : rapproche les factures et les encaissements réels pour fiabiliser la TVA.",
+        icon: "ti-building-bank",
+      },
+    ],
+  },
+  {
+    category: "Ventes en ligne",
+    items: [
+      {
+        name: "Shopify",
+        description:
+          "Commandes e-commerce dans le journal de Jarvis, à côté des résas et des avis.",
+        icon: "ti-shopping-cart",
+      },
+      {
+        name: "WooCommerce",
+        description: "Boutiques WordPress : ventes, clients et stock remontés dans l'observatoire.",
+        icon: "ti-shopping-bag",
+      },
+    ],
+  },
+  {
+    category: "Agenda",
+    items: [
+      {
+        name: "Google Calendar",
+        description:
+          "Sync bidirectionnelle : les créneaux bloqués ailleurs évitent les doubles réservations.",
+        icon: "ti-calendar",
+      },
+    ],
+  },
+  {
+    category: "Publicité",
+    items: [
+      {
+        name: "Google Ads",
+        description:
+          "Dépenses et conversions dans le brief matinal : combien coûte un client acquis.",
+        icon: "ti-ad-2",
+      },
+      {
+        name: "Meta Ads",
+        description: "Campagnes Facebook & Instagram : budget et retombées suivis au même endroit.",
+        icon: "ti-brand-meta",
+      },
+    ],
+  },
+  {
+    category: "Point de vente & canaux",
+    items: [
+      {
+        name: "Point de vente",
+        description: "SumUp, Zettle, Square : le chiffre d'affaires physique en temps réel.",
+        icon: "ti-cash-register",
+      },
+      {
+        name: "Instagram & Messenger",
+        description: "Les messages privés deviennent un canal client de plus, géré par Jarvis.",
+        icon: "ti-brand-instagram",
+      },
+    ],
+  },
+];
+
+function EcosystemSection() {
+  return (
+    <div className="mb-10">
+      <h2 className="text-2xl font-semibold tracking-tight">Écosystème</h2>
+      <p className="mt-1 mb-4 text-sm text-stone-500">
+        La suite : brancher tout le commerce à Jarvis. Ces intégrations arrivent — dis-nous celle
+        qui te manque le plus.
+      </p>
+
+      <div className="space-y-6">
+        {ECOSYSTEM.map((group) => (
+          <div key={group.category}>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-400">
+              {group.category}
+            </h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {group.items.map((item) => (
+                <div
+                  key={item.name}
+                  className="flex flex-col rounded-lg border border-stone-200 bg-white p-4 opacity-75"
+                >
+                  <div className="flex items-start justify-between">
+                    <span
+                      className={`ti ${item.icon} text-[26px] text-stone-500`}
+                      aria-hidden="true"
+                    />
+                    <span className="rounded bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-500">
+                      Bientôt
+                    </span>
+                  </div>
+                  <div className="mt-3 text-sm font-semibold text-stone-900">{item.name}</div>
+                  <p className="mt-1 flex-1 text-xs leading-relaxed text-stone-500">
+                    {item.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function TrackerSection() {
   const [copied, setCopied] = useState(false);
   const tenantId = getCurrentTenantId();
@@ -821,6 +954,8 @@ function IntegrationsView() {
       <MailboxesSection />
 
       <GoogleBusinessSection />
+
+      <EcosystemSection />
 
       <TrackerSection />
 
