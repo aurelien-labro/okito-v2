@@ -4,19 +4,24 @@ import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { LoginGate } from "../_components/login-gate";
 import {
   API_URL,
+  type GoogleBusinessConnection,
   type Mailbox,
   type TenantWebhook,
   WEBHOOK_EVENTS,
   type WebhookEvent,
+  connectGoogleBusiness,
   connectImapMailbox,
   connectMailbox,
   connectOutlookMailbox,
   createWebhook,
+  deleteGoogleBusiness,
   deleteMailbox,
   deleteWebhook,
   getCurrentTenantId,
+  listGoogleBusiness,
   listMailboxes,
   listWebhooks,
+  setGoogleBusinessStatus,
   setMailboxStatus,
   setWebhookActive,
 } from "../_lib/api-client";
@@ -541,6 +546,181 @@ function ProviderCard({
   );
 }
 
+function GoogleBusinessLogo() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-7 w-7" aria-hidden="true">
+      <path
+        fill="#4285F4"
+        d="M21.6 12.2c0-.6-.05-1.2-.16-1.8H12v3.4h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.1Z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.7-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22Z"
+      />
+      <path
+        fill="#FBBC04"
+        d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2L6.4 14Z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.8-2.8A10 10 0 0 0 3.1 7.4L6.4 10c.8-2.4 3-4.1 5.6-4.1Z"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Section « Avis Google » : connexion OAuth d'une fiche Google Business
+ * Profile. Une fois connectée, Jarvis ingère les nouveaux avis et propose une
+ * réponse (annulable 24h) publiée directement sur la fiche.
+ */
+function GoogleBusinessSection() {
+  const [connections, setConnections] = useState<GoogleBusinessConnection[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
+
+  const fetchConnections = useCallback(async () => {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    try {
+      const res = await listGoogleBusiness(tenantId);
+      setConnections(res.data);
+      setUnavailable(false);
+      setErr(null);
+    } catch (e) {
+      // 404 = module non monté (OAuth Google Business non configuré côté API).
+      if ((e as { status?: number }).status === 404) {
+        setUnavailable(true);
+        return;
+      }
+      setErr("Impossible de charger les fiches Google.");
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchConnections();
+  }, [fetchConnections]);
+
+  async function handleConnect() {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    try {
+      const res = await connectGoogleBusiness(tenantId);
+      window.location.href = res.data.url;
+    } catch (e) {
+      alert(`Connexion impossible : ${e instanceof Error ? e.message : "erreur"}`);
+    }
+  }
+
+  async function handleToggle(conn: GoogleBusinessConnection) {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    try {
+      await setGoogleBusinessStatus(
+        tenantId,
+        conn.id,
+        conn.status === "paused" ? "active" : "paused",
+      );
+      await fetchConnections();
+    } catch (e) {
+      alert(`Échec : ${e instanceof Error ? e.message : "erreur"}`);
+    }
+  }
+
+  async function handleDelete(conn: GoogleBusinessConnection) {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    if (!confirm(`Déconnecter « ${conn.locationTitle} » ? Jarvis cessera de suivre ses avis.`)) {
+      return;
+    }
+    try {
+      await deleteGoogleBusiness(tenantId, conn.id);
+      await fetchConnections();
+    } catch (e) {
+      alert(`Échec : ${e instanceof Error ? e.message : "erreur"}`);
+    }
+  }
+
+  // Module non configuré côté API : on masque la section plutôt que d'afficher une erreur.
+  if (unavailable) return null;
+
+  return (
+    <div className="mb-10">
+      <h2 className="text-2xl font-semibold tracking-tight">Avis Google</h2>
+      <p className="mt-1 mb-4 text-sm text-stone-500">
+        Connecte la fiche Google Business du commerce : Jarvis suit les nouveaux avis et propose une
+        réponse (annulable 24h) publiée directement sur la fiche.
+      </p>
+
+      {err && (
+        <div className="mb-4 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {err}
+        </div>
+      )}
+
+      <div className="rounded-lg border border-stone-200 bg-white p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <GoogleBusinessLogo />
+            <div>
+              <div className="text-sm font-semibold text-stone-900">Google Business Profile</div>
+              <p className="text-xs text-stone-500">Avis Google — réponse autonome par Jarvis.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleConnect}
+            className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
+          >
+            {connections.length > 0 ? "Connecter une autre fiche" : "Connecter"}
+          </button>
+        </div>
+
+        {connections.length > 0 && (
+          <div className="mt-4 space-y-3 border-t border-stone-100 pt-4">
+            {connections.map((conn) => (
+              <div key={conn.id} className="flex items-start justify-between gap-4 text-sm">
+                <div className="min-w-0">
+                  <div className="truncate font-medium">{conn.locationTitle}</div>
+                  <div className="mt-0.5 text-xs text-stone-500">
+                    {conn.lastSyncAt
+                      ? `Dernière sync : ${new Date(conn.lastSyncAt).toLocaleString("fr-FR")}`
+                      : "Jamais synchronisée (première sync dans les 15 min)"}
+                  </div>
+                  {conn.status === "error" && conn.lastError && (
+                    <div className="mt-1 text-xs text-rose-700">{conn.lastError}</div>
+                  )}
+                </div>
+                <div className="flex shrink-0 items-center gap-3 text-xs">
+                  <span
+                    className={`rounded px-2 py-0.5 font-medium ${MAILBOX_STATUS_COLOR[conn.status]}`}
+                  >
+                    {MAILBOX_STATUS_LABEL[conn.status]}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleToggle(conn)}
+                    className="text-blue-700 hover:underline"
+                  >
+                    {conn.status === "paused" ? "Reprendre" : "Mettre en pause"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(conn)}
+                    className="text-rose-700 hover:underline"
+                  >
+                    Déconnecter
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function TrackerSection() {
   const [copied, setCopied] = useState(false);
   const tenantId = getCurrentTenantId();
@@ -639,6 +819,8 @@ function IntegrationsView() {
   return (
     <div>
       <MailboxesSection />
+
+      <GoogleBusinessSection />
 
       <TrackerSection />
 

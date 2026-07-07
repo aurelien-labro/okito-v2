@@ -46,6 +46,13 @@ const envSchema = z.object({
   GOOGLE_REDIRECT_URI: z.string().url().optional(),
   /** Clé API Places (onboarding : scan fiche Google Business). Optionnelle. */
   GOOGLE_PLACES_API_KEY: z.string().optional(),
+  /**
+   * URL de callback OAuth pour Google Business Profile (avis Google). Réutilise
+   * GOOGLE_CLIENT_ID/SECRET mais une redirect URI dédiée (scope business.manage
+   * en plus). Ex: http://localhost:3001/oauth/google-business/callback.
+   * Requiert que l'API Business Profile soit validée par Google pour le projet.
+   */
+  GOOGLE_BUSINESS_REDIRECT_URI: z.string().url().optional(),
   /** OAuth Microsoft (ingestion Outlook/365). Les 3 requis pour activer la connexion. */
   MICROSOFT_CLIENT_ID: z.string().optional(),
   MICROSOFT_CLIENT_SECRET: z.string().optional(),

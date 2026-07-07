@@ -23,6 +23,12 @@ const NEGATIVE_RATING_MAX = 3;
  * fenêtre scannée déclenche une proposition review.reply (auto_cancellable :
  * exécutée après la fenêtre de retrait sauf si le patron annule).
  *
+ * Règle 4 — avis Google : un event google.review.submitted (sans réponse
+ * existante) déclenche une proposition google.review.reply. On répond à TOUS
+ * les avis Google (positifs comme négatifs) : sur une fiche publique, répondre
+ * aux avis est une bonne pratique de e-réputation. Dédup sur
+ * payload->>'googleReviewName'.
+ *
  * Règle 3 — échéance fournisseur : une facture fournisseur non payée dont
  * l'échéance tombe sous 3 jours déclenche supplier_invoice.pay_reminder
  * (rappel email au patron). Scan direct de la table (pas d'event "le temps
@@ -50,7 +56,7 @@ export class JarvisObserverService {
       .where(
         and(
           gte(schema.events.createdAt, since),
-          sql`${schema.events.type} in ('review.submitted', 'invoice.overdue')`,
+          sql`${schema.events.type} in ('review.submitted', 'invoice.overdue', 'google.review.submitted')`,
         ),
       );
     result.eventsScanned = events.length;
@@ -61,6 +67,8 @@ export class JarvisObserverService {
       } else if (event.type === "invoice.overdue") {
         if (await this.handleOverdueInvoice(event.tenantId, event.payload))
           result.actionsProposed++;
+      } else if (event.type === "google.review.submitted") {
+        if (await this.handleGoogleReview(event.tenantId, event.payload)) result.actionsProposed++;
       }
     }
 
@@ -124,6 +132,42 @@ export class JarvisObserverService {
       "review.reply",
       `Répondre à l'avis ${payload.rating}★${payload.comment ? ` — « ${truncate(payload.comment, 80)} »` : ""}`,
       { reviewId: payload.reviewId, rating: payload.rating, comment: payload.comment ?? null },
+    );
+    return true;
+  }
+
+  private async handleGoogleReview(tenantId: string, raw: unknown): Promise<boolean> {
+    const payload = raw as {
+      googleReviewName?: string;
+      connectionId?: string;
+      rating?: number;
+      comment?: string | null;
+      hasReply?: boolean;
+    };
+    if (!payload.googleReviewName || !payload.connectionId) return false;
+    // Un avis déjà répondu (par le patron ou une sync précédente) est ignoré.
+    if (payload.hasReply) return false;
+    if (
+      await this.alreadyProposed(
+        tenantId,
+        "google.review.reply",
+        "googleReviewName",
+        payload.googleReviewName,
+      )
+    ) {
+      return false;
+    }
+    const stars = typeof payload.rating === "number" ? `${payload.rating}★` : "avis";
+    await this.actions.propose(
+      tenantId,
+      "google.review.reply",
+      `Répondre à l'avis Google ${stars}${payload.comment ? ` — « ${truncate(payload.comment, 80)} »` : ""}`,
+      {
+        googleReviewName: payload.googleReviewName,
+        connectionId: payload.connectionId,
+        rating: payload.rating ?? null,
+        comment: payload.comment ?? null,
+      },
     );
     return true;
   }
