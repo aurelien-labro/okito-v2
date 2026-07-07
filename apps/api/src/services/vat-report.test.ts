@@ -27,7 +27,7 @@ describe("VatReportService", () => {
     amountCents: number,
     vatRateBps: number,
     paidAt: Date,
-    status = "paid",
+    status: NonNullable<(typeof schema.invoices.$inferInsert)["status"]> = "paid",
   ) {
     await ctx.db.insert(schema.invoices).values({
       tenantId,
@@ -44,7 +44,7 @@ describe("VatReportService", () => {
     amountCents: number,
     vatRateBps: number,
     paidAt: Date,
-    status = "paid",
+    status: NonNullable<(typeof schema.supplierInvoices.$inferInsert)["status"]> = "paid",
   ) {
     await ctx.db.insert(schema.supplierInvoices).values({
       tenantId,
