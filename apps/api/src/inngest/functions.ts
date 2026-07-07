@@ -1,6 +1,7 @@
 import type { InngestFunction } from "inngest";
 import { inngest } from "../lib/inngest.js";
 import { logger } from "../lib/logger.js";
+import type { BankSyncService } from "../services/bank-sync.js";
 import type { CalendarSyncService } from "../services/calendar-sync.js";
 import type { GmailSyncService } from "../services/gmail-sync.js";
 import type { GoogleReviewsSyncService } from "../services/google-reviews-sync.js";
@@ -42,6 +43,7 @@ export function createInngestFunctions(
   googleReviewsSync?: GoogleReviewsSyncService,
   calendarSync?: CalendarSyncService,
   stripeSync?: StripeSyncService,
+  bankSync?: BankSyncService,
 ): InngestFunction.Any[] {
   const dailyReminders = inngest.createFunction(
     {
@@ -252,6 +254,24 @@ export function createInngestFunctions(
       },
     );
     functions.push(syncStripe);
+  }
+
+  if (bankSync) {
+    const syncBank = inngest.createFunction(
+      {
+        id: "bank-sync",
+        name: "Sync transactions bancaires (toutes les 15 min)",
+        triggers: [{ cron: "*/15 * * * *" }],
+      },
+      async ({ step }) => {
+        const result = await step.run("run-once", async () => bankSync.runOnce());
+        if (result.transactionsIngested > 0 || result.errors > 0) {
+          logger.info({ result }, "Inngest: bankSync terminé");
+        }
+        return result;
+      },
+    );
+    functions.push(syncBank);
   }
 
   if (invoiceOverdue) {

@@ -10,6 +10,7 @@ import { createAdminMiddleware } from "./middleware/admin.js";
 import { createAuthMiddleware } from "./middleware/auth.js";
 import { metricsMiddleware } from "./middleware/metrics.js";
 import { adminAuditRoute } from "./routes/admin-audit.js";
+import { adminBankRoute } from "./routes/admin-bank.js";
 import { adminCalendarsRoute, googleCalendarCallbackRoute } from "./routes/admin-calendars.js";
 import { adminCustomerTimelineRoute } from "./routes/admin-customer-timeline.js";
 import { adminCustomersRoute } from "./routes/admin-customers.js";
@@ -58,6 +59,8 @@ import { vapiLlmRoute } from "./routes/vapi-llm.js";
 import { whatsappWebhookRoute } from "./routes/whatsapp-webhook.js";
 import { widgetRoute } from "./routes/widget.js";
 import type { AuditLogService } from "./services/audit-log.js";
+import type { BankConnectionService } from "./services/bank-connection.js";
+import type { BankSyncService } from "./services/bank-sync.js";
 import type { CalendarSyncService } from "./services/calendar-sync.js";
 import type { CapacityService } from "./services/capacity.js";
 import type { ChatService } from "./services/chat.js";
@@ -178,6 +181,10 @@ export interface AppServices {
   stripeAccount?: StripeAccountService;
   /** Sync paiements Stripe — ajoute la function Inngest 15-min si fournie. */
   stripeSync?: StripeSyncService;
+  /** Connexions bancaires — monté sur /v1/admin/bank si MAILBOX_ENC_KEY configurée. */
+  bankConnection?: BankConnectionService;
+  /** Sync transactions bancaires — ajoute la function Inngest 15-min si fournie. */
+  bankSync?: BankSyncService;
   /** Inbox unifiée — monté sur /v1/admin/inbox si fourni. */
   inbox?: InboxService;
   /** Fiche client 360° — monté sur /v1/admin/customer-360 si fourni. */
@@ -443,6 +450,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     if (services.db) {
       v1Admin.route("/stripe-analytics", adminStripeAnalyticsRoute(services.db));
     }
+    if (services.bankConnection) {
+      v1Admin.route("/bank", adminBankRoute(services.bankConnection));
+    }
     if (services.onboardingScan) {
       v1Admin.route("/onboarding", adminOnboardingRoute(services.onboardingScan));
     }
@@ -503,6 +513,7 @@ export function createApp(env: Env, services: AppServices = {}) {
         services.googleReviewsSync,
         services.calendarSync,
         services.stripeSync,
+        services.bankSync,
       ),
     );
   }
