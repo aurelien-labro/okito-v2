@@ -316,6 +316,19 @@ async function applySchema(pglite: PGlite): Promise<void> {
     create unique index tenant_calendars_calendar_uniq
       on tenant_calendars (tenant_id, calendar_id);
 
+    create table tenant_bank_connections (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      provider text not null default 'bridge',
+      account_label text not null default 'Banque',
+      access_token_enc text not null,
+      transaction_cursor timestamptz,
+      last_sync_at timestamptz,
+      last_error text,
+      status text not null default 'active',
+      created_at timestamptz not null default now()
+    );
+
     create table tenant_stripe_accounts (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid not null references tenants(id) on delete cascade,
