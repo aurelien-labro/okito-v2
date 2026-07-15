@@ -1,8 +1,8 @@
 import type { InngestFunction } from "inngest";
 import { inngest } from "../lib/inngest.js";
 import { logger } from "../lib/logger.js";
-import type { CalendarSyncService } from "../services/calendar-sync.js";
 import type { BankSyncService } from "../services/bank-sync.js";
+import type { CalendarSyncService } from "../services/calendar-sync.js";
 import type { GmailSyncService } from "../services/gmail-sync.js";
 import type { GoogleReviewsSyncService } from "../services/google-reviews-sync.js";
 import type { GraphSyncService } from "../services/graph-sync.js";
