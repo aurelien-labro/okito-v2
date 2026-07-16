@@ -24,12 +24,10 @@ const MODULES: NavItem[] = [
   { href: "/service-catalog", label: "Prestations", icon: "ti-list-details" },
   { href: "/schedule", label: "Horaires", icon: "ti-clock" },
   { href: "/tables", label: "Tables", icon: "ti-armchair" },
+  { href: "/marketing", label: "Marketing", icon: "ti-speakerphone" },
 ];
 
-const COMING: { label: string; icon: string }[] = [
-  { label: "Site web", icon: "ti-world" },
-  { label: "Marketing", icon: "ti-speakerphone" },
-];
+const COMING: { label: string; icon: string }[] = [{ label: "Site web", icon: "ti-world" }];
 
 const ADMIN: NavItem[] = [
   { href: "/tenants", label: "Tenants", icon: "ti-building-store" },

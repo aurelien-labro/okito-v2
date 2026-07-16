@@ -1,4 +1,5 @@
 export * from "./tenants.js";
+export * from "./campaigns.js";
 export * from "./reservations.js";
 export * from "./conversations.js";
 export * from "./tenant-phone-routes.js";
