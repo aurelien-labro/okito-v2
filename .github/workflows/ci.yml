@@ -40,6 +40,9 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Install Playwright browser
+        run: pnpm --filter @okito/e2e install:browsers
+
       - name: Test
         run: pnpm test
         env:
