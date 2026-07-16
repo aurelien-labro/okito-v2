@@ -14,6 +14,7 @@ import { adminBankRoute } from "./routes/admin-bank.js";
 import { adminCalendarsRoute, googleCalendarCallbackRoute } from "./routes/admin-calendars.js";
 import { adminCustomerTimelineRoute } from "./routes/admin-customer-timeline.js";
 import { adminCustomersRoute } from "./routes/admin-customers.js";
+import { adminGoogleAdsRoute, googleAdsCallbackRoute } from "./routes/admin-google-ads.js";
 import {
   adminGoogleBusinessRoute,
   googleBusinessCallbackRoute,
@@ -30,6 +31,7 @@ import {
   microsoftOAuthCallbackRoute,
 } from "./routes/admin-mailboxes.js";
 import { adminMembersRoute } from "./routes/admin-members.js";
+import { adminMetaRoute, metaCallbackRoute } from "./routes/admin-meta.js";
 import { adminOnboardingRoute } from "./routes/admin-onboarding.js";
 import { adminRemindersRoute } from "./routes/admin-reminders.js";
 import { adminReviewsRoute } from "./routes/admin-reviews.js";
@@ -70,6 +72,7 @@ import type { CustomerPrivacyService } from "./services/customer-privacy.js";
 import type { CustomerTimelineService } from "./services/customer-timeline.js";
 import { type BusinessEventEmitter, EventBusService } from "./services/event-bus.js";
 import type { GmailSyncService } from "./services/gmail-sync.js";
+import type { GoogleAdsService } from "./services/google-ads.js";
 import type { GoogleBusinessService } from "./services/google-business.js";
 import type { GoogleCalendarService } from "./services/google-calendar.js";
 import type { GoogleReviewsSyncService } from "./services/google-reviews-sync.js";
@@ -85,6 +88,7 @@ import type { JarvisExecutor } from "./services/jarvis-executor.js";
 import type { JarvisObserverService } from "./services/jarvis-observer.js";
 import type { LoyaltyService } from "./services/loyalty.js";
 import type { MailboxService } from "./services/mailbox.js";
+import type { MetaAdsService } from "./services/meta-ads.js";
 import type { MicrosoftMailboxService } from "./services/microsoft-mailbox.js";
 import type { NoShowService } from "./services/no-show.js";
 import type { Notifier } from "./services/notifier.js";
@@ -199,6 +203,10 @@ export interface AppServices {
   woocommerceConnection?: WoocommerceConnectionService;
   /** Sync commandes WooCommerce — ajoute la function Inngest 15-min si fournie. */
   woocommerceSync?: WoocommerceSyncService;
+  /** Comptes Google Ads — monté sur /v1/admin/google-ads si OAuth Google Ads configuré. */
+  googleAds?: GoogleAdsService;
+  /** Comptes Meta (Facebook & Instagram) — monté sur /v1/admin/meta si OAuth Meta configuré. */
+  metaAds?: MetaAdsService;
   /** Inbox unifiée — monté sur /v1/admin/inbox si fourni. */
   inbox?: InboxService;
   /** Fiche client 360° — monté sur /v1/admin/customer-360 si fourni. */
@@ -473,6 +481,12 @@ export function createApp(env: Env, services: AppServices = {}) {
     if (services.woocommerceConnection) {
       v1Admin.route("/woocommerce", adminWoocommerceRoute(services.woocommerceConnection));
     }
+    if (services.googleAds) {
+      v1Admin.route("/google-ads", adminGoogleAdsRoute(services.googleAds));
+    }
+    if (services.metaAds) {
+      v1Admin.route("/meta", adminMetaRoute(services.metaAds));
+    }
     if (services.onboardingScan) {
       v1Admin.route("/onboarding", adminOnboardingRoute(services.onboardingScan));
     }
@@ -512,6 +526,19 @@ export function createApp(env: Env, services: AppServices = {}) {
       "/oauth/google-calendar/callback",
       googleCalendarCallbackRoute(services.googleCalendar, env.APP_URL),
     );
+  }
+
+  // Callback OAuth Google Ads — public, Google y redirige le navigateur du patron.
+  if (services.googleAds) {
+    app.route(
+      "/oauth/google-ads/callback",
+      googleAdsCallbackRoute(services.googleAds, env.APP_URL),
+    );
+  }
+
+  // Callback OAuth Meta — public, Meta y redirige le navigateur du patron.
+  if (services.metaAds) {
+    app.route("/oauth/meta/callback", metaCallbackRoute(services.metaAds, env.APP_URL));
   }
 
   // Inngest : endpoint scrape par le dashboard pour découvrir + invoquer

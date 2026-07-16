@@ -357,6 +357,33 @@ async function applySchema(pglite: PGlite): Promise<void> {
       unique (tenant_id, store_url)
     );
 
+    create table tenant_google_ads_connections (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      account_label text not null default 'Google Ads',
+      access_token text not null,
+      refresh_token text not null,
+      access_token_expires_at timestamptz not null,
+      last_sync_at timestamptz,
+      last_error text,
+      status text not null default 'active',
+      created_at timestamptz not null default now()
+    );
+
+    create table tenant_meta_connections (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      external_account_id text not null,
+      account_label text not null default 'Meta Ads',
+      access_token text not null,
+      access_token_expires_at timestamptz not null,
+      last_sync_at timestamptz,
+      last_error text,
+      status text not null default 'active',
+      created_at timestamptz not null default now(),
+      unique (tenant_id, external_account_id)
+    );
+
     create table tenant_stripe_accounts (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid not null references tenants(id) on delete cascade,
