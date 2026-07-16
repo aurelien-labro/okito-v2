@@ -21,3 +21,6 @@ export * from "./google-calendars.js";
 export * from "./stripe-accounts.js";
 export * from "./bank-connections.js";
 export * from "./shopify-connections.js";
+export * from "./woocommerce-connections.js";
+export * from "./google-ads-connections.js";
+export * from "./meta-connections.js";

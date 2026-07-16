@@ -59,6 +59,17 @@ const envSchema = z.object({
    * calendar.readonly). Ex: http://localhost:3001/oauth/google-calendar/callback.
    */
   GOOGLE_CALENDAR_REDIRECT_URI: z.string().url().optional(),
+  /**
+   * URL de callback OAuth pour Google Ads (dépenses pub). Réutilise
+   * GOOGLE_CLIENT_ID/SECRET, redirect URI dédiée (scope adwords).
+   * Ex: http://localhost:3001/oauth/google-ads/callback.
+   */
+  GOOGLE_ADS_REDIRECT_URI: z.string().url().optional(),
+  /** OAuth Meta (Facebook & Instagram). Les 3 requis pour activer la connexion. */
+  META_APP_ID: z.string().optional(),
+  META_APP_SECRET: z.string().optional(),
+  /** URL de callback enregistrée dans le portail Meta, ex: http://localhost:3001/oauth/meta/callback */
+  META_REDIRECT_URI: z.string().url().optional(),
   /** OAuth Microsoft (ingestion Outlook/365). Les 3 requis pour activer la connexion. */
   MICROSOFT_CLIENT_ID: z.string().optional(),
   MICROSOFT_CLIENT_SECRET: z.string().optional(),

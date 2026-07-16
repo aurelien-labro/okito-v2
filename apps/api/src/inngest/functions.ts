@@ -16,6 +16,7 @@ import type { ReminderService } from "../services/reminder.js";
 import type { ReviewRequestService } from "../services/review-request.js";
 import type { ShopifySyncService } from "../services/shopify-sync.js";
 import type { StripeSyncService } from "../services/stripe-sync.js";
+import type { WoocommerceSyncService } from "../services/woocommerce-sync.js";
 
 /**
  * Functions Inngest exposées par l'API.
@@ -46,6 +47,7 @@ export function createInngestFunctions(
   stripeSync?: StripeSyncService,
   bankSync?: BankSyncService,
   shopifySync?: ShopifySyncService,
+  woocommerceSync?: WoocommerceSyncService,
 ): InngestFunction.Any[] {
   const dailyReminders = inngest.createFunction(
     {
@@ -292,6 +294,24 @@ export function createInngestFunctions(
       },
     );
     functions.push(syncShopify);
+  }
+
+  if (woocommerceSync) {
+    const syncWoocommerce = inngest.createFunction(
+      {
+        id: "woocommerce-sync",
+        name: "Sync commandes WooCommerce (toutes les 15 min)",
+        triggers: [{ cron: "*/15 * * * *" }],
+      },
+      async ({ step }) => {
+        const result = await step.run("run-once", async () => woocommerceSync.runOnce());
+        if (result.ordersIngested > 0 || result.errors > 0) {
+          logger.info({ result }, "Inngest: woocommerceSync terminé");
+        }
+        return result;
+      },
+    );
+    functions.push(syncWoocommerce);
   }
 
   if (invoiceOverdue) {

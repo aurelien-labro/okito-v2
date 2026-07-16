@@ -17,6 +17,7 @@ import { CustomerPrivacyService } from "./services/customer-privacy.js";
 import { CustomerTimelineService } from "./services/customer-timeline.js";
 import { EventBusService } from "./services/event-bus.js";
 import { GmailSyncService } from "./services/gmail-sync.js";
+import { GoogleAdsService } from "./services/google-ads.js";
 import { GoogleBusinessService } from "./services/google-business.js";
 import { GoogleCalendarService } from "./services/google-calendar.js";
 import { GoogleReviewsSyncService } from "./services/google-reviews-sync.js";
@@ -37,6 +38,7 @@ import { SupplierInvoicePayReminderTool } from "./services/jarvis-tools/supplier
 import { createLLMClient } from "./services/llm/index.js";
 import { LoyaltyService } from "./services/loyalty.js";
 import { MailboxService } from "./services/mailbox.js";
+import { MetaAdsService } from "./services/meta-ads.js";
 import { MicrosoftMailboxService } from "./services/microsoft-mailbox.js";
 import { NoShowService } from "./services/no-show.js";
 import { createNotifier } from "./services/notifier-factory.js";
@@ -62,6 +64,8 @@ import { VatReportService } from "./services/vat-report.js";
 import { WaitlistService } from "./services/waitlist.js";
 import { WebhookDispatchService } from "./services/webhook-dispatch.js";
 import { WebhookService } from "./services/webhook.js";
+import { WoocommerceConnectionService } from "./services/woocommerce-connection.js";
+import { WoocommerceSyncService } from "./services/woocommerce-sync.js";
 
 const env = loadEnv();
 initSentry(env);
@@ -129,9 +133,13 @@ if (env.DATABASE_URL) {
     const shopifyConnection = new ShopifyConnectionService(db, secretBox);
     services.shopifyConnection = shopifyConnection;
     services.shopifySync = new ShopifySyncService(db, shopifyConnection, eventBus);
+    // WooCommerce réutilise la même clé de chiffrement (secrets au repos).
+    const woocommerceConnection = new WoocommerceConnectionService(db, secretBox);
+    services.woocommerceConnection = woocommerceConnection;
+    services.woocommerceSync = new WoocommerceSyncService(db, woocommerceConnection, eventBus);
   } else {
     logger.warn(
-      "MAILBOX_ENC_KEY absente — boîtes IMAP/Yahoo + Stripe + banque + Shopify désactivés",
+      "MAILBOX_ENC_KEY absente — boîtes IMAP/Yahoo + Stripe + banque + Shopify + WooCommerce désactivés",
     );
   }
   if (env.MICROSOFT_CLIENT_ID && env.MICROSOFT_CLIENT_SECRET && env.MICROSOFT_REDIRECT_URI) {
@@ -166,6 +174,24 @@ if (env.DATABASE_URL) {
     services.calendarSync = new CalendarSyncService(db, googleCalendar, eventBus);
   } else {
     logger.warn("OAuth Google Calendar absent — import d'agenda désactivé");
+  }
+  if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_ADS_REDIRECT_URI) {
+    services.googleAds = new GoogleAdsService(db, {
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
+      redirectUri: env.GOOGLE_ADS_REDIRECT_URI,
+    });
+  } else {
+    logger.warn("OAuth Google Ads absent — connexion Google Ads désactivée");
+  }
+  if (env.META_APP_ID && env.META_APP_SECRET && env.META_REDIRECT_URI) {
+    services.metaAds = new MetaAdsService(db, {
+      appId: env.META_APP_ID,
+      appSecret: env.META_APP_SECRET,
+      redirectUri: env.META_REDIRECT_URI,
+    });
+  } else {
+    logger.warn("OAuth Meta absent — connexion Meta Ads désactivée");
   }
   services.customerPrivacy = new CustomerPrivacyService(db);
   services.db = db;

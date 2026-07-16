@@ -6,44 +6,59 @@ import {
   API_URL,
   type BankConnection,
   type CalendarConnection,
+  type GoogleAdsConnection,
   type GoogleBusinessConnection,
   type Mailbox,
+  type MetaConnection,
   type ShopifyConnection,
   type StripeAccount,
   type TenantWebhook,
   WEBHOOK_EVENTS,
   type WebhookEvent,
+  type WoocommerceConnection,
   connectBank,
   connectCalendar,
+  connectGoogleAds,
   connectGoogleBusiness,
   connectImapMailbox,
   connectMailbox,
+  connectMeta,
   connectOutlookMailbox,
   connectShopify,
   connectStripeAccount,
+  connectWoocommerce,
   createWebhook,
   deleteBankConnection,
   deleteCalendar,
+  deleteGoogleAdsConnection,
   deleteGoogleBusiness,
   deleteMailbox,
+  deleteMetaConnection,
   deleteShopifyConnection,
   deleteStripeAccount,
   deleteWebhook,
+  deleteWoocommerceConnection,
   getCurrentTenantId,
   listBankConnections,
   listCalendars,
+  listGoogleAdsConnections,
   listGoogleBusiness,
   listMailboxes,
+  listMetaConnections,
   listShopifyConnections,
   listStripeAccounts,
   listWebhooks,
+  listWoocommerceConnections,
   setBankConnectionStatus,
   setCalendarStatus,
+  setGoogleAdsConnectionStatus,
   setGoogleBusinessStatus,
   setMailboxStatus,
+  setMetaConnectionStatus,
   setShopifyConnectionStatus,
   setStripeAccountStatus,
   setWebhookActive,
+  setWoocommerceConnectionStatus,
 } from "../_lib/api-client";
 
 const MAILBOX_STATUS_LABEL: Record<Mailbox["status"], string> = {
@@ -754,7 +769,7 @@ interface EcosystemGroup {
     description: string;
     icon: string;
     /** Présent = carte branchée sur l'API (plus « Bientôt »). */
-    connect?: "stripe" | "bank" | "calendar" | "shopify";
+    connect?: "stripe" | "bank" | "calendar" | "shopify" | "woocommerce" | "googleAds" | "meta";
   }[];
 }
 
@@ -778,6 +793,8 @@ interface ConnectableCardProps {
    * champ secret (`placeholder`) passé à `connectSecret`.
    */
   fields?: { key: string; placeholder: string; secret?: boolean }[];
+  /** Libellé du bouton OAuth quand au moins une connexion existe déjà. */
+  connectMoreLabel?: string;
   labelOf: (conn: EcoConnection) => string;
   list: (tenantId: string) => Promise<{ data: EcoConnection[] }>;
   connectSecret?: (tenantId: string, secret: string) => Promise<unknown>;
@@ -799,6 +816,7 @@ function ConnectableCard({
   mode,
   placeholder,
   fields,
+  connectMoreLabel,
   labelOf,
   list,
   connectSecret,
@@ -969,7 +987,7 @@ function ConnectableCard({
           disabled={busy}
           className="mt-3 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-50"
         >
-          {connections.length > 0 ? "Connecter un autre agenda" : "Connecter"}
+          {connections.length > 0 ? (connectMoreLabel ?? "Connecter un autre compte") : "Connecter"}
         </button>
       ) : showForm ? (
         fields ? (
@@ -1062,6 +1080,7 @@ const ECOSYSTEM: EcosystemGroup[] = [
         name: "WooCommerce",
         description: "Boutiques WordPress : ventes, clients et stock remontés dans l'observatoire.",
         icon: "ti-shopping-bag",
+        connect: "woocommerce",
       },
     ],
   },
@@ -1085,11 +1104,13 @@ const ECOSYSTEM: EcosystemGroup[] = [
         description:
           "Dépenses et conversions dans le brief matinal : combien coûte un client acquis.",
         icon: "ti-ad-2",
+        connect: "googleAds",
       },
       {
         name: "Meta Ads",
         description: "Campagnes Facebook & Instagram : budget et retombées suivis au même endroit.",
         icon: "ti-brand-meta",
+        connect: "meta",
       },
     ],
   },
@@ -1112,12 +1133,13 @@ const ECOSYSTEM: EcosystemGroup[] = [
 
 /** Branchements API des cartes écosystème actives. */
 const CONNECTABLE_PROPS: Record<
-  "stripe" | "bank" | "calendar" | "shopify",
+  "stripe" | "bank" | "calendar" | "shopify" | "woocommerce" | "googleAds" | "meta",
   Pick<
     ConnectableCardProps,
     | "mode"
     | "placeholder"
     | "fields"
+    | "connectMoreLabel"
     | "labelOf"
     | "list"
     | "connectSecret"
@@ -1164,8 +1186,47 @@ const CONNECTABLE_PROPS: Record<
     setStatus: setShopifyConnectionStatus,
     remove: deleteShopifyConnection,
   },
+  woocommerce: {
+    mode: "secret",
+    fields: [
+      { key: "storeUrl", placeholder: "https://ma-boutique.fr" },
+      { key: "consumerKey", placeholder: "Consumer key ck_…", secret: true },
+      { key: "consumerSecret", placeholder: "Consumer secret cs_…", secret: true },
+    ],
+    labelOf: (c) => {
+      const w = c as WoocommerceConnection;
+      return w.storeLabel || w.storeUrl;
+    },
+    list: listWoocommerceConnections,
+    connectFields: (tenantId, values) =>
+      connectWoocommerce(
+        tenantId,
+        values.storeUrl ?? "",
+        values.consumerKey ?? "",
+        values.consumerSecret ?? "",
+      ),
+    setStatus: setWoocommerceConnectionStatus,
+    remove: deleteWoocommerceConnection,
+  },
+  googleAds: {
+    mode: "oauth",
+    labelOf: (c) => (c as GoogleAdsConnection).accountLabel || "Google Ads",
+    list: listGoogleAdsConnections,
+    connectOauth: connectGoogleAds,
+    setStatus: setGoogleAdsConnectionStatus,
+    remove: deleteGoogleAdsConnection,
+  },
+  meta: {
+    mode: "oauth",
+    labelOf: (c) => (c as MetaConnection).accountLabel || "Meta Ads",
+    list: listMetaConnections,
+    connectOauth: connectMeta,
+    setStatus: setMetaConnectionStatus,
+    remove: deleteMetaConnection,
+  },
   calendar: {
     mode: "oauth",
+    connectMoreLabel: "Connecter un autre agenda",
     labelOf: (c) => (c as CalendarConnection).calendarSummary || "Agenda",
     list: listCalendars,
     connectOauth: connectCalendar,

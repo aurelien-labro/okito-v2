@@ -1261,6 +1261,126 @@ export async function deleteShopifyConnection(tenantId: string, id: string): Pro
   await request(`/v1/admin/shopify/${tenantId}/${id}`, { method: "DELETE" });
 }
 
+// --- Écosystème : WooCommerce ---------------------------------------------------
+
+export interface WoocommerceConnection {
+  id: string;
+  tenantId: string;
+  storeUrl: string;
+  storeLabel: string;
+  orderCursor: string | null;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  status: MailboxStatus;
+  createdAt: string;
+}
+
+export async function listWoocommerceConnections(
+  tenantId: string,
+): Promise<{ data: WoocommerceConnection[] }> {
+  return request(`/v1/admin/woocommerce/${tenantId}`);
+}
+
+export async function connectWoocommerce(
+  tenantId: string,
+  storeUrl: string,
+  consumerKey: string,
+  consumerSecret: string,
+): Promise<{ data: WoocommerceConnection }> {
+  return request(`/v1/admin/woocommerce/${tenantId}/connect`, {
+    method: "POST",
+    body: JSON.stringify({ storeUrl, consumerKey, consumerSecret }),
+  });
+}
+
+export async function setWoocommerceConnectionStatus(
+  tenantId: string,
+  id: string,
+  status: "active" | "paused",
+): Promise<{ data: WoocommerceConnection }> {
+  return request(`/v1/admin/woocommerce/${tenantId}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function deleteWoocommerceConnection(tenantId: string, id: string): Promise<void> {
+  await request(`/v1/admin/woocommerce/${tenantId}/${id}`, { method: "DELETE" });
+}
+
+// --- Écosystème : Google Ads ----------------------------------------------------
+
+export interface GoogleAdsConnection {
+  id: string;
+  tenantId: string;
+  accountLabel: string;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  status: MailboxStatus;
+  createdAt: string;
+}
+
+export async function listGoogleAdsConnections(
+  tenantId: string,
+): Promise<{ data: GoogleAdsConnection[] }> {
+  return request(`/v1/admin/google-ads/${tenantId}`);
+}
+
+export async function connectGoogleAds(tenantId: string): Promise<{ data: { url: string } }> {
+  return request(`/v1/admin/google-ads/${tenantId}/connect`, { method: "POST" });
+}
+
+export async function setGoogleAdsConnectionStatus(
+  tenantId: string,
+  id: string,
+  status: "active" | "paused",
+): Promise<{ data: GoogleAdsConnection }> {
+  return request(`/v1/admin/google-ads/${tenantId}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function deleteGoogleAdsConnection(tenantId: string, id: string): Promise<void> {
+  await request(`/v1/admin/google-ads/${tenantId}/${id}`, { method: "DELETE" });
+}
+
+// --- Écosystème : Meta (Facebook & Instagram) -----------------------------------
+
+export interface MetaConnection {
+  id: string;
+  tenantId: string;
+  externalAccountId: string;
+  accountLabel: string;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  status: MailboxStatus;
+  createdAt: string;
+}
+
+export async function listMetaConnections(tenantId: string): Promise<{ data: MetaConnection[] }> {
+  return request(`/v1/admin/meta/${tenantId}`);
+}
+
+export async function connectMeta(tenantId: string): Promise<{ data: { url: string } }> {
+  return request(`/v1/admin/meta/${tenantId}/connect`, { method: "POST" });
+}
+
+export async function setMetaConnectionStatus(
+  tenantId: string,
+  id: string,
+  status: "active" | "paused",
+): Promise<{ data: MetaConnection }> {
+  return request(`/v1/admin/meta/${tenantId}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function deleteMetaConnection(tenantId: string, id: string): Promise<void> {
+  await request(`/v1/admin/meta/${tenantId}/${id}`, { method: "DELETE" });
+}
+
 // --- Écosystème : Google Calendar --------------------------------------------
 
 export interface CalendarConnection {
