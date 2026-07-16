@@ -52,6 +52,7 @@ import { ScheduleRuleService } from "./services/schedule-rule.js";
 import { ServiceCatalogService } from "./services/service-catalog.js";
 import { ShopifyConnectionService } from "./services/shopify-connection.js";
 import { ShopifySyncService } from "./services/shopify-sync.js";
+import { SiteGeneratorService } from "./services/site-generator.js";
 import { SiteService } from "./services/site.js";
 import { StatsService } from "./services/stats.js";
 import { StripeAccountService } from "./services/stripe-account.js";
@@ -255,6 +256,13 @@ if (env.DATABASE_URL) {
       eventBus,
       env.GOOGLE_PLACES_API_KEY,
     );
+    if (services.site) {
+      services.siteGenerator = new SiteGeneratorService(
+        services.onboardingScan,
+        services.site,
+        llm,
+      );
+    }
   } else {
     logger.warn("GEMINI_API_KEY absent — moteur conversationnel désactivé");
   }

@@ -106,6 +106,7 @@ import type { ScheduleRuleService } from "./services/schedule-rule.js";
 import type { ServiceCatalogService } from "./services/service-catalog.js";
 import type { ShopifyConnectionService } from "./services/shopify-connection.js";
 import type { ShopifySyncService } from "./services/shopify-sync.js";
+import type { SiteGeneratorService } from "./services/site-generator.js";
 import type { SiteService } from "./services/site.js";
 import type { StatsService } from "./services/stats.js";
 import type { StripeAccountService } from "./services/stripe-account.js";
@@ -218,6 +219,8 @@ export interface AppServices {
   campaign?: CampaignService;
   /** Site builder — monté sur /v1/admin/site + public /v1/sites si fourni. */
   site?: SiteService;
+  /** Génération LLM du contenu initial du site — active POST /site/:tenantId/generate. */
+  siteGenerator?: SiteGeneratorService;
   /** Accès multi-établissements — étend X-Tenant-Id aux owners de groupe + route /v1/tenants/accessible. */
   tenantAccess?: TenantAccessService;
   /** Inbox unifiée — monté sur /v1/admin/inbox si fourni. */
@@ -522,7 +525,7 @@ export function createApp(env: Env, services: AppServices = {}) {
       v1Admin.route("/campaigns", adminCampaignsRoute(services.campaign));
     }
     if (services.site) {
-      v1Admin.route("/site", adminSiteRoute(services.site));
+      v1Admin.route("/site", adminSiteRoute(services.site, services.siteGenerator));
     }
     if (services.review) {
       v1Admin.route("/reviews", adminReviewsRoute(services.review));

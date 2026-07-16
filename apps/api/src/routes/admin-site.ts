@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { BadRequestError, HttpError } from "../lib/errors.js";
 import type { AppEnv } from "../lib/types.js";
+import type { SiteGeneratorService } from "../services/site-generator.js";
 import type { SiteService } from "../services/site.js";
 
 const uuidParam = z.string().uuid();
@@ -23,8 +24,18 @@ const upsertSchema = z.object({
     .optional(),
 });
 
-/** Site builder d'un tenant : lecture, édition des blocs, publication. */
-export function adminSiteRoute(service: SiteService) {
+const generateSchema = z
+  .object({
+    websiteUrl: z.string().min(1).max(300).optional(),
+    businessQuery: z.string().min(1).max(200).optional(),
+    force: z.boolean().optional(),
+  })
+  .refine((v) => v.websiteUrl || v.businessQuery, {
+    message: "Fournir au moins websiteUrl ou businessQuery",
+  });
+
+/** Site builder d'un tenant : lecture, édition des blocs, publication, génération LLM. */
+export function adminSiteRoute(service: SiteService, generator?: SiteGeneratorService) {
   const app = new Hono<AppEnv>();
 
   app.onError((err, c) => {
@@ -57,6 +68,19 @@ export function adminSiteRoute(service: SiteService) {
     const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
     return c.json({ data: await service.publish(tenantId) });
   });
+
+  // POST /v1/admin/site/:tenantId/generate — pré-remplit le site via LLM
+  // (scan du site existant + fiche Google, comme le diagnostic onboarding).
+  if (generator) {
+    app.post("/:tenantId/generate", async (c) => {
+      const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
+      const body = await c.req.json().catch(() => {
+        throw new BadRequestError("JSON invalide", "invalid_json");
+      });
+      const input = parseOrThrow(generateSchema, body, "body");
+      return c.json({ data: await generator.generate(tenantId, input) });
+    });
+  }
 
   // POST /v1/admin/site/:tenantId/unpublish — repasse en brouillon
   app.post("/:tenantId/unpublish", async (c) => {
