@@ -88,6 +88,7 @@ const createSchema = z.object({
   depositCurrency: z.enum(["EUR", "USD", "GBP", "CHF"]).optional(),
   notificationPreferences: notificationPreferencesSchema.optional(),
   status: statusEnum.default("trial"),
+  parentTenantId: z.string().uuid().nullable().optional(),
 });
 
 const updateSchema = z
@@ -107,6 +108,7 @@ const updateSchema = z
     notificationPreferences: notificationPreferencesSchema,
     status: statusEnum,
     remindersEnabled: z.boolean(),
+    parentTenantId: z.string().uuid().nullable(),
   })
   .partial();
 

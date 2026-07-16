@@ -10,6 +10,21 @@ class UnauthorizedError extends HttpError {
   }
 }
 
+class TenantForbiddenError extends HttpError {
+  constructor() {
+    super(403, "tenant_forbidden", "Accès refusé à cet établissement");
+  }
+}
+
+/** Résolution d'accès multi-établissements (implémentée par TenantAccessService). */
+export interface TenantAccessLookup {
+  canAccess(
+    userId: string | null,
+    claimTenantId: string | null,
+    targetTenantId: string,
+  ): Promise<boolean>;
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
@@ -27,7 +42,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * `ADMIN_USER_IDS`) peuvent passer sans `tenant_id` — leur tenantId est
  * marqué `"admin"` (sentinel non-UUID, à ignorer côté routes admin).
  */
-export function createAuthMiddleware(env: Env) {
+export function createAuthMiddleware(env: Env, access?: TenantAccessLookup) {
   const jwks = env.SUPABASE_URL
     ? createRemoteJWKSet(new URL(`${env.SUPABASE_URL}/auth/v1/.well-known/jwks.json`))
     : null;
@@ -67,7 +82,18 @@ export function createAuthMiddleware(env: Env) {
 
       const tenantId = extractTenantId(claims);
       if (tenantId) {
-        c.set("tenantId", tenantId);
+        // Multi-établissements : un membre peut piloter un autre établissement
+        // de son groupe via X-Tenant-Id, si TenantAccessService l'autorise
+        // (owner du groupe parent uniquement — staff/manager cloisonnés).
+        const overrideTenant = c.req.header("X-Tenant-Id");
+        if (overrideTenant && UUID_RE.test(overrideTenant) && overrideTenant !== tenantId) {
+          if (!access || !(await access.canAccess(userId ?? null, tenantId, overrideTenant))) {
+            throw new TenantForbiddenError();
+          }
+          c.set("tenantId", overrideTenant);
+        } else {
+          c.set("tenantId", tenantId);
+        }
       } else if (isAdmin) {
         // Admin sans tenant_id : peut spécifier le tenant courant via header
         // X-Tenant-Id (utilisé par le dashboard pour piloter un tenant choisi).

@@ -59,6 +59,7 @@ import { SubscriptionService } from "./services/subscription.js";
 import { SupplierInvoiceExtractionService } from "./services/supplier-invoice-extraction.js";
 import { SupplierInvoiceService } from "./services/supplier-invoice.js";
 import { TableService } from "./services/table.js";
+import { TenantAccessService } from "./services/tenant-access.js";
 import { TenantMemberService } from "./services/tenant-member.js";
 import { TenantService } from "./services/tenant.js";
 import { VatReportService } from "./services/vat-report.js";
@@ -195,6 +196,7 @@ if (env.DATABASE_URL) {
     logger.warn("OAuth Meta absent — connexion Meta Ads désactivée");
   }
   services.customerPrivacy = new CustomerPrivacyService(db);
+  services.tenantAccess = new TenantAccessService(db);
   services.db = db;
 
   if (env.NODE_ENV !== "production") {
