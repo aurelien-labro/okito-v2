@@ -4,25 +4,40 @@ import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { LoginGate } from "../_components/login-gate";
 import {
   API_URL,
+  type BankConnection,
+  type CalendarConnection,
   type GoogleBusinessConnection,
   type Mailbox,
+  type StripeAccount,
   type TenantWebhook,
   WEBHOOK_EVENTS,
   type WebhookEvent,
+  connectBank,
+  connectCalendar,
   connectGoogleBusiness,
   connectImapMailbox,
   connectMailbox,
   connectOutlookMailbox,
+  connectStripeAccount,
   createWebhook,
+  deleteBankConnection,
+  deleteCalendar,
   deleteGoogleBusiness,
   deleteMailbox,
+  deleteStripeAccount,
   deleteWebhook,
   getCurrentTenantId,
+  listBankConnections,
+  listCalendars,
   listGoogleBusiness,
   listMailboxes,
+  listStripeAccounts,
   listWebhooks,
+  setBankConnectionStatus,
+  setCalendarStatus,
   setGoogleBusinessStatus,
   setMailboxStatus,
+  setStripeAccountStatus,
   setWebhookActive,
 } from "../_lib/api-client";
 
@@ -729,7 +744,240 @@ function GoogleBusinessSection() {
  */
 interface EcosystemGroup {
   category: string;
-  items: { name: string; description: string; icon: string }[];
+  items: {
+    name: string;
+    description: string;
+    icon: string;
+    /** Présent = carte branchée sur l'API (plus « Bientôt »). */
+    connect?: "stripe" | "bank" | "calendar";
+  }[];
+}
+
+/** Forme commune des connexions écosystème pour la carte générique. */
+interface EcoConnection {
+  id: string;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  status: Mailbox["status"];
+}
+
+interface ConnectableCardProps {
+  name: string;
+  description: string;
+  icon: string;
+  /** secret : champ masqué + POST connect. oauth : redirection consentement. */
+  mode: "secret" | "oauth";
+  placeholder?: string;
+  labelOf: (conn: EcoConnection) => string;
+  list: (tenantId: string) => Promise<{ data: EcoConnection[] }>;
+  connectSecret?: (tenantId: string, secret: string) => Promise<unknown>;
+  connectOauth?: (tenantId: string) => Promise<{ data: { url: string } }>;
+  setStatus: (tenantId: string, id: string, status: "active" | "paused") => Promise<unknown>;
+  remove: (tenantId: string, id: string) => Promise<void>;
+}
+
+/**
+ * Carte écosystème active : liste les connexions du tenant, permet d'en
+ * ajouter (clé/jeton masqué ou OAuth) et de les gérer (pause, déconnexion).
+ * Un 404 = module non monté côté API → on retombe sur la carte « Bientôt ».
+ */
+function ConnectableCard({
+  name,
+  description,
+  icon,
+  mode,
+  placeholder,
+  labelOf,
+  list,
+  connectSecret,
+  connectOauth,
+  setStatus,
+  remove,
+}: ConnectableCardProps) {
+  const [connections, setConnections] = useState<EcoConnection[]>([]);
+  const [unavailable, setUnavailable] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [secret, setSecret] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const fetchConnections = useCallback(async () => {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    try {
+      const res = await list(tenantId);
+      setConnections(res.data);
+      setUnavailable(false);
+    } catch (e) {
+      if ((e as { status?: number }).status === 404) setUnavailable(true);
+    }
+  }, [list]);
+
+  useEffect(() => {
+    fetchConnections();
+  }, [fetchConnections]);
+
+  async function handleConnect(e: FormEvent) {
+    e.preventDefault();
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      if (mode === "oauth" && connectOauth) {
+        const res = await connectOauth(tenantId);
+        window.location.href = res.data.url;
+        return;
+      }
+      if (connectSecret) {
+        await connectSecret(tenantId, secret.trim());
+        setSecret("");
+        setShowForm(false);
+        await fetchConnections();
+      }
+    } catch (e2) {
+      setErr(e2 instanceof Error ? e2.message : "Connexion impossible");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleToggle(conn: EcoConnection) {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    try {
+      await setStatus(tenantId, conn.id, conn.status === "paused" ? "active" : "paused");
+      await fetchConnections();
+    } catch (e) {
+      alert(`Échec : ${e instanceof Error ? e.message : "erreur"}`);
+    }
+  }
+
+  async function handleDelete(conn: EcoConnection) {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    if (!confirm(`Déconnecter « ${labelOf(conn)} » ?`)) return;
+    try {
+      await remove(tenantId, conn.id);
+      await fetchConnections();
+    } catch (e) {
+      alert(`Échec : ${e instanceof Error ? e.message : "erreur"}`);
+    }
+  }
+
+  // Module non monté côté API : même rendu que les intégrations « Bientôt ».
+  if (unavailable) {
+    return (
+      <div className="flex flex-col rounded-lg border border-stone-200 bg-white p-4 opacity-75">
+        <div className="flex items-start justify-between">
+          <span className={`ti ${icon} text-[26px] text-stone-500`} aria-hidden="true" />
+          <span className="rounded bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-500">
+            Bientôt
+          </span>
+        </div>
+        <div className="mt-3 text-sm font-semibold text-stone-900">{name}</div>
+        <p className="mt-1 flex-1 text-xs leading-relaxed text-stone-500">{description}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col rounded-lg border border-stone-200 bg-white p-4">
+      <div className="flex items-start justify-between">
+        <span className={`ti ${icon} text-[26px] text-stone-700`} aria-hidden="true" />
+        {connections[0] ? (
+          <span
+            className={`rounded px-2 py-0.5 text-[11px] font-medium ${MAILBOX_STATUS_COLOR[connections[0].status]}`}
+          >
+            {MAILBOX_STATUS_LABEL[connections[0].status]}
+          </span>
+        ) : (
+          <span className="rounded bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700">
+            Disponible
+          </span>
+        )}
+      </div>
+      <div className="mt-3 text-sm font-semibold text-stone-900">{name}</div>
+      <p className="mt-1 flex-1 text-xs leading-relaxed text-stone-500">{description}</p>
+
+      {connections.length > 0 && (
+        <div className="mt-3 space-y-2 border-t border-stone-100 pt-3">
+          {connections.map((conn) => (
+            <div key={conn.id} className="flex items-center justify-between gap-2 text-xs">
+              <div className="min-w-0">
+                <div className="truncate font-medium text-stone-800">{labelOf(conn)}</div>
+                <div className="text-[11px] text-stone-500">
+                  {conn.lastSyncAt
+                    ? `Sync : ${new Date(conn.lastSyncAt).toLocaleString("fr-FR")}`
+                    : "Première sync dans les 15 min"}
+                </div>
+                {conn.status === "error" && conn.lastError && (
+                  <div className="mt-0.5 text-[11px] text-rose-700">{conn.lastError}</div>
+                )}
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleToggle(conn)}
+                  className="text-blue-700 hover:underline"
+                >
+                  {conn.status === "paused" ? "Reprendre" : "Pause"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(conn)}
+                  className="text-rose-700 hover:underline"
+                >
+                  Déconnecter
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {err && <div className="mt-2 text-xs text-rose-700">{err}</div>}
+
+      {mode === "oauth" ? (
+        <button
+          type="button"
+          onClick={handleConnect}
+          disabled={busy}
+          className="mt-3 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+        >
+          {connections.length > 0 ? "Connecter un autre agenda" : "Connecter"}
+        </button>
+      ) : showForm ? (
+        <form onSubmit={handleConnect} className="mt-3 flex gap-2">
+          <input
+            type="password"
+            value={secret}
+            onChange={(e) => setSecret(e.target.value)}
+            placeholder={placeholder}
+            autoComplete="off"
+            required
+            minLength={10}
+            className="min-w-0 flex-1 rounded border border-stone-300 px-2 py-1.5 text-xs"
+          />
+          <button
+            type="submit"
+            disabled={busy || secret.trim().length < 10}
+            className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+          >
+            {busy ? "…" : "Valider"}
+          </button>
+        </form>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowForm(true)}
+          className="mt-3 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700"
+        >
+          {connections.length > 0 ? "Ajouter un compte" : "Connecter"}
+        </button>
+      )}
+    </div>
+  );
 }
 
 const ECOSYSTEM: EcosystemGroup[] = [
@@ -741,12 +989,14 @@ const ECOSYSTEM: EcosystemGroup[] = [
         description:
           "Encaissements en ligne : chaque paiement alimente le chiffre du jour et la TVA collectée.",
         icon: "ti-credit-card",
+        connect: "stripe",
       },
       {
         name: "Connexion bancaire",
         description:
           "Bridge / Powens : rapproche les factures et les encaissements réels pour fiabiliser la TVA.",
         icon: "ti-building-bank",
+        connect: "bank",
       },
     ],
   },
@@ -774,6 +1024,7 @@ const ECOSYSTEM: EcosystemGroup[] = [
         description:
           "Sync bidirectionnelle : les créneaux bloqués ailleurs évitent les doubles réservations.",
         icon: "ti-calendar",
+        connect: "calendar",
       },
     ],
   },
@@ -810,6 +1061,52 @@ const ECOSYSTEM: EcosystemGroup[] = [
   },
 ];
 
+/** Branchements API des cartes écosystème actives. */
+const CONNECTABLE_PROPS: Record<
+  "stripe" | "bank" | "calendar",
+  Pick<
+    ConnectableCardProps,
+    | "mode"
+    | "placeholder"
+    | "labelOf"
+    | "list"
+    | "connectSecret"
+    | "connectOauth"
+    | "setStatus"
+    | "remove"
+  >
+> = {
+  stripe: {
+    mode: "secret",
+    placeholder: "Clé restreinte rk_… (ou sk_…)",
+    labelOf: (c) => (c as StripeAccount).accountLabel || "Stripe",
+    list: listStripeAccounts,
+    connectSecret: connectStripeAccount,
+    setStatus: setStripeAccountStatus,
+    remove: deleteStripeAccount,
+  },
+  bank: {
+    mode: "secret",
+    placeholder: "Jeton d'accès Bridge / Powens",
+    labelOf: (c) => {
+      const b = c as BankConnection;
+      return `${b.accountLabel || "Banque"} (${b.provider})`;
+    },
+    list: listBankConnections,
+    connectSecret: connectBank,
+    setStatus: setBankConnectionStatus,
+    remove: deleteBankConnection,
+  },
+  calendar: {
+    mode: "oauth",
+    labelOf: (c) => (c as CalendarConnection).calendarSummary || "Agenda",
+    list: listCalendars,
+    connectOauth: connectCalendar,
+    setStatus: setCalendarStatus,
+    remove: deleteCalendar,
+  },
+};
+
 function EcosystemSection() {
   return (
     <div className="mb-10">
@@ -826,26 +1123,30 @@ function EcosystemSection() {
               {group.category}
             </h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {group.items.map((item) => (
-                <div
-                  key={item.name}
-                  className="flex flex-col rounded-lg border border-stone-200 bg-white p-4 opacity-75"
-                >
-                  <div className="flex items-start justify-between">
-                    <span
-                      className={`ti ${item.icon} text-[26px] text-stone-500`}
-                      aria-hidden="true"
-                    />
-                    <span className="rounded bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-500">
-                      Bientôt
-                    </span>
+              {group.items.map((item) =>
+                item.connect ? (
+                  <ConnectableCard key={item.name} {...CONNECTABLE_PROPS[item.connect]} {...item} />
+                ) : (
+                  <div
+                    key={item.name}
+                    className="flex flex-col rounded-lg border border-stone-200 bg-white p-4 opacity-75"
+                  >
+                    <div className="flex items-start justify-between">
+                      <span
+                        className={`ti ${item.icon} text-[26px] text-stone-500`}
+                        aria-hidden="true"
+                      />
+                      <span className="rounded bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-500">
+                        Bientôt
+                      </span>
+                    </div>
+                    <div className="mt-3 text-sm font-semibold text-stone-900">{item.name}</div>
+                    <p className="mt-1 flex-1 text-xs leading-relaxed text-stone-500">
+                      {item.description}
+                    </p>
                   </div>
-                  <div className="mt-3 text-sm font-semibold text-stone-900">{item.name}</div>
-                  <p className="mt-1 flex-1 text-xs leading-relaxed text-stone-500">
-                    {item.description}
-                  </p>
-                </div>
-              ))}
+                ),
+              )}
             </div>
           </div>
         ))}

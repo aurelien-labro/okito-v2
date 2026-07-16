@@ -1130,6 +1130,128 @@ export async function deleteGoogleBusiness(tenantId: string, id: string): Promis
   await request(`/v1/admin/google-business/${tenantId}/${id}`, { method: "DELETE" });
 }
 
+// --- Écosystème : Stripe ------------------------------------------------------
+
+export interface StripeAccount {
+  id: string;
+  tenantId: string;
+  accountLabel: string;
+  chargeCursor: string | null;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  status: MailboxStatus;
+  createdAt: string;
+}
+
+export async function listStripeAccounts(tenantId: string): Promise<{ data: StripeAccount[] }> {
+  return request(`/v1/admin/stripe/${tenantId}`);
+}
+
+export async function connectStripeAccount(
+  tenantId: string,
+  secretKey: string,
+): Promise<{ data: StripeAccount }> {
+  return request(`/v1/admin/stripe/${tenantId}/connect`, {
+    method: "POST",
+    body: JSON.stringify({ secretKey }),
+  });
+}
+
+export async function setStripeAccountStatus(
+  tenantId: string,
+  id: string,
+  status: "active" | "paused",
+): Promise<{ data: StripeAccount }> {
+  return request(`/v1/admin/stripe/${tenantId}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function deleteStripeAccount(tenantId: string, id: string): Promise<void> {
+  await request(`/v1/admin/stripe/${tenantId}/${id}`, { method: "DELETE" });
+}
+
+// --- Écosystème : connexion bancaire -----------------------------------------
+
+export interface BankConnection {
+  id: string;
+  tenantId: string;
+  provider: string;
+  accountLabel: string;
+  transactionCursor: string | null;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  status: MailboxStatus;
+  createdAt: string;
+}
+
+export async function listBankConnections(tenantId: string): Promise<{ data: BankConnection[] }> {
+  return request(`/v1/admin/bank/${tenantId}`);
+}
+
+export async function connectBank(
+  tenantId: string,
+  accessToken: string,
+): Promise<{ data: BankConnection }> {
+  return request(`/v1/admin/bank/${tenantId}/connect`, {
+    method: "POST",
+    body: JSON.stringify({ accessToken }),
+  });
+}
+
+export async function setBankConnectionStatus(
+  tenantId: string,
+  id: string,
+  status: "active" | "paused",
+): Promise<{ data: BankConnection }> {
+  return request(`/v1/admin/bank/${tenantId}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function deleteBankConnection(tenantId: string, id: string): Promise<void> {
+  await request(`/v1/admin/bank/${tenantId}/${id}`, { method: "DELETE" });
+}
+
+// --- Écosystème : Google Calendar --------------------------------------------
+
+export interface CalendarConnection {
+  id: string;
+  tenantId: string;
+  calendarId: string;
+  calendarSummary: string;
+  eventsCursor: string | null;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  status: MailboxStatus;
+  createdAt: string;
+}
+
+export async function listCalendars(tenantId: string): Promise<{ data: CalendarConnection[] }> {
+  return request(`/v1/admin/calendars/${tenantId}`);
+}
+
+export async function connectCalendar(tenantId: string): Promise<{ data: { url: string } }> {
+  return request(`/v1/admin/calendars/${tenantId}/connect`, { method: "POST" });
+}
+
+export async function setCalendarStatus(
+  tenantId: string,
+  id: string,
+  status: "active" | "paused",
+): Promise<{ data: CalendarConnection }> {
+  return request(`/v1/admin/calendars/${tenantId}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function deleteCalendar(tenantId: string, id: string): Promise<void> {
+  await request(`/v1/admin/calendars/${tenantId}/${id}`, { method: "DELETE" });
+}
+
 // --- Reminders --------------------------------------------------------------
 
 export interface ReminderRunResult {

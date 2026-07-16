@@ -40,3 +40,4 @@ drizzle/
 # Misc
 *.pem
 .cache/
+graphify-out/

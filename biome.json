@@ -13,6 +13,7 @@
       "**/.turbo",
       "**/drizzle",
       "**/coverage",
+      "**/graphify-out",
       "**/*.min.js"
     ]
   },
