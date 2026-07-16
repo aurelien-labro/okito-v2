@@ -1172,6 +1172,64 @@ export async function deleteStripeAccount(tenantId: string, id: string): Promise
   await request(`/v1/admin/stripe/${tenantId}/${id}`, { method: "DELETE" });
 }
 
+// --- Marketing : campagnes segmentées -----------------------------------------
+
+export type CampaignChannel = "email" | "whatsapp";
+export type CampaignSegment = "all" | "regulars" | "recent" | "dormant";
+
+export interface Campaign {
+  id: string;
+  tenantId: string;
+  name: string;
+  channel: CampaignChannel;
+  segment: CampaignSegment;
+  subject: string | null;
+  body: string;
+  status: "draft" | "sent";
+  recipientCount: number;
+  sentCount: number;
+  failedCount: number;
+  sentAt: string | null;
+  createdAt: string;
+}
+
+export async function listCampaigns(tenantId: string): Promise<{ data: Campaign[] }> {
+  return request(`/v1/admin/campaigns/${tenantId}`);
+}
+
+export async function getSegmentCounts(
+  tenantId: string,
+): Promise<{ data: Record<CampaignSegment, number> }> {
+  return request(`/v1/admin/campaigns/${tenantId}/segments`);
+}
+
+export async function createCampaign(
+  tenantId: string,
+  input: {
+    name: string;
+    channel: CampaignChannel;
+    segment: CampaignSegment;
+    subject?: string | null;
+    body: string;
+  },
+): Promise<{ data: Campaign }> {
+  return request(`/v1/admin/campaigns/${tenantId}`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function sendCampaign(
+  tenantId: string,
+  id: string,
+): Promise<{ data: { campaign: Campaign; sentCount: number; failedCount: number } }> {
+  return request(`/v1/admin/campaigns/${tenantId}/${id}/send`, { method: "POST" });
+}
+
+export async function deleteCampaignDraft(tenantId: string, id: string): Promise<void> {
+  await request(`/v1/admin/campaigns/${tenantId}/${id}`, { method: "DELETE" });
+}
+
 // --- Écosystème : connexion bancaire -----------------------------------------
 
 export interface BankConnection {

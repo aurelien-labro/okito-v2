@@ -384,6 +384,22 @@ async function applySchema(pglite: PGlite): Promise<void> {
       unique (tenant_id, external_account_id)
     );
 
+    create table campaigns (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      name text not null,
+      channel text not null,
+      segment text not null,
+      subject text,
+      body text not null,
+      status text not null default 'draft',
+      recipient_count integer not null default 0,
+      sent_count integer not null default 0,
+      failed_count integer not null default 0,
+      sent_at timestamptz,
+      created_at timestamptz not null default now()
+    );
+
     create table tenant_stripe_accounts (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid not null references tenants(id) on delete cascade,

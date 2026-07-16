@@ -10,6 +10,7 @@ import { AuditLogService } from "./services/audit-log.js";
 import { BankConnectionService } from "./services/bank-connection.js";
 import { BankSyncService } from "./services/bank-sync.js";
 import { CalendarSyncService } from "./services/calendar-sync.js";
+import { CampaignService } from "./services/campaign.js";
 import { CapacityService } from "./services/capacity.js";
 import { ChatService } from "./services/chat.js";
 import { ConversationService } from "./services/conversation.js";
@@ -208,6 +209,7 @@ if (env.DATABASE_URL) {
   const notifier = createNotifier(env);
   services.notifier = notifier;
   services.reminder = new ReminderService(db, notifier);
+  services.campaign = new CampaignService(db, notifier, eventBus);
   if (env.REVIEW_LINK_SECRET) {
     services.reviewRequest = new ReviewRequestService(
       db,
