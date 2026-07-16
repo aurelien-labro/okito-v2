@@ -30,6 +30,8 @@ export interface TenantUpdate {
   depositCurrency?: "EUR" | "USD" | "GBP" | "CHF";
   status?: "active" | "suspended" | "trial";
   remindersEnabled?: boolean;
+  /** Multi-établissements : rattachement à un tenant groupe (null = détacher). */
+  parentTenantId?: string | null;
 }
 
 export class TenantService {

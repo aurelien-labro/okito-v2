@@ -64,6 +64,7 @@ async function applySchema(pglite: PGlite): Promise<void> {
       reminder_hour time not null default '09:00',
       status text not null default 'active',
       stripe_customer_id text,
+      parent_tenant_id uuid references tenants(id) on delete set null,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     );

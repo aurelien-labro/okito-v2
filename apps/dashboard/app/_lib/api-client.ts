@@ -217,6 +217,8 @@ export interface Tenant {
   capacityMax: number;
   status: "active" | "suspended" | "trial";
   remindersEnabled: boolean;
+  /** Multi-établissements : tenant groupe de rattachement (null = indépendant). */
+  parentTenantId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -232,11 +234,24 @@ export interface TenantCreate {
   features?: Record<string, boolean>;
   services?: ServiceWindow[];
   status?: "active" | "suspended" | "trial";
+  parentTenantId?: string | null;
 }
 
 export type TenantUpdate = Partial<Omit<TenantCreate, "slug">> & {
   remindersEnabled?: boolean;
 };
+
+/** Établissement accessible par l'utilisateur courant (switcher). */
+export interface AccessibleTenant {
+  id: string;
+  slug: string;
+  name: string;
+  parentTenantId: string | null;
+}
+
+export async function listAccessibleTenants(): Promise<{ data: AccessibleTenant[] }> {
+  return request("/v1/tenants/accessible");
+}
 
 export async function listTenants(): Promise<{ data: Tenant[] }> {
   return request("/v1/admin/tenants");

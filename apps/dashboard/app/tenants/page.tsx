@@ -81,6 +81,7 @@ function TenantsList() {
 
       {showForm && (
         <CreateTenantForm
+          tenants={tenants}
           onSuccess={() => {
             setShowForm(false);
             reload();
@@ -100,6 +101,7 @@ function TenantsList() {
                 <th className="px-4 py-3 text-left font-medium">Nom</th>
                 <th className="px-4 py-3 text-left font-medium">Slug</th>
                 <th className="px-4 py-3 text-left font-medium">Vertical</th>
+                <th className="px-4 py-3 text-left font-medium">Groupe</th>
                 <th className="px-4 py-3 text-left font-medium">Statut</th>
                 <th className="px-4 py-3 text-left font-medium">Capacité</th>
                 <th className="px-4 py-3 text-left font-medium">—</th>
@@ -116,6 +118,11 @@ function TenantsList() {
                     <span className="rounded bg-stone-100 px-2 py-0.5 text-xs uppercase tracking-wide text-stone-600">
                       {t.industry}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-stone-600">
+                    {t.parentTenantId
+                      ? (tenants.find((p) => p.id === t.parentTenantId)?.name ?? "—")
+                      : ""}
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={t.status} />
@@ -148,11 +155,18 @@ function TenantsList() {
   );
 }
 
-function CreateTenantForm({ onSuccess }: { onSuccess: () => void }) {
+function CreateTenantForm({
+  tenants,
+  onSuccess,
+}: {
+  tenants: Tenant[];
+  onSuccess: () => void;
+}) {
   const [slug, setSlug] = useState("");
   const [name, setName] = useState("");
   const [industry, setIndustry] = useState("restaurant");
   const [contactEmail, setContactEmail] = useState("");
+  const [parentTenantId, setParentTenantId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -166,6 +180,7 @@ function CreateTenantForm({ onSuccess }: { onSuccess: () => void }) {
         name: name.trim(),
         industry,
         contactEmail: contactEmail.trim() || null,
+        parentTenantId: parentTenantId || null,
       });
       onSuccess();
     } catch (e) {
@@ -219,6 +234,22 @@ function CreateTenantForm({ onSuccess }: { onSuccess: () => void }) {
             placeholder="manager@bistrot.fr"
             className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
           />
+        </Field>
+        <Field label="Groupe (rattachement)">
+          <select
+            value={parentTenantId}
+            onChange={(e) => setParentTenantId(e.target.value)}
+            className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+          >
+            <option value="">Aucun — établissement indépendant</option>
+            {tenants
+              .filter((t) => t.parentTenantId === null)
+              .map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+          </select>
         </Field>
       </div>
       {err && <div className="mt-4 text-sm text-red-700">{err}</div>}

@@ -1,5 +1,15 @@
 import { sql } from "drizzle-orm";
-import { boolean, integer, jsonb, pgTable, text, time, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  type AnyPgColumn,
+  boolean,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  time,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 /**
  * Industry du tenant. Détermine quel IndustryProfile charger (champs, prompt, défauts).
@@ -164,6 +174,15 @@ export const tenants = pgTable("tenants", {
     .notNull()
     .default("active"),
   stripeCustomerId: text("stripe_customer_id"),
+
+  /**
+   * Multi-établissements : tenant « groupe » auquel cet établissement est
+   * rattaché. Un owner du groupe accède à tous les enfants ; les autres
+   * rôles restent cloisonnés à leur établissement.
+   */
+  parentTenantId: uuid("parent_tenant_id").references((): AnyPgColumn => tenants.id, {
+    onDelete: "set null",
+  }),
 
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

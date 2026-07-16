@@ -59,6 +59,7 @@ import { portalRoute } from "./routes/portal.js";
 import { reservationsRoute } from "./routes/reservations.js";
 import { reviewRoute } from "./routes/review.js";
 import { stripeWebhookRoute } from "./routes/stripe-webhook.js";
+import { tenantsAccessibleRoute } from "./routes/tenants-accessible.js";
 import { trackRoute } from "./routes/track.js";
 import { vapiLlmRoute } from "./routes/vapi-llm.js";
 import { whatsappWebhookRoute } from "./routes/whatsapp-webhook.js";
@@ -110,6 +111,7 @@ import type { SubscriptionService } from "./services/subscription.js";
 import type { SupplierInvoiceExtractionService } from "./services/supplier-invoice-extraction.js";
 import type { SupplierInvoiceService } from "./services/supplier-invoice.js";
 import type { TableService } from "./services/table.js";
+import type { TenantAccessService } from "./services/tenant-access.js";
 import type { TenantMemberService } from "./services/tenant-member.js";
 import type { TenantService } from "./services/tenant.js";
 import type { VatReportService } from "./services/vat-report.js";
@@ -211,6 +213,8 @@ export interface AppServices {
   metaAds?: MetaAdsService;
   /** Campagnes marketing — monté sur /v1/admin/campaigns si fourni. */
   campaign?: CampaignService;
+  /** Accès multi-établissements — étend X-Tenant-Id aux owners de groupe + route /v1/tenants/accessible. */
+  tenantAccess?: TenantAccessService;
   /** Inbox unifiée — monté sur /v1/admin/inbox si fourni. */
   inbox?: InboxService;
   /** Fiche client 360° — monté sur /v1/admin/customer-360 si fourni. */
@@ -289,10 +293,10 @@ export function createApp(env: Env, services: AppServices = {}) {
     // Auth scopée aux routes de ce sous-app uniquement : un use("*") ici
     // intercepterait aussi les routes publiques montées plus bas sur /v1
     // (track, widget, webhooks WhatsApp) car le sous-app est monté en premier.
-    v1.use("/reservations", createAuthMiddleware(env));
-    v1.use("/reservations/*", createAuthMiddleware(env));
-    v1.use("/chat", createAuthMiddleware(env));
-    v1.use("/chat/*", createAuthMiddleware(env));
+    v1.use("/reservations", createAuthMiddleware(env, services.tenantAccess));
+    v1.use("/reservations/*", createAuthMiddleware(env, services.tenantAccess));
+    v1.use("/chat", createAuthMiddleware(env, services.tenantAccess));
+    v1.use("/chat/*", createAuthMiddleware(env, services.tenantAccess));
     if (services.reservation)
       v1.route(
         "/reservations",
@@ -300,6 +304,14 @@ export function createApp(env: Env, services: AppServices = {}) {
       );
     if (services.chat) v1.route("/chat", chatRoute(services.chat));
     app.route("/v1", v1);
+  }
+
+  // Switcher multi-établissements — auth simple (membre), pas admin.
+  if (services.tenantAccess) {
+    const v1Tenants = new Hono<AppEnv>();
+    v1Tenants.use("*", createAuthMiddleware(env, services.tenantAccess));
+    v1Tenants.route("/", tenantsAccessibleRoute(services.tenantAccess));
+    app.route("/v1/tenants", v1Tenants);
   }
 
   // Portail self-service client — public, le token est l'auth (hashé en DB).
@@ -394,7 +406,7 @@ export function createApp(env: Env, services: AppServices = {}) {
   if (services.tenant && env.ADMIN_USER_IDS) {
     const adminIds = env.ADMIN_USER_IDS.split(",");
     const v1Admin = new Hono<AppEnv>();
-    v1Admin.use("*", createAuthMiddleware(env));
+    v1Admin.use("*", createAuthMiddleware(env, services.tenantAccess));
     v1Admin.use("*", createAdminMiddleware(adminIds));
     v1Admin.route("/tenants", adminTenantsRoute(services.tenant, services.audit));
     if (services.audit) {
