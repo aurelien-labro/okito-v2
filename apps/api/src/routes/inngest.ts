@@ -15,6 +15,7 @@ import type { JarvisObserverService } from "../services/jarvis-observer.js";
 import type { NoShowService } from "../services/no-show.js";
 import type { ReminderService } from "../services/reminder.js";
 import type { ReviewRequestService } from "../services/review-request.js";
+import type { ShopifySyncService } from "../services/shopify-sync.js";
 import type { StripeSyncService } from "../services/stripe-sync.js";
 
 /**
@@ -41,6 +42,7 @@ export function inngestRoute(
   calendarSync?: CalendarSyncService,
   stripeSync?: StripeSyncService,
   bankSync?: BankSyncService,
+  shopifySync?: ShopifySyncService,
 ) {
   const app = new Hono();
   const handler = serve({
@@ -60,6 +62,7 @@ export function inngestRoute(
       calendarSync,
       stripeSync,
       bankSync,
+      shopifySync,
     ),
   });
   app.all("/*", handler);

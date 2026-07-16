@@ -14,6 +14,7 @@ import type { JarvisObserverService } from "../services/jarvis-observer.js";
 import type { NoShowService } from "../services/no-show.js";
 import type { ReminderService } from "../services/reminder.js";
 import type { ReviewRequestService } from "../services/review-request.js";
+import type { ShopifySyncService } from "../services/shopify-sync.js";
 import type { StripeSyncService } from "../services/stripe-sync.js";
 
 /**
@@ -44,6 +45,7 @@ export function createInngestFunctions(
   calendarSync?: CalendarSyncService,
   stripeSync?: StripeSyncService,
   bankSync?: BankSyncService,
+  shopifySync?: ShopifySyncService,
 ): InngestFunction.Any[] {
   const dailyReminders = inngest.createFunction(
     {
@@ -272,6 +274,24 @@ export function createInngestFunctions(
       },
     );
     functions.push(syncBank);
+  }
+
+  if (shopifySync) {
+    const syncShopify = inngest.createFunction(
+      {
+        id: "shopify-sync",
+        name: "Sync commandes Shopify (toutes les 15 min)",
+        triggers: [{ cron: "*/15 * * * *" }],
+      },
+      async ({ step }) => {
+        const result = await step.run("run-once", async () => shopifySync.runOnce());
+        if (result.ordersIngested > 0 || result.errors > 0) {
+          logger.info({ result }, "Inngest: shopifySync terminé");
+        }
+        return result;
+      },
+    );
+    functions.push(syncShopify);
   }
 
   if (invoiceOverdue) {
