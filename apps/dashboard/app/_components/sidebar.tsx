@@ -25,9 +25,10 @@ const MODULES: NavItem[] = [
   { href: "/schedule", label: "Horaires", icon: "ti-clock" },
   { href: "/tables", label: "Tables", icon: "ti-armchair" },
   { href: "/marketing", label: "Marketing", icon: "ti-speakerphone" },
+  { href: "/site", label: "Site web", icon: "ti-world" },
 ];
 
-const COMING: { label: string; icon: string }[] = [{ label: "Site web", icon: "ti-world" }];
+const COMING: { label: string; icon: string }[] = [];
 
 const ADMIN: NavItem[] = [
   { href: "/tenants", label: "Tenants", icon: "ti-building-store" },
