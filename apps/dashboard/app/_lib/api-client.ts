@@ -1308,6 +1308,79 @@ export async function deleteWoocommerceConnection(tenantId: string, id: string):
   await request(`/v1/admin/woocommerce/${tenantId}/${id}`, { method: "DELETE" });
 }
 
+// --- Écosystème : Google Ads ----------------------------------------------------
+
+export interface GoogleAdsConnection {
+  id: string;
+  tenantId: string;
+  accountLabel: string;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  status: MailboxStatus;
+  createdAt: string;
+}
+
+export async function listGoogleAdsConnections(
+  tenantId: string,
+): Promise<{ data: GoogleAdsConnection[] }> {
+  return request(`/v1/admin/google-ads/${tenantId}`);
+}
+
+export async function connectGoogleAds(tenantId: string): Promise<{ data: { url: string } }> {
+  return request(`/v1/admin/google-ads/${tenantId}/connect`, { method: "POST" });
+}
+
+export async function setGoogleAdsConnectionStatus(
+  tenantId: string,
+  id: string,
+  status: "active" | "paused",
+): Promise<{ data: GoogleAdsConnection }> {
+  return request(`/v1/admin/google-ads/${tenantId}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function deleteGoogleAdsConnection(tenantId: string, id: string): Promise<void> {
+  await request(`/v1/admin/google-ads/${tenantId}/${id}`, { method: "DELETE" });
+}
+
+// --- Écosystème : Meta (Facebook & Instagram) -----------------------------------
+
+export interface MetaConnection {
+  id: string;
+  tenantId: string;
+  externalAccountId: string;
+  accountLabel: string;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  status: MailboxStatus;
+  createdAt: string;
+}
+
+export async function listMetaConnections(tenantId: string): Promise<{ data: MetaConnection[] }> {
+  return request(`/v1/admin/meta/${tenantId}`);
+}
+
+export async function connectMeta(tenantId: string): Promise<{ data: { url: string } }> {
+  return request(`/v1/admin/meta/${tenantId}/connect`, { method: "POST" });
+}
+
+export async function setMetaConnectionStatus(
+  tenantId: string,
+  id: string,
+  status: "active" | "paused",
+): Promise<{ data: MetaConnection }> {
+  return request(`/v1/admin/meta/${tenantId}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function deleteMetaConnection(tenantId: string, id: string): Promise<void> {
+  await request(`/v1/admin/meta/${tenantId}/${id}`, { method: "DELETE" });
+}
+
 // --- Écosystème : Google Calendar --------------------------------------------
 
 export interface CalendarConnection {
