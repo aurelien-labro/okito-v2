@@ -17,6 +17,7 @@ import type { ReminderService } from "../services/reminder.js";
 import type { ReviewRequestService } from "../services/review-request.js";
 import type { ShopifySyncService } from "../services/shopify-sync.js";
 import type { StripeSyncService } from "../services/stripe-sync.js";
+import type { WoocommerceSyncService } from "../services/woocommerce-sync.js";
 
 /**
  * Endpoint Inngest. À monter sur `/api/inngest` :
@@ -43,6 +44,7 @@ export function inngestRoute(
   stripeSync?: StripeSyncService,
   bankSync?: BankSyncService,
   shopifySync?: ShopifySyncService,
+  woocommerceSync?: WoocommerceSyncService,
 ) {
   const app = new Hono();
   const handler = serve({
@@ -63,6 +65,7 @@ export function inngestRoute(
       stripeSync,
       bankSync,
       shopifySync,
+      woocommerceSync,
     ),
   });
   app.all("/*", handler);

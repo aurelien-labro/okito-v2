@@ -343,6 +343,20 @@ async function applySchema(pglite: PGlite): Promise<void> {
       unique (tenant_id, shop_domain)
     );
 
+    create table tenant_woocommerce_connections (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      store_url text not null,
+      store_label text not null default 'Boutique WooCommerce',
+      credentials_enc text not null,
+      order_cursor timestamptz,
+      last_sync_at timestamptz,
+      last_error text,
+      status text not null default 'active',
+      created_at timestamptz not null default now(),
+      unique (tenant_id, store_url)
+    );
+
     create table tenant_stripe_accounts (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid not null references tenants(id) on delete cascade,
