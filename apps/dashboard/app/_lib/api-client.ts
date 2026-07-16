@@ -1505,3 +1505,45 @@ export async function runReminders(opts?: { dryRun?: boolean }): Promise<Reminde
   const q = opts?.dryRun ? "?dryRun=true" : "";
   return request(`/v1/admin/reminders/run${q}`, { method: "POST" });
 }
+
+// --- Site builder : site vitrine hébergé -------------------------------------
+
+export type SiteBlockKey = "hero" | "offer" | "info" | "reviews" | "contact";
+export type SiteBlocks = Partial<Record<SiteBlockKey, Record<string, unknown>>>;
+
+export interface TenantSite {
+  id: string;
+  tenantId: string;
+  slug: string;
+  theme: string;
+  blocks: SiteBlocks;
+  seo: { title?: string; description?: string };
+  status: "draft" | "published";
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getSite(tenantId: string): Promise<{ data: TenantSite | null }> {
+  return request(`/v1/admin/site/${tenantId}`);
+}
+
+export async function upsertSite(
+  tenantId: string,
+  input: {
+    slug?: string;
+    theme?: string;
+    blocks?: SiteBlocks;
+    seo?: { title?: string; description?: string };
+  },
+): Promise<{ data: TenantSite }> {
+  return request(`/v1/admin/site/${tenantId}`, { method: "PUT", body: JSON.stringify(input) });
+}
+
+export async function publishSite(tenantId: string): Promise<{ data: TenantSite }> {
+  return request(`/v1/admin/site/${tenantId}/publish`, { method: "POST" });
+}
+
+export async function unpublishSite(tenantId: string): Promise<{ data: TenantSite }> {
+  return request(`/v1/admin/site/${tenantId}/unpublish`, { method: "POST" });
+}
