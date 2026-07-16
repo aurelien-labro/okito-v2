@@ -40,6 +40,7 @@ import { adminScheduleRulesRoute } from "./routes/admin-schedule-rules.js";
 import { adminServiceCatalogRoute } from "./routes/admin-service-catalog.js";
 import { adminShopifyRoute } from "./routes/admin-shopify.js";
 import { adminSiteAnalyticsRoute } from "./routes/admin-site-analytics.js";
+import { adminSiteRoute } from "./routes/admin-site.js";
 import { adminStatsRoute } from "./routes/admin-stats.js";
 import { adminStripeAnalyticsRoute, adminStripeRoute } from "./routes/admin-stripe.js";
 import { adminSupplierInvoicesRoute } from "./routes/admin-supplier-invoices.js";
@@ -58,6 +59,7 @@ import { playgroundRoute } from "./routes/playground.js";
 import { portalRoute } from "./routes/portal.js";
 import { reservationsRoute } from "./routes/reservations.js";
 import { reviewRoute } from "./routes/review.js";
+import { sitesPublicRoute } from "./routes/sites-public.js";
 import { stripeWebhookRoute } from "./routes/stripe-webhook.js";
 import { tenantsAccessibleRoute } from "./routes/tenants-accessible.js";
 import { trackRoute } from "./routes/track.js";
@@ -104,6 +106,8 @@ import type { ScheduleRuleService } from "./services/schedule-rule.js";
 import type { ServiceCatalogService } from "./services/service-catalog.js";
 import type { ShopifyConnectionService } from "./services/shopify-connection.js";
 import type { ShopifySyncService } from "./services/shopify-sync.js";
+import type { SiteGeneratorService } from "./services/site-generator.js";
+import type { SiteService } from "./services/site.js";
 import type { StatsService } from "./services/stats.js";
 import type { StripeAccountService } from "./services/stripe-account.js";
 import type { StripeSyncService } from "./services/stripe-sync.js";
@@ -213,6 +217,10 @@ export interface AppServices {
   metaAds?: MetaAdsService;
   /** Campagnes marketing — monté sur /v1/admin/campaigns si fourni. */
   campaign?: CampaignService;
+  /** Site builder — monté sur /v1/admin/site + public /v1/sites si fourni. */
+  site?: SiteService;
+  /** Génération LLM du contenu initial du site — active POST /site/:tenantId/generate. */
+  siteGenerator?: SiteGeneratorService;
   /** Accès multi-établissements — étend X-Tenant-Id aux owners de groupe + route /v1/tenants/accessible. */
   tenantAccess?: TenantAccessService;
   /** Inbox unifiée — monté sur /v1/admin/inbox si fourni. */
@@ -377,6 +385,13 @@ export function createApp(env: Env, services: AppServices = {}) {
     app.route("/v1/widget", widgetRoute(services.chat, services.tenant));
   }
 
+  // Sites vitrines hébergés — public, seuls les sites publiés répondent.
+  // CORS ouvert : la page SSR de la landing tourne sur un autre domaine.
+  if (services.site) {
+    app.use("/v1/sites/*", cors({ origin: "*", allowMethods: ["GET", "OPTIONS"], maxAge: 86400 }));
+    app.route("/v1/sites", sitesPublicRoute(services.site));
+  }
+
   // Tracker analytics site — public, chaque visite devient un event site.visit.
   if (services.db && services.eventBus instanceof EventBusService) {
     app.route("/v1/track", trackRoute(services.db, services.eventBus, env.PUBLIC_API_URL));
@@ -508,6 +523,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.campaign) {
       v1Admin.route("/campaigns", adminCampaignsRoute(services.campaign));
+    }
+    if (services.site) {
+      v1Admin.route("/site", adminSiteRoute(services.site, services.siteGenerator));
     }
     if (services.review) {
       v1Admin.route("/reviews", adminReviewsRoute(services.review));

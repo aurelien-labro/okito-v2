@@ -401,6 +401,21 @@ async function applySchema(pglite: PGlite): Promise<void> {
       created_at timestamptz not null default now()
     );
 
+    create table tenant_sites (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      slug text not null,
+      theme text not null default 'okito',
+      blocks jsonb not null default '{}',
+      seo jsonb not null default '{}',
+      status text not null default 'draft',
+      published_at timestamptz,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      unique (tenant_id),
+      unique (slug)
+    );
+
     create table tenant_stripe_accounts (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid not null references tenants(id) on delete cascade,
