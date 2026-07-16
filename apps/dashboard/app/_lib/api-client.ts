@@ -1261,6 +1261,53 @@ export async function deleteShopifyConnection(tenantId: string, id: string): Pro
   await request(`/v1/admin/shopify/${tenantId}/${id}`, { method: "DELETE" });
 }
 
+// --- Écosystème : WooCommerce ---------------------------------------------------
+
+export interface WoocommerceConnection {
+  id: string;
+  tenantId: string;
+  storeUrl: string;
+  storeLabel: string;
+  orderCursor: string | null;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  status: MailboxStatus;
+  createdAt: string;
+}
+
+export async function listWoocommerceConnections(
+  tenantId: string,
+): Promise<{ data: WoocommerceConnection[] }> {
+  return request(`/v1/admin/woocommerce/${tenantId}`);
+}
+
+export async function connectWoocommerce(
+  tenantId: string,
+  storeUrl: string,
+  consumerKey: string,
+  consumerSecret: string,
+): Promise<{ data: WoocommerceConnection }> {
+  return request(`/v1/admin/woocommerce/${tenantId}/connect`, {
+    method: "POST",
+    body: JSON.stringify({ storeUrl, consumerKey, consumerSecret }),
+  });
+}
+
+export async function setWoocommerceConnectionStatus(
+  tenantId: string,
+  id: string,
+  status: "active" | "paused",
+): Promise<{ data: WoocommerceConnection }> {
+  return request(`/v1/admin/woocommerce/${tenantId}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function deleteWoocommerceConnection(tenantId: string, id: string): Promise<void> {
+  await request(`/v1/admin/woocommerce/${tenantId}/${id}`, { method: "DELETE" });
+}
+
 // --- Écosystème : Google Calendar --------------------------------------------
 
 export interface CalendarConnection {

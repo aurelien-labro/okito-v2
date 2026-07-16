@@ -13,6 +13,7 @@ import {
   type TenantWebhook,
   WEBHOOK_EVENTS,
   type WebhookEvent,
+  type WoocommerceConnection,
   connectBank,
   connectCalendar,
   connectGoogleBusiness,
@@ -21,6 +22,7 @@ import {
   connectOutlookMailbox,
   connectShopify,
   connectStripeAccount,
+  connectWoocommerce,
   createWebhook,
   deleteBankConnection,
   deleteCalendar,
@@ -29,6 +31,7 @@ import {
   deleteShopifyConnection,
   deleteStripeAccount,
   deleteWebhook,
+  deleteWoocommerceConnection,
   getCurrentTenantId,
   listBankConnections,
   listCalendars,
@@ -37,6 +40,7 @@ import {
   listShopifyConnections,
   listStripeAccounts,
   listWebhooks,
+  listWoocommerceConnections,
   setBankConnectionStatus,
   setCalendarStatus,
   setGoogleBusinessStatus,
@@ -44,6 +48,7 @@ import {
   setShopifyConnectionStatus,
   setStripeAccountStatus,
   setWebhookActive,
+  setWoocommerceConnectionStatus,
 } from "../_lib/api-client";
 
 const MAILBOX_STATUS_LABEL: Record<Mailbox["status"], string> = {
@@ -754,7 +759,7 @@ interface EcosystemGroup {
     description: string;
     icon: string;
     /** Présent = carte branchée sur l'API (plus « Bientôt »). */
-    connect?: "stripe" | "bank" | "calendar" | "shopify";
+    connect?: "stripe" | "bank" | "calendar" | "shopify" | "woocommerce";
   }[];
 }
 
@@ -1062,6 +1067,7 @@ const ECOSYSTEM: EcosystemGroup[] = [
         name: "WooCommerce",
         description: "Boutiques WordPress : ventes, clients et stock remontés dans l'observatoire.",
         icon: "ti-shopping-bag",
+        connect: "woocommerce",
       },
     ],
   },
@@ -1112,7 +1118,7 @@ const ECOSYSTEM: EcosystemGroup[] = [
 
 /** Branchements API des cartes écosystème actives. */
 const CONNECTABLE_PROPS: Record<
-  "stripe" | "bank" | "calendar" | "shopify",
+  "stripe" | "bank" | "calendar" | "shopify" | "woocommerce",
   Pick<
     ConnectableCardProps,
     | "mode"
@@ -1163,6 +1169,28 @@ const CONNECTABLE_PROPS: Record<
       connectShopify(tenantId, values.shopDomain ?? "", values.accessToken ?? ""),
     setStatus: setShopifyConnectionStatus,
     remove: deleteShopifyConnection,
+  },
+  woocommerce: {
+    mode: "secret",
+    fields: [
+      { key: "storeUrl", placeholder: "https://ma-boutique.fr" },
+      { key: "consumerKey", placeholder: "Consumer key ck_…", secret: true },
+      { key: "consumerSecret", placeholder: "Consumer secret cs_…", secret: true },
+    ],
+    labelOf: (c) => {
+      const w = c as WoocommerceConnection;
+      return w.storeLabel || w.storeUrl;
+    },
+    list: listWoocommerceConnections,
+    connectFields: (tenantId, values) =>
+      connectWoocommerce(
+        tenantId,
+        values.storeUrl ?? "",
+        values.consumerKey ?? "",
+        values.consumerSecret ?? "",
+      ),
+    setStatus: setWoocommerceConnectionStatus,
+    remove: deleteWoocommerceConnection,
   },
   calendar: {
     mode: "oauth",

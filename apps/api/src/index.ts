@@ -62,6 +62,8 @@ import { VatReportService } from "./services/vat-report.js";
 import { WaitlistService } from "./services/waitlist.js";
 import { WebhookDispatchService } from "./services/webhook-dispatch.js";
 import { WebhookService } from "./services/webhook.js";
+import { WoocommerceConnectionService } from "./services/woocommerce-connection.js";
+import { WoocommerceSyncService } from "./services/woocommerce-sync.js";
 
 const env = loadEnv();
 initSentry(env);
@@ -129,9 +131,13 @@ if (env.DATABASE_URL) {
     const shopifyConnection = new ShopifyConnectionService(db, secretBox);
     services.shopifyConnection = shopifyConnection;
     services.shopifySync = new ShopifySyncService(db, shopifyConnection, eventBus);
+    // WooCommerce réutilise la même clé de chiffrement (secrets au repos).
+    const woocommerceConnection = new WoocommerceConnectionService(db, secretBox);
+    services.woocommerceConnection = woocommerceConnection;
+    services.woocommerceSync = new WoocommerceSyncService(db, woocommerceConnection, eventBus);
   } else {
     logger.warn(
-      "MAILBOX_ENC_KEY absente — boîtes IMAP/Yahoo + Stripe + banque + Shopify désactivés",
+      "MAILBOX_ENC_KEY absente — boîtes IMAP/Yahoo + Stripe + banque + Shopify + WooCommerce désactivés",
     );
   }
   if (env.MICROSOFT_CLIENT_ID && env.MICROSOFT_CLIENT_SECRET && env.MICROSOFT_REDIRECT_URI) {

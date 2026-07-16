@@ -45,6 +45,7 @@ import { adminTenantsRoute } from "./routes/admin-tenants.js";
 import { adminVatReportRoute } from "./routes/admin-vat-report.js";
 import { adminWaitlistRoute } from "./routes/admin-waitlist.js";
 import { adminWebhooksRoute } from "./routes/admin-webhooks.js";
+import { adminWoocommerceRoute } from "./routes/admin-woocommerce.js";
 import { chatRoute } from "./routes/chat.js";
 import { healthRoute } from "./routes/health.js";
 import { icalFeedRoute } from "./routes/ical-feed.js";
@@ -108,6 +109,8 @@ import type { TenantService } from "./services/tenant.js";
 import type { VatReportService } from "./services/vat-report.js";
 import type { WaitlistService } from "./services/waitlist.js";
 import type { WebhookService } from "./services/webhook.js";
+import type { WoocommerceConnectionService } from "./services/woocommerce-connection.js";
+import type { WoocommerceSyncService } from "./services/woocommerce-sync.js";
 
 export interface AppServices {
   reservation?: ReservationService;
@@ -192,6 +195,10 @@ export interface AppServices {
   shopifyConnection?: ShopifyConnectionService;
   /** Sync commandes Shopify — ajoute la function Inngest 15-min si fournie. */
   shopifySync?: ShopifySyncService;
+  /** Boutiques WooCommerce — monté sur /v1/admin/woocommerce si MAILBOX_ENC_KEY configurée. */
+  woocommerceConnection?: WoocommerceConnectionService;
+  /** Sync commandes WooCommerce — ajoute la function Inngest 15-min si fournie. */
+  woocommerceSync?: WoocommerceSyncService;
   /** Inbox unifiée — monté sur /v1/admin/inbox si fourni. */
   inbox?: InboxService;
   /** Fiche client 360° — monté sur /v1/admin/customer-360 si fourni. */
@@ -463,6 +470,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     if (services.shopifyConnection) {
       v1Admin.route("/shopify", adminShopifyRoute(services.shopifyConnection));
     }
+    if (services.woocommerceConnection) {
+      v1Admin.route("/woocommerce", adminWoocommerceRoute(services.woocommerceConnection));
+    }
     if (services.onboardingScan) {
       v1Admin.route("/onboarding", adminOnboardingRoute(services.onboardingScan));
     }
@@ -525,6 +535,7 @@ export function createApp(env: Env, services: AppServices = {}) {
         services.stripeSync,
         services.bankSync,
         services.shopifySync,
+        services.woocommerceSync,
       ),
     );
   }
