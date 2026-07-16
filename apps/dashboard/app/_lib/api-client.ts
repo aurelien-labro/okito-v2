@@ -1215,6 +1215,52 @@ export async function deleteBankConnection(tenantId: string, id: string): Promis
   await request(`/v1/admin/bank/${tenantId}/${id}`, { method: "DELETE" });
 }
 
+// --- Écosystème : Shopify -----------------------------------------------------
+
+export interface ShopifyConnection {
+  id: string;
+  tenantId: string;
+  shopDomain: string;
+  shopLabel: string;
+  orderCursor: string | null;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  status: MailboxStatus;
+  createdAt: string;
+}
+
+export async function listShopifyConnections(
+  tenantId: string,
+): Promise<{ data: ShopifyConnection[] }> {
+  return request(`/v1/admin/shopify/${tenantId}`);
+}
+
+export async function connectShopify(
+  tenantId: string,
+  shopDomain: string,
+  accessToken: string,
+): Promise<{ data: ShopifyConnection }> {
+  return request(`/v1/admin/shopify/${tenantId}/connect`, {
+    method: "POST",
+    body: JSON.stringify({ shopDomain, accessToken }),
+  });
+}
+
+export async function setShopifyConnectionStatus(
+  tenantId: string,
+  id: string,
+  status: "active" | "paused",
+): Promise<{ data: ShopifyConnection }> {
+  return request(`/v1/admin/shopify/${tenantId}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function deleteShopifyConnection(tenantId: string, id: string): Promise<void> {
+  await request(`/v1/admin/shopify/${tenantId}/${id}`, { method: "DELETE" });
+}
+
 // --- Écosystème : Google Calendar --------------------------------------------
 
 export interface CalendarConnection {

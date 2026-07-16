@@ -35,6 +35,7 @@ import { adminRemindersRoute } from "./routes/admin-reminders.js";
 import { adminReviewsRoute } from "./routes/admin-reviews.js";
 import { adminScheduleRulesRoute } from "./routes/admin-schedule-rules.js";
 import { adminServiceCatalogRoute } from "./routes/admin-service-catalog.js";
+import { adminShopifyRoute } from "./routes/admin-shopify.js";
 import { adminSiteAnalyticsRoute } from "./routes/admin-site-analytics.js";
 import { adminStatsRoute } from "./routes/admin-stats.js";
 import { adminStripeAnalyticsRoute, adminStripeRoute } from "./routes/admin-stripe.js";
@@ -93,6 +94,8 @@ import type { ReviewRequestService } from "./services/review-request.js";
 import type { ReviewService } from "./services/review.js";
 import type { ScheduleRuleService } from "./services/schedule-rule.js";
 import type { ServiceCatalogService } from "./services/service-catalog.js";
+import type { ShopifyConnectionService } from "./services/shopify-connection.js";
+import type { ShopifySyncService } from "./services/shopify-sync.js";
 import type { StatsService } from "./services/stats.js";
 import type { StripeAccountService } from "./services/stripe-account.js";
 import type { StripeSyncService } from "./services/stripe-sync.js";
@@ -185,6 +188,10 @@ export interface AppServices {
   bankConnection?: BankConnectionService;
   /** Sync transactions bancaires — ajoute la function Inngest 15-min si fournie. */
   bankSync?: BankSyncService;
+  /** Boutiques Shopify — monté sur /v1/admin/shopify si MAILBOX_ENC_KEY configurée. */
+  shopifyConnection?: ShopifyConnectionService;
+  /** Sync commandes Shopify — ajoute la function Inngest 15-min si fournie. */
+  shopifySync?: ShopifySyncService;
   /** Inbox unifiée — monté sur /v1/admin/inbox si fourni. */
   inbox?: InboxService;
   /** Fiche client 360° — monté sur /v1/admin/customer-360 si fourni. */
@@ -453,6 +460,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     if (services.bankConnection) {
       v1Admin.route("/bank", adminBankRoute(services.bankConnection));
     }
+    if (services.shopifyConnection) {
+      v1Admin.route("/shopify", adminShopifyRoute(services.shopifyConnection));
+    }
     if (services.onboardingScan) {
       v1Admin.route("/onboarding", adminOnboardingRoute(services.onboardingScan));
     }
@@ -514,6 +524,7 @@ export function createApp(env: Env, services: AppServices = {}) {
         services.calendarSync,
         services.stripeSync,
         services.bankSync,
+        services.shopifySync,
       ),
     );
   }

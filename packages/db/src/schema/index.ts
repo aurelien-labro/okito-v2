@@ -20,3 +20,4 @@ export * from "./google-business.js";
 export * from "./google-calendars.js";
 export * from "./stripe-accounts.js";
 export * from "./bank-connections.js";
+export * from "./shopify-connections.js";

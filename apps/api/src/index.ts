@@ -47,6 +47,8 @@ import { ReviewRequestService } from "./services/review-request.js";
 import { ReviewService } from "./services/review.js";
 import { ScheduleRuleService } from "./services/schedule-rule.js";
 import { ServiceCatalogService } from "./services/service-catalog.js";
+import { ShopifyConnectionService } from "./services/shopify-connection.js";
+import { ShopifySyncService } from "./services/shopify-sync.js";
 import { StatsService } from "./services/stats.js";
 import { StripeAccountService } from "./services/stripe-account.js";
 import { StripeSyncService } from "./services/stripe-sync.js";
@@ -123,8 +125,14 @@ if (env.DATABASE_URL) {
     const bankConnection = new BankConnectionService(db, secretBox);
     services.bankConnection = bankConnection;
     services.bankSync = new BankSyncService(db, bankConnection, eventBus);
+    // Shopify réutilise la même clé de chiffrement (secrets au repos).
+    const shopifyConnection = new ShopifyConnectionService(db, secretBox);
+    services.shopifyConnection = shopifyConnection;
+    services.shopifySync = new ShopifySyncService(db, shopifyConnection, eventBus);
   } else {
-    logger.warn("MAILBOX_ENC_KEY absente — boîtes IMAP/Yahoo + Stripe + banque désactivés");
+    logger.warn(
+      "MAILBOX_ENC_KEY absente — boîtes IMAP/Yahoo + Stripe + banque + Shopify désactivés",
+    );
   }
   if (env.MICROSOFT_CLIENT_ID && env.MICROSOFT_CLIENT_SECRET && env.MICROSOFT_REDIRECT_URI) {
     const microsoftMailbox = new MicrosoftMailboxService(db, {

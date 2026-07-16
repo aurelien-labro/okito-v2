@@ -8,6 +8,7 @@ import {
   type CalendarConnection,
   type GoogleBusinessConnection,
   type Mailbox,
+  type ShopifyConnection,
   type StripeAccount,
   type TenantWebhook,
   WEBHOOK_EVENTS,
@@ -18,12 +19,14 @@ import {
   connectImapMailbox,
   connectMailbox,
   connectOutlookMailbox,
+  connectShopify,
   connectStripeAccount,
   createWebhook,
   deleteBankConnection,
   deleteCalendar,
   deleteGoogleBusiness,
   deleteMailbox,
+  deleteShopifyConnection,
   deleteStripeAccount,
   deleteWebhook,
   getCurrentTenantId,
@@ -31,12 +34,14 @@ import {
   listCalendars,
   listGoogleBusiness,
   listMailboxes,
+  listShopifyConnections,
   listStripeAccounts,
   listWebhooks,
   setBankConnectionStatus,
   setCalendarStatus,
   setGoogleBusinessStatus,
   setMailboxStatus,
+  setShopifyConnectionStatus,
   setStripeAccountStatus,
   setWebhookActive,
 } from "../_lib/api-client";
@@ -749,7 +754,7 @@ interface EcosystemGroup {
     description: string;
     icon: string;
     /** Présent = carte branchée sur l'API (plus « Bientôt »). */
-    connect?: "stripe" | "bank" | "calendar";
+    connect?: "stripe" | "bank" | "calendar" | "shopify";
   }[];
 }
 
@@ -765,12 +770,18 @@ interface ConnectableCardProps {
   name: string;
   description: string;
   icon: string;
-  /** secret : champ masqué + POST connect. oauth : redirection consentement. */
+  /** secret : champ(s) masqué(s) + POST connect. oauth : redirection consentement. */
   mode: "secret" | "oauth";
   placeholder?: string;
+  /**
+   * Formulaire multi-champs (ex : Shopify = domaine + jeton). Absent = un seul
+   * champ secret (`placeholder`) passé à `connectSecret`.
+   */
+  fields?: { key: string; placeholder: string; secret?: boolean }[];
   labelOf: (conn: EcoConnection) => string;
   list: (tenantId: string) => Promise<{ data: EcoConnection[] }>;
   connectSecret?: (tenantId: string, secret: string) => Promise<unknown>;
+  connectFields?: (tenantId: string, values: Record<string, string>) => Promise<unknown>;
   connectOauth?: (tenantId: string) => Promise<{ data: { url: string } }>;
   setStatus: (tenantId: string, id: string, status: "active" | "paused") => Promise<unknown>;
   remove: (tenantId: string, id: string) => Promise<void>;
@@ -787,9 +798,11 @@ function ConnectableCard({
   icon,
   mode,
   placeholder,
+  fields,
   labelOf,
   list,
   connectSecret,
+  connectFields,
   connectOauth,
   setStatus,
   remove,
@@ -798,6 +811,7 @@ function ConnectableCard({
   const [unavailable, setUnavailable] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [secret, setSecret] = useState("");
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -827,6 +841,16 @@ function ConnectableCard({
       if (mode === "oauth" && connectOauth) {
         const res = await connectOauth(tenantId);
         window.location.href = res.data.url;
+        return;
+      }
+      if (fields && connectFields) {
+        const values = Object.fromEntries(
+          fields.map((f) => [f.key, (fieldValues[f.key] ?? "").trim()]),
+        );
+        await connectFields(tenantId, values);
+        setFieldValues({});
+        setShowForm(false);
+        await fetchConnections();
         return;
       }
       if (connectSecret) {
@@ -948,25 +972,49 @@ function ConnectableCard({
           {connections.length > 0 ? "Connecter un autre agenda" : "Connecter"}
         </button>
       ) : showForm ? (
-        <form onSubmit={handleConnect} className="mt-3 flex gap-2">
-          <input
-            type="password"
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
-            placeholder={placeholder}
-            autoComplete="off"
-            required
-            minLength={10}
-            className="min-w-0 flex-1 rounded border border-stone-300 px-2 py-1.5 text-xs"
-          />
-          <button
-            type="submit"
-            disabled={busy || secret.trim().length < 10}
-            className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-50"
-          >
-            {busy ? "…" : "Valider"}
-          </button>
-        </form>
+        fields ? (
+          <form onSubmit={handleConnect} className="mt-3 flex flex-col gap-2">
+            {fields.map((f) => (
+              <input
+                key={f.key}
+                type={f.secret ? "password" : "text"}
+                value={fieldValues[f.key] ?? ""}
+                onChange={(e) => setFieldValues((v) => ({ ...v, [f.key]: e.target.value }))}
+                placeholder={f.placeholder}
+                autoComplete="off"
+                required
+                className="min-w-0 rounded border border-stone-300 px-2 py-1.5 text-xs"
+              />
+            ))}
+            <button
+              type="submit"
+              disabled={busy || fields.some((f) => !(fieldValues[f.key] ?? "").trim())}
+              className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+            >
+              {busy ? "…" : "Valider"}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleConnect} className="mt-3 flex gap-2">
+            <input
+              type="password"
+              value={secret}
+              onChange={(e) => setSecret(e.target.value)}
+              placeholder={placeholder}
+              autoComplete="off"
+              required
+              minLength={10}
+              className="min-w-0 flex-1 rounded border border-stone-300 px-2 py-1.5 text-xs"
+            />
+            <button
+              type="submit"
+              disabled={busy || secret.trim().length < 10}
+              className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+            >
+              {busy ? "…" : "Valider"}
+            </button>
+          </form>
+        )
       ) : (
         <button
           type="button"
@@ -1008,6 +1056,7 @@ const ECOSYSTEM: EcosystemGroup[] = [
         description:
           "Commandes e-commerce dans le journal de Jarvis, à côté des résas et des avis.",
         icon: "ti-shopping-cart",
+        connect: "shopify",
       },
       {
         name: "WooCommerce",
@@ -1063,14 +1112,16 @@ const ECOSYSTEM: EcosystemGroup[] = [
 
 /** Branchements API des cartes écosystème actives. */
 const CONNECTABLE_PROPS: Record<
-  "stripe" | "bank" | "calendar",
+  "stripe" | "bank" | "calendar" | "shopify",
   Pick<
     ConnectableCardProps,
     | "mode"
     | "placeholder"
+    | "fields"
     | "labelOf"
     | "list"
     | "connectSecret"
+    | "connectFields"
     | "connectOauth"
     | "setStatus"
     | "remove"
@@ -1096,6 +1147,22 @@ const CONNECTABLE_PROPS: Record<
     connectSecret: connectBank,
     setStatus: setBankConnectionStatus,
     remove: deleteBankConnection,
+  },
+  shopify: {
+    mode: "secret",
+    fields: [
+      { key: "shopDomain", placeholder: "ma-boutique.myshopify.com" },
+      { key: "accessToken", placeholder: "Jeton Admin API shpat_…", secret: true },
+    ],
+    labelOf: (c) => {
+      const s = c as ShopifyConnection;
+      return s.shopLabel || s.shopDomain;
+    },
+    list: listShopifyConnections,
+    connectFields: (tenantId, values) =>
+      connectShopify(tenantId, values.shopDomain ?? "", values.accessToken ?? ""),
+    setStatus: setShopifyConnectionStatus,
+    remove: deleteShopifyConnection,
   },
   calendar: {
     mode: "oauth",

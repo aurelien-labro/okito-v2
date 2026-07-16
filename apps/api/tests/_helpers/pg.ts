@@ -329,6 +329,20 @@ async function applySchema(pglite: PGlite): Promise<void> {
       created_at timestamptz not null default now()
     );
 
+    create table tenant_shopify_connections (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      shop_domain text not null,
+      shop_label text not null default 'Boutique Shopify',
+      access_token_enc text not null,
+      order_cursor timestamptz,
+      last_sync_at timestamptz,
+      last_error text,
+      status text not null default 'active',
+      created_at timestamptz not null default now(),
+      unique (tenant_id, shop_domain)
+    );
+
     create table tenant_stripe_accounts (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid not null references tenants(id) on delete cascade,
