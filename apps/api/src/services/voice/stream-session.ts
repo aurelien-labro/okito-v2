@@ -37,6 +37,11 @@ export interface StreamSessionDeps {
   tts: StreamingTextToSpeech;
   chat: ChatService;
   secret: string;
+  /**
+   * Voice cloning : TTS spécifique au tenant (voix clonée du patron).
+   * Résolu une fois par appel ; en absence ou en erreur → tts par défaut.
+   */
+  resolveTts?: (tenantId: string) => Promise<StreamingTextToSpeech | undefined>;
   /** Envoie un message JSON à Twilio (frame media, mark, clear…). */
   send: (message: Record<string, unknown>) => void;
   /** Ferme la connexion (auth invalide, erreur fatale). */
@@ -65,6 +70,8 @@ export class VoiceStreamSession {
   /** Invalide les réponses périmées après un barge-in. */
   private generation = 0;
   private abort?: AbortController;
+  /** TTS de l'appel (voix clonée du tenant si dispo), résolu au premier tour. */
+  private ttsForCall?: StreamingTextToSpeech;
 
   constructor(private readonly deps: StreamSessionDeps) {}
 
@@ -153,7 +160,9 @@ export class VoiceStreamSession {
         message: text,
       });
       if (gen !== this.generation) return; // barge-in pendant la génération LLM
-      for await (const chunk of this.deps.tts.synthesizeStream(response.reply, signal)) {
+      const tts = await this.tts();
+      if (gen !== this.generation) return;
+      for await (const chunk of tts.synthesizeStream(response.reply, signal)) {
         if (gen !== this.generation) return;
         this.deps.send({
           event: "media",
@@ -175,5 +184,17 @@ export class VoiceStreamSession {
     }
     // Pas de reset de `replying` en succès : Twilio joue encore l'audio
     // bufferisé ; c'est son event "mark" retour qui clôt la réponse.
+  }
+
+  private async tts(): Promise<StreamingTextToSpeech> {
+    if (!this.ttsForCall) {
+      try {
+        this.ttsForCall = (await this.deps.resolveTts?.(this.tenantId)) ?? this.deps.tts;
+      } catch (err) {
+        logger.warn({ err, tenantId: this.tenantId }, "voice: résolution TTS tenant échouée");
+        this.ttsForCall = this.deps.tts;
+      }
+    }
+    return this.ttsForCall;
   }
 }
