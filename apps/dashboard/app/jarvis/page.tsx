@@ -7,12 +7,16 @@ import {
   type JarvisActionStatus,
   type JarvisBrief,
   type JarvisChatMessage,
+  type JarvisPolicy,
+  type JarvisToolStatus,
   approveJarvisAction,
   cancelJarvisAction,
   chatWithJarvis,
   getCurrentTenantId,
   getJarvisBrief,
   listJarvisActions,
+  listJarvisTools,
+  patchJarvisTool,
   regenerateJarvisBrief,
 } from "../_lib/api-client";
 import { speak, useVoiceInput } from "../_lib/use-voice";
@@ -271,6 +275,128 @@ function JarvisView() {
           </table>
         </div>
       )}
+
+      <JarvisToolShop />
+    </div>
+  );
+}
+
+const POLICY_LABEL: Record<JarvisPolicy, string> = {
+  auto: "Automatique",
+  auto_cancellable: "Annulable 24 h",
+  approval: "Sur validation",
+};
+
+function JarvisToolShop() {
+  const [tools, setTools] = useState<JarvisToolStatus[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const fetchTools = useCallback(async () => {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    setErr(null);
+    try {
+      const res = await listJarvisTools(tenantId);
+      setTools(res.data);
+    } catch (e) {
+      const status = (e as { status?: number }).status;
+      // 404 = API sans le module (pas encore déployé) : section masquée.
+      if (status !== 404) setErr("Impossible de charger la boutique.");
+      setTools([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTools();
+  }, [fetchTools]);
+
+  async function handlePatch(
+    type: string,
+    patch: { enabled?: boolean; policyOverride?: JarvisPolicy | null },
+  ) {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId) return;
+    setBusy(type);
+    try {
+      await patchJarvisTool(tenantId, type, patch);
+      await fetchTools();
+    } catch (e) {
+      alert(`Réglage échoué : ${e instanceof Error ? e.message : "erreur"}`);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  if (tools.length === 0 && !err) return null;
+
+  return (
+    <div className="mt-10">
+      <div className="mb-1">
+        <h2 className="text-lg font-semibold tracking-tight">Boutique d&apos;automatisations</h2>
+        <p className="mt-1 text-sm text-stone-500">
+          Chaque boucle autonome peut être coupée ou passée sur validation. Une boucle coupée ne
+          propose plus rien ; ses actions déjà programmées sont retirées.
+        </p>
+      </div>
+      {err && (
+        <div className="mb-4 rounded border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          {err}
+        </div>
+      )}
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        {tools.map((tool) => (
+          <div
+            key={tool.type}
+            className={`rounded-lg border p-4 ${
+              tool.enabled ? "border-stone-200 bg-white" : "border-stone-200 bg-stone-50 opacity-75"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold">{tool.label}</h3>
+                <p className="mt-1 text-xs leading-relaxed text-stone-500">{tool.description}</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={tool.enabled}
+                aria-label={`${tool.enabled ? "Désactiver" : "Activer"} ${tool.label}`}
+                disabled={busy === tool.type}
+                onClick={() => handlePatch(tool.type, { enabled: !tool.enabled })}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+                  tool.enabled ? "bg-emerald-500" : "bg-stone-300"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                    tool.enabled ? "left-[22px]" : "left-0.5"
+                  }`}
+                />
+              </button>
+            </div>
+            <div className="mt-3 flex items-center gap-2 text-xs">
+              <span className="text-stone-500">Politique :</span>
+              <select
+                value={tool.policyOverride ?? ""}
+                disabled={busy === tool.type || !tool.enabled}
+                onChange={(e) =>
+                  handlePatch(tool.type, {
+                    policyOverride: e.target.value === "" ? null : (e.target.value as JarvisPolicy),
+                  })
+                }
+                className="rounded border border-stone-300 bg-white px-2 py-1 text-xs disabled:opacity-50"
+              >
+                <option value="">{`Défaut (${POLICY_LABEL[tool.defaultPolicy]})`}</option>
+                <option value="auto">Automatique</option>
+                <option value="auto_cancellable">Annulable 24 h</option>
+                <option value="approval">Sur validation</option>
+              </select>
+              <span className="ml-auto font-mono text-[10px] text-stone-400">{tool.type}</span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

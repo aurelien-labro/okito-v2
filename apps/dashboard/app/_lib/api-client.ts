@@ -725,6 +725,31 @@ export interface JarvisAction {
   cancelledAt: string | null;
 }
 
+/** Boutique d'automatisations : une boucle autonome et ses réglages tenant. */
+export interface JarvisToolStatus {
+  type: string;
+  label: string;
+  description: string;
+  defaultPolicy: JarvisPolicy;
+  enabled: boolean;
+  policyOverride: JarvisPolicy | null;
+}
+
+export async function listJarvisTools(tenantId: string): Promise<{ data: JarvisToolStatus[] }> {
+  return request(`/v1/admin/jarvis-tools/${tenantId}`);
+}
+
+export async function patchJarvisTool(
+  tenantId: string,
+  type: string,
+  patch: { enabled?: boolean; policyOverride?: JarvisPolicy | null },
+): Promise<{ data: JarvisToolStatus | null }> {
+  return request(`/v1/admin/jarvis-tools/${tenantId}/${encodeURIComponent(type)}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
 export async function listJarvisActions(
   tenantId: string,
   status?: JarvisActionStatus,
