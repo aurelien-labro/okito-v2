@@ -232,6 +232,20 @@ async function applySchema(pglite: PGlite): Promise<void> {
       unique (tenant_id, tool_type)
     );
 
+    create table tenant_voice_profiles (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      voice_id text not null,
+      label text not null default 'Voix du patron',
+      consent_given_by text not null,
+      consent_text text not null,
+      consent_at timestamptz not null default now(),
+      status text not null default 'active',
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      unique (tenant_id)
+    );
+
     create table tenant_mailboxes (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid not null references tenants(id) on delete cascade,
