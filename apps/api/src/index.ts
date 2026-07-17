@@ -1,11 +1,13 @@
 import "dotenv/config";
 import { serve } from "@hono/node-server";
+import { createNodeWebSocket } from "@hono/node-ws";
 import { getDb } from "@okito/db";
 import { type AppServices, createApp } from "./app.js";
 import { loadEnv } from "./lib/env.js";
 import { logger } from "./lib/logger.js";
 import { SecretBox } from "./lib/secret-box.js";
 import { initSentry } from "./lib/sentry.js";
+import { voiceTwimlRoute } from "./routes/voice-twiml.js";
 import { AuditLogService } from "./services/audit-log.js";
 import { BankConnectionService } from "./services/bank-connection.js";
 import { BankSyncService } from "./services/bank-sync.js";
@@ -66,6 +68,7 @@ import { TenantAccessService } from "./services/tenant-access.js";
 import { TenantMemberService } from "./services/tenant-member.js";
 import { TenantService } from "./services/tenant.js";
 import { VatReportService } from "./services/vat-report.js";
+import { VoiceStreamSession } from "./services/voice/stream-session.js";
 import { DeepgramSTT } from "./services/voice/stt.js";
 import { ElevenLabsTTS } from "./services/voice/tts.js";
 import { VoiceTurnService } from "./services/voice/voice-turn.js";
@@ -299,7 +302,65 @@ if (env.DATABASE_URL) {
 
 const app = createApp(env, services);
 
-serve(
+// Streaming voix v2 (Twilio Media Streams) : monté hors createApp car le
+// WebSocket doit être injecté dans le serveur node après serve().
+let injectWebSocket: ((server: unknown) => void) | undefined;
+if (
+  services.chat &&
+  env.DEEPGRAM_API_KEY &&
+  env.ELEVENLABS_API_KEY &&
+  env.VOICE_STREAM_SECRET &&
+  env.VOICE_STREAM_PUBLIC_URL
+) {
+  const chat = services.chat;
+  const secret = env.VOICE_STREAM_SECRET;
+  const streamStt = new DeepgramSTT(
+    env.DEEPGRAM_API_KEY,
+    fetch,
+    "model=nova-2&smart_format=true&encoding=mulaw&sample_rate=8000",
+  );
+  const streamTts = new ElevenLabsTTS(
+    env.ELEVENLABS_API_KEY,
+    env.ELEVENLABS_VOICE_ID,
+    fetch,
+    "ulaw_8000",
+  );
+  const nodeWs = createNodeWebSocket({ app });
+  injectWebSocket = nodeWs.injectWebSocket as (server: unknown) => void;
+  app.get(
+    "/v1/voice/stream",
+    nodeWs.upgradeWebSocket(() => {
+      let session: VoiceStreamSession | undefined;
+      return {
+        onOpen(_evt, ws) {
+          session = new VoiceStreamSession({
+            stt: streamStt,
+            tts: streamTts,
+            chat,
+            secret,
+            send: (m) => ws.send(JSON.stringify(m)),
+            close: () => ws.close(),
+          });
+        },
+        onMessage(evt) {
+          try {
+            void session?.handleMessage(JSON.parse(String(evt.data)));
+          } catch {
+            // frame non-JSON ignorée
+          }
+        },
+      };
+    }),
+  );
+  app.route("/v1/voice", voiceTwimlRoute(secret, env.VOICE_STREAM_PUBLIC_URL));
+  logger.info("pipeline voix v2 : streaming Twilio actif (/v1/voice/stream)");
+} else if (env.DEEPGRAM_API_KEY && env.ELEVENLABS_API_KEY) {
+  logger.warn(
+    "VOICE_STREAM_SECRET/VOICE_STREAM_PUBLIC_URL absentes — streaming Twilio désactivé (banc d'essai /turn seul)",
+  );
+}
+
+const server = serve(
   {
     fetch: app.fetch,
     port: env.PORT,
@@ -308,3 +369,4 @@ serve(
     logger.info({ port: info.port, env: env.NODE_ENV }, "okito-api ready");
   },
 );
+injectWebSocket?.(server);
