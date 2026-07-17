@@ -39,6 +39,13 @@ export default defineConfig({
       url: "http://localhost:3000",
       reuseExistingServer: !process.env.CI,
       timeout: 90_000,
+      // Force le ManualTokenGate quel que soit le .env.local du poste : les
+      // smoke tests passent le gate via okito_token, pas via Supabase Auth.
+      env: {
+        ...process.env,
+        NEXT_PUBLIC_SUPABASE_URL: "",
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
+      },
     },
   ],
 });

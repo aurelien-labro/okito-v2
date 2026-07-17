@@ -15,17 +15,25 @@ import { expect, test } from "@playwright/test";
  */
 
 test.describe("Dashboard — smoke tests", () => {
+  test.beforeEach(async ({ page }) => {
+    // Passe le ManualTokenGate (mode CI, sans NEXT_PUBLIC_SUPABASE_*) : un token
+    // localStorage suffit — les pages testées ne dépendent pas d'une réponse API.
+    await page.addInitScript(() => {
+      window.localStorage.setItem("okito_token", "e2e-smoke-token");
+    });
+  });
+
   test("la page d'accueil charge le titre OKITO", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle(/OKITO|Dashboard/);
     await expect(page.getByText(/OKITO/i).first()).toBeVisible();
   });
 
-  test("la sidebar contient les 5 liens de nav", async ({ page }) => {
+  test("la sidebar contient les liens de nav principaux", async ({ page }) => {
     await page.goto("/");
     const sidebar = page.locator("aside");
-    await expect(sidebar.getByRole("link", { name: /Vue d'ensemble/i })).toBeVisible();
-    await expect(sidebar.getByRole("link", { name: /Réservations/i })).toBeVisible();
+    await expect(sidebar.getByRole("link", { name: /Vue globale/i })).toBeVisible();
+    await expect(sidebar.getByRole("link", { name: /Agenda/i })).toBeVisible();
     await expect(sidebar.getByRole("link", { name: /Tenants/i })).toBeVisible();
     await expect(sidebar.getByRole("link", { name: /Paramètres/i })).toBeVisible();
   });

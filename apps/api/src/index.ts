@@ -72,6 +72,7 @@ import { VoiceStreamSession } from "./services/voice/stream-session.js";
 import { DeepgramLiveSTT } from "./services/voice/stt-live.js";
 import { DeepgramSTT } from "./services/voice/stt.js";
 import { ElevenLabsTTS } from "./services/voice/tts.js";
+import { VoiceProfileService } from "./services/voice/voice-profile.js";
 import { VoiceTurnService } from "./services/voice/voice-turn.js";
 import { WaitlistService } from "./services/waitlist.js";
 import { WebhookDispatchService } from "./services/webhook-dispatch.js";
@@ -291,6 +292,8 @@ if (env.DATABASE_URL) {
         new ElevenLabsTTS(env.ELEVENLABS_API_KEY, env.ELEVENLABS_VOICE_ID),
         services.chat,
       );
+      // Voice cloning : profil vocal (voix clonée) par tenant.
+      services.voiceProfile = new VoiceProfileService(db, env.ELEVENLABS_API_KEY);
     } else {
       logger.warn("DEEPGRAM_API_KEY/ELEVENLABS_API_KEY absentes — pipeline voix maison désactivé");
     }
@@ -322,6 +325,15 @@ if (
     fetch,
     "ulaw_8000",
   );
+  // Voice cloning : si le tenant a un clone actif, l'appel parle avec sa voix.
+  const voiceProfile = services.voiceProfile;
+  const elevenLabsKey = env.ELEVENLABS_API_KEY;
+  const resolveTts = voiceProfile
+    ? async (tenantId: string) => {
+        const voiceId = await voiceProfile.voiceIdFor(tenantId);
+        return voiceId ? new ElevenLabsTTS(elevenLabsKey, voiceId, fetch, "ulaw_8000") : undefined;
+      }
+    : undefined;
   const nodeWs = createNodeWebSocket({ app });
   injectWebSocket = nodeWs.injectWebSocket as (server: unknown) => void;
   app.get(
@@ -335,6 +347,7 @@ if (
             tts: streamTts,
             chat,
             secret,
+            resolveTts,
             send: (m) => ws.send(JSON.stringify(m)),
             close: () => ws.close(),
           });

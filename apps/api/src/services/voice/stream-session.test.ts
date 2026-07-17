@@ -45,6 +45,7 @@ function makeSession(overrides?: {
   stt?: LiveSpeechToText;
   chat?: ChatService;
   tts?: StreamingTextToSpeech;
+  resolveTts?: (tenantId: string) => Promise<StreamingTextToSpeech | undefined>;
 }) {
   const sent: Array<Record<string, unknown>> = [];
   const close = vi.fn();
@@ -64,6 +65,7 @@ function makeSession(overrides?: {
     tts: overrides?.tts ?? fakeTts.tts,
     chat,
     secret: SECRET,
+    resolveTts: overrides?.resolveTts,
     send: (m) => sent.push(m),
     close,
   });
@@ -206,5 +208,35 @@ describe("VoiceStreamSession (v3 live)", () => {
     await start(session);
     await session.handleMessage({ event: "stop" });
     expect(fakeStt.close).toHaveBeenCalled();
+  });
+
+  it("voice cloning : resolveTts fournit la voix du tenant, résolue une seule fois", async () => {
+    const cloned = makeFakeTts();
+    const resolveTts = vi.fn(async (tenantId: string) =>
+      tenantId === TENANT ? cloned.tts : undefined,
+    );
+    const { session, fakeTts, fakeStt } = makeSession({ resolveTts });
+    await start(session);
+    fakeStt.emit("bonjour");
+    await flush();
+    await session.handleMessage({ event: "mark" });
+    fakeStt.emit("une table pour deux");
+    await flush();
+    expect(cloned.synthesizeStream).toHaveBeenCalledTimes(2);
+    expect(fakeTts.synthesizeStream).not.toHaveBeenCalled();
+    expect(resolveTts).toHaveBeenCalledTimes(1);
+    expect(resolveTts).toHaveBeenCalledWith(TENANT);
+  });
+
+  it("voice cloning : resolveTts en erreur → repli silencieux sur le TTS par défaut", async () => {
+    const resolveTts = vi.fn(async () => {
+      throw new Error("db down");
+    });
+    const { session, fakeTts, fakeStt, sent } = makeSession({ resolveTts });
+    await start(session);
+    fakeStt.emit("bonjour");
+    await flush();
+    expect(fakeTts.synthesizeStream).toHaveBeenCalledTimes(1);
+    expect(sent.some((m) => m.event === "media")).toBe(true);
   });
 });
