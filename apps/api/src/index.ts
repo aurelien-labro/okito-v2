@@ -32,6 +32,7 @@ import { JarvisActionService } from "./services/jarvis-action.js";
 import { JarvisAdvisorService } from "./services/jarvis-advisor.js";
 import { JarvisExecutor } from "./services/jarvis-executor.js";
 import { JarvisObserverService } from "./services/jarvis-observer.js";
+import { JarvisToolSettingsService } from "./services/jarvis-tool-settings.js";
 import { GoogleReviewReplyTool } from "./services/jarvis-tools/google-review-reply.js";
 import { InvoiceRemindTool } from "./services/jarvis-tools/invoice-remind.js";
 import { ReviewReplyTool } from "./services/jarvis-tools/review-reply.js";
@@ -95,13 +96,27 @@ if (env.DATABASE_URL) {
   services.webhook = new WebhookService(db);
   const eventBus = new EventBusService(db, new WebhookDispatchService(db));
   services.eventBus = eventBus;
-  const jarvisAction = new JarvisActionService(db, eventBus);
+  const jarvisToolSettings = new JarvisToolSettingsService(db);
+  services.jarvisToolSettings = jarvisToolSettings;
+  const jarvisAction = new JarvisActionService(
+    db,
+    eventBus,
+    undefined,
+    undefined,
+    jarvisToolSettings,
+  );
   services.jarvisAction = jarvisAction;
-  const jarvisExecutor = new JarvisExecutor(db, jarvisAction);
+  const jarvisExecutor = new JarvisExecutor(db, jarvisAction, [], jarvisToolSettings);
   services.jarvisExecutor = jarvisExecutor;
   const supplierInvoice = new SupplierInvoiceService(db, eventBus);
   services.supplierInvoice = supplierInvoice;
-  services.jarvisObserver = new JarvisObserverService(db, jarvisAction, 2, supplierInvoice);
+  services.jarvisObserver = new JarvisObserverService(
+    db,
+    jarvisAction,
+    2,
+    supplierInvoice,
+    jarvisToolSettings,
+  );
   services.review = new ReviewService(db, eventBus);
   services.inbox = new InboxService(db);
   services.customerTimeline = new CustomerTimelineService(db);

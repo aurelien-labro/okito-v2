@@ -2,6 +2,7 @@ import { type Database, schema } from "@okito/db";
 import { and, eq, gte, sql } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 import type { JarvisActionService } from "./jarvis-action.js";
+import type { JarvisToolSettingsService } from "./jarvis-tool-settings.js";
 import type { SupplierInvoiceService } from "./supplier-invoice.js";
 
 export interface ObserverRunResult {
@@ -44,7 +45,13 @@ export class JarvisObserverService {
     private readonly actions: JarvisActionService,
     private readonly windowHours = 2,
     private readonly supplierInvoices?: SupplierInvoiceService,
+    private readonly toolSettings?: JarvisToolSettingsService,
   ) {}
+
+  /** Boutique d'automatisations : un tool désactivé n'est plus proposé. */
+  private async toolEnabled(tenantId: string, type: string): Promise<boolean> {
+    return this.toolSettings ? this.toolSettings.isEnabled(tenantId, type) : true;
+  }
 
   async runOnce(now = new Date()): Promise<ObserverRunResult> {
     const result: ObserverRunResult = { eventsScanned: 0, actionsProposed: 0 };
@@ -90,6 +97,7 @@ export class JarvisObserverService {
     });
     for (const tenant of tenants) {
       try {
+        if (!(await this.toolEnabled(tenant.id, "supplier_invoice.pay_reminder"))) continue;
         const due = await this.supplierInvoices.dueSoon(tenant.id, SUPPLIER_DUE_SOON_DAYS, now);
         for (const invoice of due) {
           if (
@@ -124,6 +132,7 @@ export class JarvisObserverService {
     const payload = raw as { reviewId?: string; rating?: number; comment?: string | null };
     if (!payload.reviewId || typeof payload.rating !== "number") return false;
     if (payload.rating > NEGATIVE_RATING_MAX) return false;
+    if (!(await this.toolEnabled(tenantId, "review.reply"))) return false;
     if (await this.alreadyProposed(tenantId, "review.reply", "reviewId", payload.reviewId)) {
       return false;
     }
@@ -147,6 +156,7 @@ export class JarvisObserverService {
     if (!payload.googleReviewName || !payload.connectionId) return false;
     // Un avis déjà répondu (par le patron ou une sync précédente) est ignoré.
     if (payload.hasReply) return false;
+    if (!(await this.toolEnabled(tenantId, "google.review.reply"))) return false;
     if (
       await this.alreadyProposed(
         tenantId,
@@ -181,6 +191,7 @@ export class JarvisObserverService {
       customerName?: string;
     };
     if (!payload.invoiceId) return false;
+    if (!(await this.toolEnabled(tenantId, "invoice.remind"))) return false;
     if (await this.alreadyProposed(tenantId, "invoice.remind", "invoiceId", payload.invoiceId)) {
       return false;
     }

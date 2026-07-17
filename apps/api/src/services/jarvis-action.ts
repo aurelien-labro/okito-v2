@@ -2,6 +2,7 @@ import { type Database, type JarvisAction, type JarvisPolicy, schema } from "@ok
 import { and, eq, isNull, lt, or } from "drizzle-orm";
 import { BadRequestError, NotFoundError } from "../lib/errors.js";
 import type { EventBusService } from "./event-bus.js";
+import type { JarvisToolSettingsService } from "./jarvis-tool-settings.js";
 
 /**
  * Politique par défaut par type d'action. Un type inconnu tombe sur
@@ -37,6 +38,7 @@ export class JarvisActionService {
     private readonly bus?: EventBusService,
     private readonly cancelWindowMinutes = 24 * 60,
     private readonly policies: Record<string, JarvisPolicy> = DEFAULT_POLICIES,
+    private readonly toolSettings?: JarvisToolSettingsService,
   ) {}
 
   async propose(
@@ -45,7 +47,10 @@ export class JarvisActionService {
     summary: string,
     payload: Record<string, unknown> = {},
   ): Promise<JarvisAction> {
-    const policy = this.policies[type] ?? FALLBACK_POLICY;
+    // Le patron peut forcer la politique d'un tool depuis la boutique
+    // d'automatisations ; sinon, défaut du code.
+    const override = await this.toolSettings?.policyOverride(tenantId, type);
+    const policy = override ?? this.policies[type] ?? FALLBACK_POLICY;
     const status = policy === "approval" ? "awaiting_approval" : "scheduled";
     const cancellableUntil =
       policy === "auto_cancellable"
@@ -90,6 +95,21 @@ export class JarvisActionService {
     const row = await this.transition(tenantId, id, {
       status: "cancelled",
       cancelledAt: new Date(),
+    });
+    this.publish(row, "jarvis.action.cancelled");
+    return row;
+  }
+
+  /**
+   * Annulation système (pas le patron) : l'Executor retire une action dont
+   * le tool a été désactivé dans la boutique entre la proposition et
+   * l'exécution. Pas de contrôle de fenêtre : le système peut toujours retirer.
+   */
+  async cancelBySystem(tenantId: string, id: string, reason: string): Promise<JarvisAction> {
+    const row = await this.transition(tenantId, id, {
+      status: "cancelled",
+      cancelledAt: new Date(),
+      result: { reason },
     });
     this.publish(row, "jarvis.action.cancelled");
     return row;

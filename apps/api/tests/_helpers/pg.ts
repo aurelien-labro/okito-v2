@@ -221,6 +221,17 @@ async function applySchema(pglite: PGlite): Promise<void> {
       cancelled_at timestamptz
     );
 
+    create table jarvis_tool_settings (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      tool_type text not null,
+      enabled boolean not null default true,
+      policy_override text,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      unique (tenant_id, tool_type)
+    );
+
     create table tenant_mailboxes (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid not null references tenants(id) on delete cascade,

@@ -1,6 +1,7 @@
 import type { Database, JarvisAction } from "@okito/db";
 import { logger } from "../lib/logger.js";
 import type { JarvisActionService } from "./jarvis-action.js";
+import type { JarvisToolSettingsService } from "./jarvis-tool-settings.js";
 
 /**
  * Un tool exécutable par Jarvis : une action = un tool typé, qui appelle un
@@ -16,6 +17,8 @@ export interface JarvisExecutorRunResult {
   tenantsProcessed: number;
   executed: number;
   failed: number;
+  /** Actions retirées car leur tool a été désactivé dans la boutique. */
+  skipped: number;
 }
 
 /**
@@ -33,6 +36,7 @@ export class JarvisExecutor {
     private readonly db: Database,
     private readonly actions: JarvisActionService,
     tools: JarvisTool[] = [],
+    private readonly toolSettings?: JarvisToolSettingsService,
   ) {
     this.tools = new Map(tools.map((t) => [t.type, t]));
   }
@@ -43,7 +47,12 @@ export class JarvisExecutor {
 
   /** Un passage complet sur tous les tenants. Appelé par le cron Inngest. */
   async runOnce(now = new Date()): Promise<JarvisExecutorRunResult> {
-    const result: JarvisExecutorRunResult = { tenantsProcessed: 0, executed: 0, failed: 0 };
+    const result: JarvisExecutorRunResult = {
+      tenantsProcessed: 0,
+      executed: 0,
+      failed: 0,
+      skipped: 0,
+    };
 
     const tenants = await this.db.query.tenants.findMany({ columns: { id: true } });
     for (const tenant of tenants) {
@@ -58,7 +67,17 @@ export class JarvisExecutor {
     return result;
   }
 
-  private async executeOne(action: JarvisAction): Promise<"executed" | "failed"> {
+  private async executeOne(action: JarvisAction): Promise<"executed" | "failed" | "skipped"> {
+    // Filet de sécurité boutique : un tool désactivé entre la proposition et
+    // l'exécution retire l'action (cancelled, pas failed — rien n'a échoué).
+    if (this.toolSettings && !(await this.toolSettings.isEnabled(action.tenantId, action.type))) {
+      await this.actions.cancelBySystem(
+        action.tenantId,
+        action.id,
+        "Tool désactivé dans la boutique d'automatisations",
+      );
+      return "skipped";
+    }
     const tool = this.tools.get(action.type);
     if (!tool) {
       await this.actions.markFailed(action.tenantId, action.id, `tool inconnu : ${action.type}`);
