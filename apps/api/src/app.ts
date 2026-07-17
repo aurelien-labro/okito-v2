@@ -25,6 +25,7 @@ import { adminInboxRoute } from "./routes/admin-inbox.js";
 import { adminInvoicesRoute } from "./routes/admin-invoices.js";
 import { adminJarvisActionsRoute } from "./routes/admin-jarvis-actions.js";
 import { adminJarvisBriefRoute } from "./routes/admin-jarvis-brief.js";
+import { adminJarvisToolsRoute } from "./routes/admin-jarvis-tools.js";
 import { adminLoyaltyRoute } from "./routes/admin-loyalty.js";
 import {
   adminMailboxesRoute,
@@ -91,6 +92,7 @@ import type { JarvisActionService } from "./services/jarvis-action.js";
 import type { JarvisAdvisorService } from "./services/jarvis-advisor.js";
 import type { JarvisExecutor } from "./services/jarvis-executor.js";
 import type { JarvisObserverService } from "./services/jarvis-observer.js";
+import type { JarvisToolSettingsService } from "./services/jarvis-tool-settings.js";
 import type { LoyaltyService } from "./services/loyalty.js";
 import type { MailboxService } from "./services/mailbox.js";
 import type { MetaAdsService } from "./services/meta-ads.js";
@@ -169,6 +171,8 @@ export interface AppServices {
   eventBus?: BusinessEventEmitter;
   /** Garde-fous des actions Jarvis — monté sur /v1/admin/jarvis-actions si fourni. */
   jarvisAction?: JarvisActionService;
+  /** Boutique d'automatisations — monté sur /v1/admin/jarvis-tools si fourni. */
+  jarvisToolSettings?: JarvisToolSettingsService;
   /** Executor Jarvis — ajoute la function Inngest 5-min si fourni. */
   jarvisExecutor?: JarvisExecutor;
   /** Advisor Jarvis — ajoute la function Inngest brief matinal si fourni. */
@@ -462,6 +466,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.jarvisAction) {
       v1Admin.route("/jarvis-actions", adminJarvisActionsRoute(services.jarvisAction));
+    }
+    if (services.jarvisToolSettings) {
+      v1Admin.route("/jarvis-tools", adminJarvisToolsRoute(services.jarvisToolSettings));
     }
     if (services.invoice) {
       v1Admin.route("/invoices", adminInvoicesRoute(services.invoice));

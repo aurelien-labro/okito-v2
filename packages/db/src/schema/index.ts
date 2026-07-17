@@ -26,3 +26,4 @@ export * from "./woocommerce-connections.js";
 export * from "./google-ads-connections.js";
 export * from "./meta-connections.js";
 export * from "./tenant-sites.js";
+export * from "./jarvis-tool-settings.js";
