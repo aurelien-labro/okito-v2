@@ -25,6 +25,7 @@ const MODULES: NavItem[] = [
   { href: "/schedule", label: "Horaires", icon: "ti-clock" },
   { href: "/tables", label: "Tables", icon: "ti-armchair" },
   { href: "/marketing", label: "Marketing", icon: "ti-speakerphone" },
+  { href: "/voice", label: "Voix", icon: "ti-microphone" },
   { href: "/site", label: "Site web", icon: "ti-world" },
 ];
 

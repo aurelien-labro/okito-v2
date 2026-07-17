@@ -1572,3 +1572,42 @@ export async function publishSite(tenantId: string): Promise<{ data: TenantSite 
 export async function unpublishSite(tenantId: string): Promise<{ data: TenantSite }> {
   return request(`/v1/admin/site/${tenantId}/unpublish`, { method: "POST" });
 }
+
+// --- Voix : profil vocal cloné (voice cloning) --------------------------------
+
+export interface VoiceProfile {
+  voiceId: string;
+  label: string;
+  consentGivenBy: string;
+  consentAt: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface VoiceSampleInput {
+  audioBase64: string;
+  mime: string;
+  filename: string;
+}
+
+export async function getVoiceProfile(tenantId: string): Promise<{ data: VoiceProfile | null }> {
+  return request(`/v1/admin/voice/${tenantId}/profile`);
+}
+
+export async function createVoiceProfile(
+  tenantId: string,
+  input: {
+    label?: string;
+    samples: VoiceSampleInput[];
+    consent: { givenBy: string; text: string };
+  },
+): Promise<{ data: VoiceProfile }> {
+  return request(`/v1/admin/voice/${tenantId}/profile`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteVoiceProfile(tenantId: string): Promise<void> {
+  await request(`/v1/admin/voice/${tenantId}/profile`, { method: "DELETE" });
+}
