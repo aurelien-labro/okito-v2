@@ -66,6 +66,9 @@ import { TenantAccessService } from "./services/tenant-access.js";
 import { TenantMemberService } from "./services/tenant-member.js";
 import { TenantService } from "./services/tenant.js";
 import { VatReportService } from "./services/vat-report.js";
+import { DeepgramSTT } from "./services/voice/stt.js";
+import { ElevenLabsTTS } from "./services/voice/tts.js";
+import { VoiceTurnService } from "./services/voice/voice-turn.js";
 import { WaitlistService } from "./services/waitlist.js";
 import { WebhookDispatchService } from "./services/webhook-dispatch.js";
 import { WebhookService } from "./services/webhook.js";
@@ -277,6 +280,15 @@ if (env.DATABASE_URL) {
         services.site,
         llm,
       );
+    }
+    if (env.DEEPGRAM_API_KEY && env.ELEVENLABS_API_KEY) {
+      services.voiceTurn = new VoiceTurnService(
+        new DeepgramSTT(env.DEEPGRAM_API_KEY),
+        new ElevenLabsTTS(env.ELEVENLABS_API_KEY, env.ELEVENLABS_VOICE_ID),
+        services.chat,
+      );
+    } else {
+      logger.warn("DEEPGRAM_API_KEY/ELEVENLABS_API_KEY absentes — pipeline voix maison désactivé");
     }
   } else {
     logger.warn("GEMINI_API_KEY absent — moteur conversationnel désactivé");

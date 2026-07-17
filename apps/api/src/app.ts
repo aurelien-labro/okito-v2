@@ -48,6 +48,7 @@ import { adminSupplierInvoicesRoute } from "./routes/admin-supplier-invoices.js"
 import { adminTablesRoute } from "./routes/admin-tables.js";
 import { adminTenantsRoute } from "./routes/admin-tenants.js";
 import { adminVatReportRoute } from "./routes/admin-vat-report.js";
+import { adminVoiceRoute } from "./routes/admin-voice.js";
 import { adminWaitlistRoute } from "./routes/admin-waitlist.js";
 import { adminWebhooksRoute } from "./routes/admin-webhooks.js";
 import { adminWoocommerceRoute } from "./routes/admin-woocommerce.js";
@@ -121,6 +122,7 @@ import type { TenantAccessService } from "./services/tenant-access.js";
 import type { TenantMemberService } from "./services/tenant-member.js";
 import type { TenantService } from "./services/tenant.js";
 import type { VatReportService } from "./services/vat-report.js";
+import type { VoiceTurnService } from "./services/voice/voice-turn.js";
 import type { WaitlistService } from "./services/waitlist.js";
 import type { WebhookService } from "./services/webhook.js";
 import type { WoocommerceConnectionService } from "./services/woocommerce-connection.js";
@@ -173,6 +175,8 @@ export interface AppServices {
   jarvisAction?: JarvisActionService;
   /** Boutique d'automatisations — monté sur /v1/admin/jarvis-tools si fourni. */
   jarvisToolSettings?: JarvisToolSettingsService;
+  /** Pipeline voix maison (banc d'essai) — monté sur /v1/admin/voice si fourni. */
+  voiceTurn?: VoiceTurnService;
   /** Executor Jarvis — ajoute la function Inngest 5-min si fourni. */
   jarvisExecutor?: JarvisExecutor;
   /** Advisor Jarvis — ajoute la function Inngest brief matinal si fourni. */
@@ -469,6 +473,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.jarvisToolSettings) {
       v1Admin.route("/jarvis-tools", adminJarvisToolsRoute(services.jarvisToolSettings));
+    }
+    if (services.voiceTurn) {
+      v1Admin.route("/voice", adminVoiceRoute(services.voiceTurn));
     }
     if (services.invoice) {
       v1Admin.route("/invoices", adminInvoicesRoute(services.invoice));
