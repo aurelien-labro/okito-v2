@@ -75,6 +75,12 @@ const envSchema = z.object({
   MICROSOFT_CLIENT_SECRET: z.string().optional(),
   /** URL de callback enregistrée dans le portail Azure, ex: http://localhost:3001/oauth/microsoft/callback */
   MICROSOFT_REDIRECT_URI: z.string().url().optional(),
+  /** Clé API Deepgram (STT du pipeline voix maison). Optionnelle. */
+  DEEPGRAM_API_KEY: z.string().optional(),
+  /** Clé API ElevenLabs (TTS du pipeline voix maison). Optionnelle. */
+  ELEVENLABS_API_KEY: z.string().optional(),
+  /** Voix ElevenLabs par défaut (voiceId). Optionnelle — défaut multilingue. */
+  ELEVENLABS_VOICE_ID: z.string().optional(),
   /** Clé AES-256 (64 hex) chiffrant les mots de passe IMAP. Active les boîtes IMAP/Yahoo. */
   MAILBOX_ENC_KEY: z
     .string()
