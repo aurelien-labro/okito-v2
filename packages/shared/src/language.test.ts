@@ -8,6 +8,10 @@ describe("detectLanguage", () => {
     ["Hola, quiero reservar una mesa para 4 personas mañana", "es"],
     ["hello can i book for tonight please", "en"],
     ["buenas, una reserva para esta noche por favor", "es"],
+    ["Hallo, ich möchte einen Tisch für 4 Personen reservieren bitte", "de"],
+    ["Buonasera, vorrei prenotare un tavolo per 4 persone domani", "it"],
+    ["Olá, gostaria de reservar uma mesa para 4 pessoas amanhã", "pt"],
+    ["Hallo, ik wil graag een tafel reserveren voor 4 personen morgen", "nl"],
   ];
 
   for (const [msg, expected] of cases) {
@@ -33,7 +37,11 @@ describe("isLanguage", () => {
     expect(isLanguage("fr")).toBe(true);
     expect(isLanguage("en")).toBe(true);
     expect(isLanguage("es")).toBe(true);
-    expect(isLanguage("de")).toBe(false);
+    expect(isLanguage("de")).toBe(true);
+    expect(isLanguage("it")).toBe(true);
+    expect(isLanguage("pt")).toBe(true);
+    expect(isLanguage("nl")).toBe(true);
+    expect(isLanguage("ru")).toBe(false);
     expect(isLanguage(null)).toBe(false);
     expect(isLanguage(42)).toBe(false);
   });
