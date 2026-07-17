@@ -19,10 +19,13 @@ export class ElevenLabsTTS implements TextToSpeech {
     private readonly apiKey: string,
     private readonly voiceId: string = DEFAULT_VOICE_ID,
     private readonly fetchImpl: typeof fetch = fetch,
+    /** "ulaw_8000" pour le flux téléphone Twilio ; défaut mp3. */
+    private readonly outputFormat?: string,
   ) {}
 
   async synthesize(text: string): Promise<{ audio: Buffer; mime: string }> {
-    const res = await this.fetchImpl(`${ELEVENLABS_URL}/${this.voiceId}`, {
+    const query = this.outputFormat ? `?output_format=${this.outputFormat}` : "";
+    const res = await this.fetchImpl(`${ELEVENLABS_URL}/${this.voiceId}${query}`, {
       method: "POST",
       headers: { "xi-api-key": this.apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -35,6 +38,7 @@ export class ElevenLabsTTS implements TextToSpeech {
       logger.error({ status: res.status }, "ElevenLabs: synthèse échouée");
       throw new Error(`ElevenLabs HTTP ${res.status}`);
     }
-    return { audio: Buffer.from(await res.arrayBuffer()), mime: "audio/mpeg" };
+    const mime = this.outputFormat?.startsWith("ulaw") ? "audio/basic" : "audio/mpeg";
+    return { audio: Buffer.from(await res.arrayBuffer()), mime };
   }
 }

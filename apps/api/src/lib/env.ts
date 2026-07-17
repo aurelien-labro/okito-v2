@@ -81,6 +81,10 @@ const envSchema = z.object({
   ELEVENLABS_API_KEY: z.string().optional(),
   /** Voix ElevenLabs par défaut (voiceId). Optionnelle — défaut multilingue. */
   ELEVENLABS_VOICE_ID: z.string().optional(),
+  /** Secret HMAC liant un appel Twilio à son tenant. Active le streaming voix. */
+  VOICE_STREAM_SECRET: z.string().min(16).optional(),
+  /** URL publique du WebSocket Media Streams, ex: wss://api.okito.app/v1/voice/stream */
+  VOICE_STREAM_PUBLIC_URL: z.string().url().optional(),
   /** Clé AES-256 (64 hex) chiffrant les mots de passe IMAP. Active les boîtes IMAP/Yahoo. */
   MAILBOX_ENC_KEY: z
     .string()

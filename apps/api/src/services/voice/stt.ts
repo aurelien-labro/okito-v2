@@ -19,17 +19,19 @@ export class DeepgramSTT implements SpeechToText {
   constructor(
     private readonly apiKey: string,
     private readonly fetchImpl: typeof fetch = fetch,
+    /**
+     * Query Deepgram spécifique (ex: "encoding=mulaw&sample_rate=8000" pour le
+     * flux téléphone Twilio). Défaut : détection de langue sur fichier complet.
+     */
+    private readonly query = "model=nova-2&smart_format=true&detect_language=true",
   ) {}
 
   async transcribe(audio: Buffer, mime: string): Promise<{ text: string; language?: string }> {
-    const res = await this.fetchImpl(
-      `${DEEPGRAM_URL}?model=nova-2&smart_format=true&detect_language=true`,
-      {
-        method: "POST",
-        headers: { Authorization: `Token ${this.apiKey}`, "Content-Type": mime },
-        body: new Uint8Array(audio),
-      },
-    );
+    const res = await this.fetchImpl(`${DEEPGRAM_URL}?${this.query}`, {
+      method: "POST",
+      headers: { Authorization: `Token ${this.apiKey}`, "Content-Type": mime },
+      body: new Uint8Array(audio),
+    });
     if (!res.ok) {
       logger.error({ status: res.status }, "Deepgram: transcription échouée");
       throw new Error(`Deepgram HTTP ${res.status}`);
