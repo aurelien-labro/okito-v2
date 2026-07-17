@@ -69,6 +69,7 @@ import { TenantMemberService } from "./services/tenant-member.js";
 import { TenantService } from "./services/tenant.js";
 import { VatReportService } from "./services/vat-report.js";
 import { VoiceStreamSession } from "./services/voice/stream-session.js";
+import { DeepgramLiveSTT } from "./services/voice/stt-live.js";
 import { DeepgramSTT } from "./services/voice/stt.js";
 import { ElevenLabsTTS } from "./services/voice/tts.js";
 import { VoiceTurnService } from "./services/voice/voice-turn.js";
@@ -314,11 +315,7 @@ if (
 ) {
   const chat = services.chat;
   const secret = env.VOICE_STREAM_SECRET;
-  const streamStt = new DeepgramSTT(
-    env.DEEPGRAM_API_KEY,
-    fetch,
-    "model=nova-2&smart_format=true&encoding=mulaw&sample_rate=8000",
-  );
+  const streamStt = new DeepgramLiveSTT(env.DEEPGRAM_API_KEY);
   const streamTts = new ElevenLabsTTS(
     env.ELEVENLABS_API_KEY,
     env.ELEVENLABS_VOICE_ID,
@@ -349,11 +346,26 @@ if (
             // frame non-JSON ignorée
           }
         },
+        onClose() {
+          // Ferme le socket Deepgram et coupe la synthèse en cours.
+          void session?.handleMessage({ event: "stop" });
+        },
       };
     }),
   );
-  app.route("/v1/voice", voiceTwimlRoute(secret, env.VOICE_STREAM_PUBLIC_URL));
-  logger.info("pipeline voix v2 : streaming Twilio actif (/v1/voice/stream)");
+  app.route(
+    "/v1/voice",
+    voiceTwimlRoute(
+      secret,
+      env.VOICE_STREAM_PUBLIC_URL,
+      // Même politique que le webhook WhatsApp : signature exigée en prod via
+      // TWILIO_VALIDATE_WEBHOOK=true (en dev, l'URL du tunnel ≠ PUBLIC_API_URL).
+      env.TWILIO_VALIDATE_WEBHOOK === "true" && env.TWILIO_AUTH_TOKEN
+        ? { authToken: env.TWILIO_AUTH_TOKEN, publicBaseUrl: env.PUBLIC_API_URL }
+        : undefined,
+    ),
+  );
+  logger.info("pipeline voix v3 : streaming live Twilio actif (/v1/voice/stream)");
 } else if (env.DEEPGRAM_API_KEY && env.ELEVENLABS_API_KEY) {
   logger.warn(
     "VOICE_STREAM_SECRET/VOICE_STREAM_PUBLIC_URL absentes — streaming Twilio désactivé (banc d'essai /turn seul)",
