@@ -1621,3 +1621,40 @@ export async function previewVoiceProfile(
     body: JSON.stringify({ text }),
   });
 }
+
+export interface VoiceProviderCheck {
+  ok: boolean;
+  latencyMs: number;
+  status?: number;
+  error?: string;
+}
+
+export interface VoiceHealth {
+  ready: boolean;
+  deepgram: VoiceProviderCheck;
+  elevenlabs: VoiceProviderCheck;
+  streamConfigured: boolean;
+  cloneActive: boolean;
+}
+
+export async function getVoiceHealth(tenantId: string): Promise<{ data: VoiceHealth }> {
+  return request(`/v1/admin/voice/${tenantId}/health`);
+}
+
+export interface VoiceTurnMetrics {
+  llmMs: number;
+  ttsFirstChunkMs: number;
+  totalMs: number;
+  interrupted: boolean;
+}
+
+export interface VoiceCall {
+  callSid: string;
+  tenantId: string;
+  startedAt: string;
+  turns: VoiceTurnMetrics[];
+}
+
+export async function listVoiceCalls(tenantId: string): Promise<{ data: VoiceCall[] }> {
+  return request(`/v1/admin/voice/${tenantId}/calls`);
+}

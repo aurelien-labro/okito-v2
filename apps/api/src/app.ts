@@ -122,6 +122,7 @@ import type { TenantAccessService } from "./services/tenant-access.js";
 import type { TenantMemberService } from "./services/tenant-member.js";
 import type { TenantService } from "./services/tenant.js";
 import type { VatReportService } from "./services/vat-report.js";
+import type { VoiceOpsService } from "./services/voice/voice-ops.js";
 import type { VoiceProfileService } from "./services/voice/voice-profile.js";
 import type { VoiceTurnService } from "./services/voice/voice-turn.js";
 import type { WaitlistService } from "./services/waitlist.js";
@@ -180,6 +181,8 @@ export interface AppServices {
   voiceTurn?: VoiceTurnService;
   /** Voice cloning — profil vocal par tenant (routes /v1/admin/voice/:id/profile). */
   voiceProfile?: VoiceProfileService;
+  /** Exploitation voix — santé providers + journal d'appels (/health, /calls). */
+  voiceOps?: VoiceOpsService;
   /** Executor Jarvis — ajoute la function Inngest 5-min si fourni. */
   jarvisExecutor?: JarvisExecutor;
   /** Advisor Jarvis — ajoute la function Inngest brief matinal si fourni. */
@@ -478,7 +481,10 @@ export function createApp(env: Env, services: AppServices = {}) {
       v1Admin.route("/jarvis-tools", adminJarvisToolsRoute(services.jarvisToolSettings));
     }
     if (services.voiceTurn) {
-      v1Admin.route("/voice", adminVoiceRoute(services.voiceTurn, services.voiceProfile));
+      v1Admin.route(
+        "/voice",
+        adminVoiceRoute(services.voiceTurn, services.voiceProfile, services.voiceOps),
+      );
     }
     if (services.invoice) {
       v1Admin.route("/invoices", adminInvoicesRoute(services.invoice));

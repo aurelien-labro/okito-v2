@@ -3,12 +3,16 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   type ApiError,
+  type VoiceCall,
+  type VoiceHealth,
   type VoiceProfile,
   type VoiceSampleInput,
   createVoiceProfile,
   deleteVoiceProfile,
   getCurrentTenantId,
+  getVoiceHealth,
   getVoiceProfile,
+  listVoiceCalls,
   previewVoiceProfile,
 } from "../_lib/api-client";
 
@@ -94,8 +98,207 @@ export default function VoicePage() {
       {tenantId && !loading && !error && !profile && (
         <CreateForm tenantId={tenantId} onCreated={() => refresh(tenantId)} />
       )}
+
+      {tenantId && !loading && !error && (
+        <>
+          <HealthCard tenantId={tenantId} />
+          <CallsCard tenantId={tenantId} />
+        </>
+      )}
     </div>
   );
+}
+
+/** Santé du pipeline : « prêt à recevoir un appel ? » avant de composer. */
+function HealthCard({ tenantId }: { tenantId: string }) {
+  const [health, setHealth] = useState<VoiceHealth | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const check = useCallback(async () => {
+    setBusy(true);
+    setErr(null);
+    try {
+      const { data } = await getVoiceHealth(tenantId);
+      setHealth(data);
+    } catch (e) {
+      setErr((e as ApiError).message ?? "Vérification échouée");
+    } finally {
+      setBusy(false);
+    }
+  }, [tenantId]);
+
+  useEffect(() => {
+    void check();
+  }, [check]);
+
+  return (
+    <div className="mt-6 rounded-lg border border-stone-200 bg-white p-5">
+      <div className="flex items-center justify-between">
+        <h2 className="font-medium">Santé du pipeline</h2>
+        <button
+          type="button"
+          onClick={() => void check()}
+          disabled={busy}
+          className="rounded border border-stone-300 px-3 py-1 text-xs hover:bg-stone-50 disabled:opacity-50"
+        >
+          {busy ? "Vérification…" : "Re-vérifier"}
+        </button>
+      </div>
+      {err && <div className="mt-3 text-sm text-red-700">{err}</div>}
+      {health && (
+        <div className="mt-3 space-y-2 text-sm">
+          <div
+            className={
+              health.ready
+                ? "rounded bg-emerald-50 px-3 py-2 font-medium text-emerald-800"
+                : "rounded bg-amber-50 px-3 py-2 font-medium text-amber-800"
+            }
+          >
+            {health.ready
+              ? "✓ Prêt à recevoir un appel"
+              : "✗ Pas prêt — voir les points ci-dessous"}
+          </div>
+          <HealthLine
+            label="Deepgram (STT)"
+            ok={health.deepgram.ok}
+            detail={
+              health.deepgram.ok
+                ? `${health.deepgram.latencyMs} ms`
+                : (health.deepgram.error ?? "?")
+            }
+          />
+          <HealthLine
+            label="ElevenLabs (TTS)"
+            ok={health.elevenlabs.ok}
+            detail={
+              health.elevenlabs.ok
+                ? `${health.elevenlabs.latencyMs} ms`
+                : (health.elevenlabs.error ?? "?")
+            }
+          />
+          <HealthLine
+            label="Streaming Twilio configuré"
+            ok={health.streamConfigured}
+            detail={health.streamConfigured ? "secret + URL publique posés" : "env manquantes"}
+          />
+          <HealthLine
+            label="Clone vocal"
+            ok={health.cloneActive}
+            detail={health.cloneActive ? "voix clonée active" : "voix par défaut"}
+            neutral={!health.cloneActive}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HealthLine({
+  label,
+  ok,
+  detail,
+  neutral = false,
+}: {
+  label: string;
+  ok: boolean;
+  detail: string;
+  neutral?: boolean;
+}) {
+  const icon = ok ? "✓" : neutral ? "—" : "✗";
+  const color = ok ? "text-emerald-700" : neutral ? "text-stone-400" : "text-red-700";
+  return (
+    <div className="flex items-center justify-between border-b border-stone-100 pb-1.5 last:border-0">
+      <span className="text-stone-600">{label}</span>
+      <span className={`${color} text-xs`}>
+        {icon} {detail}
+      </span>
+    </div>
+  );
+}
+
+/** Latences mesurées sur les derniers appels réels (journal en mémoire API). */
+function CallsCard({ tenantId }: { tenantId: string }) {
+  const [calls, setCalls] = useState<VoiceCall[] | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setErr(null);
+    try {
+      const { data } = await listVoiceCalls(tenantId);
+      setCalls(data);
+    } catch (e) {
+      setErr((e as ApiError).message ?? "Chargement échoué");
+    }
+  }, [tenantId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return (
+    <div className="mt-6 rounded-lg border border-stone-200 bg-white p-5">
+      <div className="flex items-center justify-between">
+        <h2 className="font-medium">Derniers appels</h2>
+        <button
+          type="button"
+          onClick={() => void load()}
+          className="rounded border border-stone-300 px-3 py-1 text-xs hover:bg-stone-50"
+        >
+          Rafraîchir
+        </button>
+      </div>
+      {err && <div className="mt-3 text-sm text-red-700">{err}</div>}
+      {calls && calls.length === 0 && (
+        <p className="mt-3 text-sm text-stone-500">
+          Aucun appel enregistré depuis le démarrage de l'API. Les latences par tour (LLM, premier
+          son, total) apparaîtront ici dès le premier appel réel.
+        </p>
+      )}
+      {calls && calls.length > 0 && (
+        <table className="mt-3 w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-stone-200 text-xs uppercase tracking-wide text-stone-400">
+              <th className="py-1.5 pr-2 font-medium">Appel</th>
+              <th className="py-1.5 pr-2 font-medium">Heure</th>
+              <th className="py-1.5 pr-2 font-medium">Tours</th>
+              <th className="py-1.5 pr-2 font-medium">LLM méd.</th>
+              <th className="py-1.5 pr-2 font-medium">1er son méd.</th>
+              <th className="py-1.5 font-medium">Barge-in</th>
+            </tr>
+          </thead>
+          <tbody>
+            {calls.map((call) => {
+              const llm = median(call.turns.map((t) => t.llmMs));
+              const first = median(call.turns.map((t) => t.llmMs + t.ttsFirstChunkMs));
+              const interrupted = call.turns.filter((t) => t.interrupted).length;
+              return (
+                <tr key={call.callSid} className="border-b border-stone-100 last:border-0">
+                  <td className="py-1.5 pr-2 font-mono text-xs">{call.callSid.slice(0, 10)}…</td>
+                  <td className="py-1.5 pr-2">
+                    {new Date(call.startedAt).toLocaleTimeString("fr-FR")}
+                  </td>
+                  <td className="py-1.5 pr-2">{call.turns.length}</td>
+                  <td className="py-1.5 pr-2">{llm === null ? "—" : `${llm} ms`}</td>
+                  <td className="py-1.5 pr-2">{first === null ? "—" : `${first} ms`}</td>
+                  <td className="py-1.5">{interrupted || "—"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+function median(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const value =
+    sorted.length % 2 === 1 ? sorted[mid] : ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2;
+  return Math.round(value ?? 0);
 }
 
 function ProfileCard({

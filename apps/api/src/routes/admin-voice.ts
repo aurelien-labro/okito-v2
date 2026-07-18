@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { BadRequestError, HttpError } from "../lib/errors.js";
 import type { AppEnv } from "../lib/types.js";
+import type { VoiceOpsService } from "../services/voice/voice-ops.js";
 import type { VoiceProfileService } from "../services/voice/voice-profile.js";
 import type { VoiceTurnService } from "../services/voice/voice-turn.js";
 
@@ -35,7 +36,11 @@ const profileSchema = z.object({
 });
 
 /** Banc d'essai du pipeline voix maison : un tour audio → transcript + réponse audio. */
-export function adminVoiceRoute(service: VoiceTurnService, voiceProfile?: VoiceProfileService) {
+export function adminVoiceRoute(
+  service: VoiceTurnService,
+  voiceProfile?: VoiceProfileService,
+  voiceOps?: VoiceOpsService,
+) {
   const app = new Hono<AppEnv>();
 
   app.onError((err, c) => {
@@ -76,6 +81,21 @@ export function adminVoiceRoute(service: VoiceTurnService, voiceProfile?: VoiceP
       },
     });
   });
+
+  // Exploitation : santé du pipeline + journal des derniers appels.
+  if (voiceOps) {
+    // GET /v1/admin/voice/:tenantId/health — « prêt à recevoir un appel ? »
+    app.get("/:tenantId/health", async (c) => {
+      const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
+      return c.json({ data: await voiceOps.health(tenantId) });
+    });
+
+    // GET /v1/admin/voice/:tenantId/calls — latences des derniers appels.
+    app.get("/:tenantId/calls", (c) => {
+      const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
+      return c.json({ data: voiceOps.listCalls(tenantId) });
+    });
+  }
 
   // Voice cloning : profil vocal du tenant (voix clonée du patron).
   if (voiceProfile) {

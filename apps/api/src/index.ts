@@ -72,6 +72,7 @@ import { VoiceStreamSession } from "./services/voice/stream-session.js";
 import { DeepgramLiveSTT } from "./services/voice/stt-live.js";
 import { DeepgramSTT } from "./services/voice/stt.js";
 import { ElevenLabsTTS } from "./services/voice/tts.js";
+import { VoiceOpsService } from "./services/voice/voice-ops.js";
 import { VoiceProfileService } from "./services/voice/voice-profile.js";
 import { VoiceTurnService } from "./services/voice/voice-turn.js";
 import { WaitlistService } from "./services/waitlist.js";
@@ -294,6 +295,13 @@ if (env.DATABASE_URL) {
       );
       // Voice cloning : profil vocal (voix clonée) par tenant.
       services.voiceProfile = new VoiceProfileService(db, env.ELEVENLABS_API_KEY);
+      // Exploitation : santé du pipeline + journal des latences d'appel.
+      services.voiceOps = new VoiceOpsService(
+        env.DEEPGRAM_API_KEY,
+        env.ELEVENLABS_API_KEY,
+        Boolean(env.VOICE_STREAM_SECRET && env.VOICE_STREAM_PUBLIC_URL),
+        services.voiceProfile,
+      );
     } else {
       logger.warn("DEEPGRAM_API_KEY/ELEVENLABS_API_KEY absentes — pipeline voix maison désactivé");
     }
@@ -342,6 +350,7 @@ if (
       let session: VoiceStreamSession | undefined;
       return {
         onOpen(_evt, ws) {
+          const voiceOps = services.voiceOps;
           session = new VoiceStreamSession({
             stt: streamStt,
             tts: streamTts,
@@ -350,6 +359,8 @@ if (
             resolveTts,
             send: (m) => ws.send(JSON.stringify(m)),
             close: () => ws.close(),
+            onCallStart: (callSid, tid) => voiceOps?.callStarted(callSid, tid),
+            onTurn: (callSid, metrics) => voiceOps?.recordTurn(callSid, metrics),
           });
         },
         onMessage(evt) {

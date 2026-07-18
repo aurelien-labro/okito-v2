@@ -46,6 +46,11 @@ function makeSession(overrides?: {
   chat?: ChatService;
   tts?: StreamingTextToSpeech;
   resolveTts?: (tenantId: string) => Promise<StreamingTextToSpeech | undefined>;
+  onCallStart?: (callSid: string, tenantId: string) => void;
+  onTurn?: (
+    callSid: string,
+    metrics: { llmMs: number; ttsFirstChunkMs: number; totalMs: number; interrupted: boolean },
+  ) => void;
 }) {
   const sent: Array<Record<string, unknown>> = [];
   const close = vi.fn();
@@ -68,6 +73,8 @@ function makeSession(overrides?: {
     resolveTts: overrides?.resolveTts,
     send: (m) => sent.push(m),
     close,
+    onCallStart: overrides?.onCallStart,
+    onTurn: overrides?.onTurn,
   });
   return { session, sent, close, chat, fakeStt, fakeTts };
 }
@@ -112,6 +119,24 @@ describe("VoiceStreamSession (v3 live)", () => {
     });
     expect(fakeStt.sendAudio).toHaveBeenCalledTimes(1);
     expect(fakeStt.sendAudio.mock.calls[0]?.[0]).toEqual(Buffer.alloc(160, 7));
+  });
+
+  it("observabilité : onCallStart au start valide, onTurn avec latences après un tour", async () => {
+    const onCallStart = vi.fn();
+    const onTurn = vi.fn();
+    const { session, fakeStt } = makeSession({ onCallStart, onTurn });
+    await start(session);
+    expect(onCallStart).toHaveBeenCalledWith("CA456", TENANT);
+
+    fakeStt.emit("une table pour deux");
+    await flush();
+    expect(onTurn).toHaveBeenCalledTimes(1);
+    const [callSid, metrics] = onTurn.mock.calls[0] ?? [];
+    expect(callSid).toBe("CA456");
+    expect(metrics.interrupted).toBe(false);
+    expect(metrics.llmMs).toBeGreaterThanOrEqual(0);
+    expect(metrics.ttsFirstChunkMs).toBeGreaterThanOrEqual(0);
+    expect(metrics.totalMs).toBeGreaterThanOrEqual(metrics.llmMs);
   });
 
   it("transcript speech_final : tour complet chat → TTS streamé → media + mark", async () => {

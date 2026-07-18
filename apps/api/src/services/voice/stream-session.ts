@@ -46,6 +46,13 @@ export interface StreamSessionDeps {
   send: (message: Record<string, unknown>) => void;
   /** Ferme la connexion (auth invalide, erreur fatale). */
   close: () => void;
+  /** Observabilité : appel accepté (token vérifié). */
+  onCallStart?: (callSid: string, tenantId: string) => void;
+  /** Observabilité : latences d'un tour terminé ou interrompu. */
+  onTurn?: (
+    callSid: string,
+    metrics: { llmMs: number; ttsFirstChunkMs: number; totalMs: number; interrupted: boolean },
+  ) => void;
 }
 
 interface TwilioMessage {
@@ -72,6 +79,7 @@ export class VoiceStreamSession {
   private abort?: AbortController;
   /** TTS de l'appel (voix clonée du tenant si dispo), résolu au premier tour. */
   private ttsForCall?: StreamingTextToSpeech;
+  private callSid = "";
 
   constructor(private readonly deps: StreamSessionDeps) {}
 
@@ -110,7 +118,9 @@ export class VoiceStreamSession {
     this.streamSid = msg.streamSid ?? "";
     this.tenantId = tenantId;
     // Mémoire de conversation par appel : le callSid Twilio est stable.
-    this.sessionKey = `call-${msg.start?.callSid ?? this.streamSid}`;
+    this.callSid = msg.start?.callSid ?? this.streamSid;
+    this.sessionKey = `call-${this.callSid}`;
+    this.deps.onCallStart?.(this.callSid, tenantId);
     this.transcriber = this.deps.stt.connect({
       onTranscript: (evt) => this.onTranscript(evt.text, evt.isFinal, evt.speechFinal),
       onUtteranceEnd: () => this.endTurn(),
@@ -152,6 +162,17 @@ export class VoiceStreamSession {
     this.replying = true;
     this.abort = new AbortController();
     const signal = this.abort.signal;
+    // Latences du tour, chrono depuis la fin de parole du client (endTurn).
+    const turnStartedAt = Date.now();
+    let llmMs = 0;
+    let ttsFirstChunkMs = 0;
+    const emitMetrics = (interrupted: boolean) =>
+      this.deps.onTurn?.(this.callSid, {
+        llmMs,
+        ttsFirstChunkMs,
+        totalMs: Date.now() - turnStartedAt,
+        interrupted,
+      });
     try {
       const response = await this.deps.chat.handle({
         tenantId: this.tenantId,
@@ -159,23 +180,27 @@ export class VoiceStreamSession {
         sessionKey: this.sessionKey,
         message: text,
       });
-      if (gen !== this.generation) return; // barge-in pendant la génération LLM
+      llmMs = Date.now() - turnStartedAt;
+      if (gen !== this.generation) return emitMetrics(true); // barge-in pendant le LLM
       const tts = await this.tts();
-      if (gen !== this.generation) return;
+      if (gen !== this.generation) return emitMetrics(true);
+      const ttsStartedAt = Date.now();
       for await (const chunk of tts.synthesizeStream(response.reply, signal)) {
-        if (gen !== this.generation) return;
+        if (ttsFirstChunkMs === 0) ttsFirstChunkMs = Date.now() - ttsStartedAt;
+        if (gen !== this.generation) return emitMetrics(true);
         this.deps.send({
           event: "media",
           streamSid: this.streamSid,
           media: { payload: chunk.toString("base64") },
         });
       }
-      if (gen !== this.generation) return;
+      if (gen !== this.generation) return emitMetrics(true);
       this.deps.send({
         event: "mark",
         streamSid: this.streamSid,
         mark: { name: `reply-${gen}` },
       });
+      emitMetrics(false);
     } catch (err) {
       if (!signal.aborted) {
         logger.error({ err, streamSid: this.streamSid }, "voice: tour échoué");
