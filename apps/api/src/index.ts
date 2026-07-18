@@ -11,6 +11,7 @@ import { voiceTwimlRoute } from "./routes/voice-twiml.js";
 import { AuditLogService } from "./services/audit-log.js";
 import { BankConnectionService } from "./services/bank-connection.js";
 import { BankSyncService } from "./services/bank-sync.js";
+import { BillingService } from "./services/billing.js";
 import { CalendarSyncService } from "./services/calendar-sync.js";
 import { CampaignService } from "./services/campaign.js";
 import { CapacityService } from "./services/capacity.js";
@@ -95,6 +96,11 @@ if (env.DATABASE_URL) {
   services.tenant = tenant;
   services.audit = new AuditLogService(db);
   services.subscription = new SubscriptionService(db);
+  if (env.STRIPE_SECRET_KEY && env.STRIPE_PRICE_ID) {
+    services.billing = new BillingService(env.STRIPE_SECRET_KEY, env.STRIPE_PRICE_ID, env.APP_URL);
+  } else {
+    logger.warn("STRIPE_SECRET_KEY/STRIPE_PRICE_ID absents — facturation SaaS désactivée");
+  }
   services.stats = new StatsService(db);
   services.tenantMember = new TenantMemberService(db);
   services.waitlist = new WaitlistService(db);

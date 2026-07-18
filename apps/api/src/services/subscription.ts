@@ -17,6 +17,20 @@ export interface StripeSubscriptionPayload {
   cancelAtPeriodEnd: boolean;
 }
 
+/**
+ * Mapping statut Stripe → statut tenant (feature-gating local).
+ * active/trialing → le tenant tourne ; tout état d'échec ou de fin
+ * (past_due, canceled, unpaid, incomplete_expired, paused) → suspended.
+ * Les états transitoires (incomplete) ne changent rien.
+ */
+export function tenantStatusForStripe(stripeStatus: string): "active" | "suspended" | null {
+  if (stripeStatus === "active" || stripeStatus === "trialing") return "active";
+  if (["past_due", "canceled", "unpaid", "incomplete_expired", "paused"].includes(stripeStatus)) {
+    return "suspended";
+  }
+  return null;
+}
+
 export class SubscriptionService {
   constructor(private readonly db: Database) {}
 
@@ -28,6 +42,16 @@ export class SubscriptionService {
     const existing = await this.db.query.subscriptions.findFirst({
       where: (s, { eq: e }) => e(s.stripeSubscriptionId, payload.stripeSubscriptionId),
     });
+
+    // Facturation SaaS : l'état Stripe pilote tenants.status
+    // (trial → active au paiement, suspended à l'échec/résiliation).
+    const tenantStatus = tenantStatusForStripe(payload.status);
+    if (tenantStatus) {
+      await this.db
+        .update(schema.tenants)
+        .set({ status: tenantStatus, updatedAt: new Date() })
+        .where(eq(schema.tenants.id, payload.tenantId));
+    }
 
     if (existing) {
       const [updated] = await this.db

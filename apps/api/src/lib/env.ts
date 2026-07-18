@@ -96,6 +96,8 @@ const envSchema = z.object({
   STRIPE_SECRET_KEY: z.string().optional(),
   /** Secret du webhook endpoint (whsec_...) pour vérifier les signatures Stripe. */
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  /** Price ID du plan unique OKITO (price_...). Avec STRIPE_SECRET_KEY, active /v1/admin/billing. */
+  STRIPE_PRICE_ID: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
