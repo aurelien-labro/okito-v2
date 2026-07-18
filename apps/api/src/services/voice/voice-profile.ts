@@ -119,6 +119,36 @@ export class VoiceProfileService {
     return toView(profile);
   }
 
+  /**
+   * Extrait audio du clone (mp3) — sert de bouton "Écouter" dans /voice pour
+   * valider le clonage sans passer par un vrai appel. Renvoie null si le
+   * tenant n'a pas de profil actif.
+   */
+  async preview(tenantId: string, text: string): Promise<{ audio: Buffer; mime: string } | null> {
+    const profile = await this.find(tenantId);
+    if (!profile || profile.status !== "active") return null;
+    const res = await this.fetchImpl(
+      `https://api.elevenlabs.io/v1/text-to-speech/${profile.voiceId}`,
+      {
+        method: "POST",
+        headers: { "xi-api-key": this.apiKey, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text,
+          model_id: "eleven_flash_v2_5",
+          voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+        }),
+      },
+    );
+    if (!res.ok) {
+      logger.error({ status: res.status, tenantId }, "voice preview: synthèse échouée");
+      throw new BadRequestError(
+        `Écoute refusée par ElevenLabs (HTTP ${res.status})`,
+        "preview_failed",
+      );
+    }
+    return { audio: Buffer.from(await res.arrayBuffer()), mime: "audio/mpeg" };
+  }
+
   /** Supprime le clone (côté ElevenLabs, best effort) et le profil. */
   async remove(tenantId: string): Promise<void> {
     const profile = await this.find(tenantId);

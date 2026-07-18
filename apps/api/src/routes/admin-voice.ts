@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { BadRequestError, HttpError } from "../lib/errors.js";
 import type { AppEnv } from "../lib/types.js";
+import type { VoiceOpsService } from "../services/voice/voice-ops.js";
 import type { VoiceProfileService } from "../services/voice/voice-profile.js";
 import type { VoiceTurnService } from "../services/voice/voice-turn.js";
 
@@ -35,7 +36,11 @@ const profileSchema = z.object({
 });
 
 /** Banc d'essai du pipeline voix maison : un tour audio → transcript + réponse audio. */
-export function adminVoiceRoute(service: VoiceTurnService, voiceProfile?: VoiceProfileService) {
+export function adminVoiceRoute(
+  service: VoiceTurnService,
+  voiceProfile?: VoiceProfileService,
+  voiceOps?: VoiceOpsService,
+) {
   const app = new Hono<AppEnv>();
 
   app.onError((err, c) => {
@@ -77,6 +82,21 @@ export function adminVoiceRoute(service: VoiceTurnService, voiceProfile?: VoiceP
     });
   });
 
+  // Exploitation : santé du pipeline + journal des derniers appels.
+  if (voiceOps) {
+    // GET /v1/admin/voice/:tenantId/health — « prêt à recevoir un appel ? »
+    app.get("/:tenantId/health", async (c) => {
+      const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
+      return c.json({ data: await voiceOps.health(tenantId) });
+    });
+
+    // GET /v1/admin/voice/:tenantId/calls — latences des derniers appels.
+    app.get("/:tenantId/calls", (c) => {
+      const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
+      return c.json({ data: voiceOps.listCalls(tenantId) });
+    });
+  }
+
   // Voice cloning : profil vocal du tenant (voix clonée du patron).
   if (voiceProfile) {
     // GET /v1/admin/voice/:tenantId/profile
@@ -107,6 +127,19 @@ export function adminVoiceRoute(service: VoiceTurnService, voiceProfile?: VoiceP
         consent: input.consent,
       });
       return c.json({ data: profile }, 201);
+    });
+
+    // POST /v1/admin/voice/:tenantId/preview — extrait mp3 du clone (sans appel).
+    app.post("/:tenantId/preview", async (c) => {
+      const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
+      const body = await c.req.json().catch(() => ({}));
+      const text =
+        typeof body?.text === "string" && body.text.trim().length > 0
+          ? body.text.trim().slice(0, 400)
+          : "Bonjour, je suis votre assistant vocal. Voici un extrait de ma voix.";
+      const result = await voiceProfile.preview(tenantId, text);
+      if (!result) throw new BadRequestError("Aucun profil vocal actif", "no_profile");
+      return c.json({ data: { audioBase64: result.audio.toString("base64"), mime: result.mime } });
     });
 
     // DELETE /v1/admin/voice/:tenantId/profile

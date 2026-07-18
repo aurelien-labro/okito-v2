@@ -110,6 +110,39 @@ describe("VoiceProfileService", () => {
     expect(await svc.get(tenantId)).toBeNull();
   });
 
+  it("preview : renvoie null sans profil, mp3 avec profil actif, propage HTTP erreur", async () => {
+    const audioBytes = new Uint8Array([1, 2, 3, 4, 5]);
+    const fetchImpl = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const s = String(url);
+      if (s.endsWith("/voices/add")) {
+        return new Response(JSON.stringify({ voice_id: "vprev" }), { status: 200 });
+      }
+      if (s.includes("/text-to-speech/vprev")) {
+        if (init?.method !== "POST") throw new Error("bad method");
+        return new Response(audioBytes, { status: 200 });
+      }
+      return new Response("{}", { status: 200 });
+    }) as unknown as typeof fetch;
+    const svc = new VoiceProfileService(ctx.db, "el-key", fetchImpl);
+
+    expect(await svc.preview(tenantId, "hello")).toBeNull();
+
+    await svc.create({ tenantId, samples: [sample()], consent: CONSENT });
+    const out = await svc.preview(tenantId, "extrait");
+    expect(out?.mime).toBe("audio/mpeg");
+    expect(out?.audio.length).toBe(5);
+
+    const fail = vi.fn(async (url: RequestInfo | URL) => {
+      if (String(url).endsWith("/voices/add")) {
+        return new Response(JSON.stringify({ voice_id: "vfail" }), { status: 200 });
+      }
+      return new Response("nope", { status: 402 });
+    }) as unknown as typeof fetch;
+    const svc2 = new VoiceProfileService(ctx.db, "el-key", fail);
+    await svc2.create({ tenantId: otherTenantId, samples: [sample()], consent: CONSENT });
+    await expect(svc2.preview(otherTenantId, "boom")).rejects.toThrow(/Écoute refusée/);
+  });
+
   it("remove : supprime le clone distant et le profil ; introuvable sinon", async () => {
     const { fetchImpl, calls } = makeFetch("voice-del");
     const svc = new VoiceProfileService(ctx.db, "el-key", fetchImpl);
