@@ -96,18 +96,20 @@ switch ($Stage) {
   }
 
   "api-deploy" {
-    Push-Location apps\api
+    # Le Dockerfile monorepo attend le contexte a la racine du repo
+    # (paths tels que apps/api/package.json, packages/db/package.json).
+    Write-Host "-> fly deploy $ApiApp (contexte = racine du repo)..." -ForegroundColor Cyan
+    fly deploy `
+      --config apps\api\fly.demo.toml `
+      --dockerfile apps\api\Dockerfile `
+      -a $ApiApp
+    Write-Host "-> Sanity check /health" -ForegroundColor Cyan
     try {
-      Write-Host "-> fly deploy $ApiApp..." -ForegroundColor Cyan
-      fly deploy --config fly.demo.toml -a $ApiApp
-      Write-Host "-> Sanity check /health" -ForegroundColor Cyan
-      try {
-        $r = Invoke-RestMethod "https://$ApiApp.fly.dev/health" -TimeoutSec 30
-        Write-Host "[OK] /health = $($r | ConvertTo-Json -Compress)" -ForegroundColor Green
-      } catch {
-        Write-Host "[!] /health n'a pas repondu 200. Lance : fly logs -a $ApiApp" -ForegroundColor Yellow
-      }
-    } finally { Pop-Location }
+      $r = Invoke-RestMethod "https://$ApiApp.fly.dev/health" -TimeoutSec 30
+      Write-Host "[OK] /health = $($r | ConvertTo-Json -Compress)" -ForegroundColor Green
+    } catch {
+      Write-Host "[!] /health n'a pas repondu 200. Lance : fly logs -a $ApiApp" -ForegroundColor Yellow
+    }
   }
 
   "dashboard-secrets" {
@@ -123,11 +125,11 @@ switch ($Stage) {
   }
 
   "dashboard-deploy" {
-    Push-Location apps\dashboard
-    try {
-      Write-Host "-> fly deploy $DashApp..." -ForegroundColor Cyan
-      fly deploy --config fly.demo.toml -a $DashApp
-      Write-Host "[OK] Dashboard deploye : https://$DashApp.fly.dev" -ForegroundColor Green
-    } finally { Pop-Location }
+    Write-Host "-> fly deploy $DashApp (contexte = racine du repo)..." -ForegroundColor Cyan
+    fly deploy `
+      --config apps\dashboard\fly.demo.toml `
+      --dockerfile apps\dashboard\Dockerfile `
+      -a $DashApp
+    Write-Host "[OK] Dashboard deploye : https://$DashApp.fly.dev" -ForegroundColor Green
   }
 }
