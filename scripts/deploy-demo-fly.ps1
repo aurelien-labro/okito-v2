@@ -1,5 +1,5 @@
 # =====================================================
-# Déploiement DÉMO OKITO sur Fly.io — script tout-en-un
+# Deploiement DEMO OKITO sur Fly.io - script tout-en-un
 # =====================================================
 # Usage :
 #   1. Charge tes variables SENSIBLES dans TON shell (les valeurs restent chez toi) :
@@ -11,19 +11,19 @@
 #        $env:OKITO_ADMIN_UUID     = "<ton uuid supabase auth>"
 #        $env:OKITO_GEMINI_KEY     = "AIza..."
 #        $env:OKITO_STRIPE_SECRET  = "sk_test_..."
-#        $env:OKITO_STRIPE_PRICE   = "price_..."       # après création dans Stripe (étape 4 du playbook)
-#        $env:OKITO_STRIPE_WHSEC   = "whsec_..."       # après création du webhook (étape 4 du playbook)
-#        $env:OKITO_MARKETPLACE_PUBS = "{}"           # ou {"okito-demo":"<clé pub Ed25519 base64>"}
+#        $env:OKITO_STRIPE_PRICE   = "price_..."       # cree a l'etape 4 du playbook (facultatif au 1er deploy)
+#        $env:OKITO_STRIPE_WHSEC   = "whsec_..."       # cree apres l'endpoint (facultatif au 1er deploy)
+#        $env:OKITO_MARKETPLACE_PUBS = "{}"           # ou {"okito-demo":"<cle pub Ed25519 base64>"}
 #
 #   2. Puis :
 #        cd C:\Users\aurel\Desktop\okito-v2
+#        .\scripts\deploy-demo-fly.ps1 -Stage check
 #        .\scripts\deploy-demo-fly.ps1 -Stage api-secrets
 #        .\scripts\deploy-demo-fly.ps1 -Stage api-deploy
 #        .\scripts\deploy-demo-fly.ps1 -Stage dashboard-secrets
 #        .\scripts\deploy-demo-fly.ps1 -Stage dashboard-deploy
 #
-#   Chaque stage est indépendant et rejouable. Le script vérifie que les env
-#   vars critiques sont posées avant d'appeler Fly.
+#   Chaque stage est independant et rejouable.
 
 param(
   [Parameter(Mandatory = $true)]
@@ -44,14 +44,14 @@ function Require-Env {
     elseif ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($n, "Process"))) { $missing += $n }
   }
   if ($missing.Count -gt 0) {
-    Write-Host "❌ Variables d'environnement manquantes :" -ForegroundColor Red
+    Write-Host "[X] Variables d'environnement manquantes :" -ForegroundColor Red
     $missing | ForEach-Object { Write-Host "   - $_" -ForegroundColor Red }
-    Write-Host "Pose-les dans ton shell (voir en-tête du script)." -ForegroundColor Yellow
+    Write-Host "Pose-les dans ton shell (voir en-tete du script)." -ForegroundColor Yellow
     exit 1
   }
 }
 
-# Secrets fixes générés une fois pour la démo (pas des credentials tiers)
+# Secrets fixes generes une fois pour la demo (pas des credentials tiers)
 $FixedSecrets = @{
   ICAL_FEED_SECRET    = "a53ec1dfcee1f71fb76f83ff60d4fced6c5c6b4dc6141de2ab10abac560bc31b"
   REVIEW_LINK_SECRET  = "da53ccd06da3e3b205ebe60a2fb94e896b4bea26b229753b13b8a860a2be7d7b"
@@ -62,8 +62,8 @@ $FixedSecrets = @{
 switch ($Stage) {
   "check" {
     Require-Env @("OKITO_DATABASE_URL","OKITO_SUPABASE_URL","OKITO_SUPABASE_JWT","OKITO_SUPABASE_ANON","OKITO_ADMIN_UUID","OKITO_GEMINI_KEY","OKITO_STRIPE_SECRET")
-    Write-Host "✅ Toutes les variables critiques sont posées." -ForegroundColor Green
-    Write-Host "   Prochaine étape : .\scripts\deploy-demo-fly.ps1 -Stage api-secrets"
+    Write-Host "[OK] Toutes les variables critiques sont posees." -ForegroundColor Green
+    Write-Host "     Prochaine etape : .\scripts\deploy-demo-fly.ps1 -Stage api-secrets"
   }
 
   "api-secrets" {
@@ -72,7 +72,7 @@ switch ($Stage) {
     if (-not $env:OKITO_STRIPE_WHSEC)  { $env:OKITO_STRIPE_WHSEC  = "whsec_placeholder_a_creer" }
     if (-not $env:OKITO_MARKETPLACE_PUBS) { $env:OKITO_MARKETPLACE_PUBS = "{}" }
 
-    Write-Host "→ Envoi des secrets à $ApiApp…" -ForegroundColor Cyan
+    Write-Host "-> Envoi des secrets a $ApiApp..." -ForegroundColor Cyan
     fly secrets set `
       DATABASE_URL="$env:OKITO_DATABASE_URL" `
       SUPABASE_URL="$env:OKITO_SUPABASE_URL" `
@@ -92,42 +92,42 @@ switch ($Stage) {
       MARKETPLACE_TRUSTED_PUBLISHERS="$env:OKITO_MARKETPLACE_PUBS" `
       --stage `
       -a $ApiApp
-    Write-Host "✅ Secrets stagés — seront appliqués au prochain deploy." -ForegroundColor Green
+    Write-Host "[OK] Secrets stages - seront appliques au prochain deploy." -ForegroundColor Green
   }
 
   "api-deploy" {
     Push-Location apps\api
     try {
-      Write-Host "→ fly deploy $ApiApp…" -ForegroundColor Cyan
+      Write-Host "-> fly deploy $ApiApp..." -ForegroundColor Cyan
       fly deploy --config fly.demo.toml -a $ApiApp
-      Write-Host "→ Sanity check /health" -ForegroundColor Cyan
+      Write-Host "-> Sanity check /health" -ForegroundColor Cyan
       try {
         $r = Invoke-RestMethod "https://$ApiApp.fly.dev/health" -TimeoutSec 30
-        Write-Host "✅ /health = $($r | ConvertTo-Json -Compress)" -ForegroundColor Green
+        Write-Host "[OK] /health = $($r | ConvertTo-Json -Compress)" -ForegroundColor Green
       } catch {
-        Write-Host "⚠ /health n'a pas répondu 200. Lance : fly logs -a $ApiApp" -ForegroundColor Yellow
+        Write-Host "[!] /health n'a pas repondu 200. Lance : fly logs -a $ApiApp" -ForegroundColor Yellow
       }
     } finally { Pop-Location }
   }
 
   "dashboard-secrets" {
     Require-Env @("OKITO_SUPABASE_URL","OKITO_SUPABASE_ANON")
-    Write-Host "→ Envoi des secrets à $DashApp…" -ForegroundColor Cyan
+    Write-Host "-> Envoi des secrets a $DashApp..." -ForegroundColor Cyan
     fly secrets set `
       NEXT_PUBLIC_OKITO_API_URL="https://$ApiApp.fly.dev" `
       NEXT_PUBLIC_SUPABASE_URL="$env:OKITO_SUPABASE_URL" `
       NEXT_PUBLIC_SUPABASE_ANON_KEY="$env:OKITO_SUPABASE_ANON" `
       --stage `
       -a $DashApp
-    Write-Host "✅ Secrets stagés." -ForegroundColor Green
+    Write-Host "[OK] Secrets stages." -ForegroundColor Green
   }
 
   "dashboard-deploy" {
     Push-Location apps\dashboard
     try {
-      Write-Host "→ fly deploy $DashApp…" -ForegroundColor Cyan
+      Write-Host "-> fly deploy $DashApp..." -ForegroundColor Cyan
       fly deploy --config fly.demo.toml -a $DashApp
-      Write-Host "✅ Dashboard déployé : https://$DashApp.fly.dev" -ForegroundColor Green
+      Write-Host "[OK] Dashboard deploye : https://$DashApp.fly.dev" -ForegroundColor Green
     } finally { Pop-Location }
   }
 }
