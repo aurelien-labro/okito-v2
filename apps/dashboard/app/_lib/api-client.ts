@@ -802,6 +802,17 @@ export async function chatWithJarvis(
   });
 }
 
+/** Voix Jarvis : audio du patron → transcript + réponse texte + réponse audio. */
+export async function voiceChatJarvis(
+  tenantId: string,
+  input: { audioBase64: string; mime: string; history?: JarvisChatMessage[] },
+): Promise<{ data: { transcript: string; reply: string; audioBase64: string; mime: string } }> {
+  return request(`/v1/admin/jarvis-brief/${tenantId}/voice-chat`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 // --- Fiche client 360° --------------------------------------------------------
 
 export interface TimelineEntry {

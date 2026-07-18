@@ -24,7 +24,7 @@ import { adminIcalRoute } from "./routes/admin-ical.js";
 import { adminInboxRoute } from "./routes/admin-inbox.js";
 import { adminInvoicesRoute } from "./routes/admin-invoices.js";
 import { adminJarvisActionsRoute } from "./routes/admin-jarvis-actions.js";
-import { adminJarvisBriefRoute } from "./routes/admin-jarvis-brief.js";
+import { type JarvisVoiceDeps, adminJarvisBriefRoute } from "./routes/admin-jarvis-brief.js";
 import { adminJarvisToolsRoute } from "./routes/admin-jarvis-tools.js";
 import { adminLoyaltyRoute } from "./routes/admin-loyalty.js";
 import {
@@ -183,6 +183,8 @@ export interface AppServices {
   voiceProfile?: VoiceProfileService;
   /** Exploitation voix — santé providers + journal d'appels (/health, /calls). */
   voiceOps?: VoiceOpsService;
+  /** Voix Jarvis — parler à Jarvis au micro depuis le dashboard (vague 5). */
+  jarvisVoice?: JarvisVoiceDeps;
   /** Executor Jarvis — ajoute la function Inngest 5-min si fourni. */
   jarvisExecutor?: JarvisExecutor;
   /** Advisor Jarvis — ajoute la function Inngest brief matinal si fourni. */
@@ -505,7 +507,10 @@ export function createApp(env: Env, services: AppServices = {}) {
       v1Admin.route("/customer-360", adminCustomerTimelineRoute(services.customerTimeline));
     }
     if (services.db) {
-      v1Admin.route("/jarvis-brief", adminJarvisBriefRoute(services.db, services.jarvisAdvisor));
+      v1Admin.route(
+        "/jarvis-brief",
+        adminJarvisBriefRoute(services.db, services.jarvisAdvisor, services.jarvisVoice),
+      );
       v1Admin.route("/site-analytics", adminSiteAnalyticsRoute(services.db));
     }
     if (services.mailbox || services.imapMailbox || services.microsoftMailbox) {

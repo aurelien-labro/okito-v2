@@ -18,8 +18,9 @@ import {
   listJarvisTools,
   patchJarvisTool,
   regenerateJarvisBrief,
+  voiceChatJarvis,
 } from "../_lib/api-client";
-import { speak, useVoiceInput } from "../_lib/use-voice";
+import { playAudioBase64, speak, useMicRecorder, useVoiceInput } from "../_lib/use-voice";
 
 const STATUS_LABEL: Record<JarvisActionStatus, string> = {
   awaiting_approval: "À valider",
@@ -435,10 +436,54 @@ function JarvisChat() {
     }
   }
 
+  // Voix serveur (Deepgram + vraie voix ElevenLabs) en priorité ; si l'API
+  // voix n'est pas configurée, on retombe sur la reco navigateur (Web Speech).
+  const [serverVoiceOff, setServerVoiceOff] = useState(false);
+
+  async function handleVoiceAudio(audioBase64: string, mime: string) {
+    const tenantId = getCurrentTenantId();
+    if (!tenantId || sending) return;
+    setSending(true);
+    setChatErr(null);
+    try {
+      const res = await voiceChatJarvis(tenantId, {
+        audioBase64,
+        mime,
+        history: messages.slice(-18),
+      });
+      setMessages([
+        ...messages,
+        { role: "user", content: res.data.transcript },
+        { role: "model", content: res.data.reply },
+      ]);
+      playAudioBase64(res.data.audioBase64, res.data.mime);
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      if (code === "voice_unavailable") {
+        setServerVoiceOff(true);
+        setChatErr("Voix serveur non configurée — bascule sur la reco du navigateur.");
+      } else if (code === "empty_transcript") {
+        setChatErr("Je n'ai rien entendu — réessaie en parlant plus près du micro.");
+      } else {
+        setChatErr("Jarvis n'a pas pu répondre, réessaie.");
+      }
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const mic = useMicRecorder({
+    onAudio: (audioBase64, mime) => void handleVoiceAudio(audioBase64, mime),
+    onError: setChatErr,
+  });
   const voice = useVoiceInput({
     onInterim: setInput,
     onFinal: (text) => handleSend(text, true),
   });
+  const useServerVoice = mic.supported && !serverVoiceOff;
+  const micActive = useServerVoice ? mic.recording : voice.listening;
+  const micSupported = useServerVoice || voice.supported;
+  const micToggle = useServerVoice ? mic.toggle : voice.toggle;
 
   return (
     <div className="mb-8 rounded-lg border border-stone-200 bg-white p-5">
@@ -480,18 +525,18 @@ function JarvisChat() {
         />
         <button
           type="button"
-          onClick={voice.toggle}
-          disabled={!voice.supported}
-          aria-label={voice.listening ? "Arrêter l'écoute" : "Dicter ta question"}
+          onClick={micToggle}
+          disabled={!micSupported || sending}
+          aria-label={micActive ? "Arrêter l'écoute" : "Parler à Jarvis"}
           title={
-            voice.supported
-              ? voice.listening
-                ? "J'écoute… clique pour arrêter"
-                : "Dicter ta question"
-              : "Vocal non supporté par ce navigateur (utilise Chrome, Edge ou Safari)"
+            micSupported
+              ? micActive
+                ? "J'écoute… clique pour envoyer"
+                : "Parler à Jarvis"
+              : "Vocal non supporté par ce navigateur"
           }
           className={`flex items-center justify-center rounded border px-2.5 py-1.5 ${
-            voice.listening
+            micActive
               ? "animate-pulse border-rose-400 bg-rose-50 text-rose-600"
               : "border-stone-300 text-stone-500 hover:bg-stone-50 disabled:opacity-40"
           }`}

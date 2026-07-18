@@ -288,11 +288,11 @@ if (env.DATABASE_URL) {
       );
     }
     if (env.DEEPGRAM_API_KEY && env.ELEVENLABS_API_KEY) {
-      services.voiceTurn = new VoiceTurnService(
-        new DeepgramSTT(env.DEEPGRAM_API_KEY),
-        new ElevenLabsTTS(env.ELEVENLABS_API_KEY, env.ELEVENLABS_VOICE_ID),
-        services.chat,
-      );
+      const fileStt = new DeepgramSTT(env.DEEPGRAM_API_KEY);
+      const fileTts = new ElevenLabsTTS(env.ELEVENLABS_API_KEY, env.ELEVENLABS_VOICE_ID);
+      services.voiceTurn = new VoiceTurnService(fileStt, fileTts, services.chat);
+      // Voix Jarvis (vague 5) : le patron parle à Jarvis au micro du dashboard.
+      services.jarvisVoice = { stt: fileStt, tts: fileTts };
       // Voice cloning : profil vocal (voix clonée) par tenant.
       services.voiceProfile = new VoiceProfileService(db, env.ELEVENLABS_API_KEY);
       // Exploitation : santé du pipeline + journal des latences d'appel.
