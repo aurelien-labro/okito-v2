@@ -11,6 +11,7 @@ import { createAuthMiddleware } from "./middleware/auth.js";
 import { metricsMiddleware } from "./middleware/metrics.js";
 import { adminAuditRoute } from "./routes/admin-audit.js";
 import { adminBankRoute } from "./routes/admin-bank.js";
+import { adminBillingRoute } from "./routes/admin-billing.js";
 import { adminCalendarsRoute, googleCalendarCallbackRoute } from "./routes/admin-calendars.js";
 import { adminCampaignsRoute } from "./routes/admin-campaigns.js";
 import { adminCustomerTimelineRoute } from "./routes/admin-customer-timeline.js";
@@ -71,6 +72,7 @@ import { widgetRoute } from "./routes/widget.js";
 import type { AuditLogService } from "./services/audit-log.js";
 import type { BankConnectionService } from "./services/bank-connection.js";
 import type { BankSyncService } from "./services/bank-sync.js";
+import type { BillingService } from "./services/billing.js";
 import type { CalendarSyncService } from "./services/calendar-sync.js";
 import type { CampaignService } from "./services/campaign.js";
 import type { CapacityService } from "./services/capacity.js";
@@ -151,6 +153,8 @@ export interface AppServices {
   audit?: AuditLogService;
   /** Service abonnements Stripe — monte /v1/webhooks/stripe si STRIPE_WEBHOOK_SECRET set. */
   subscription?: SubscriptionService;
+  /** Facturation SaaS OKITO (checkout + portal) — monté sur /v1/admin/billing si fourni. */
+  billing?: BillingService;
   /** Service de stats business — monté sur /v1/admin/stats si fourni. */
   stats?: StatsService;
   /** Service de gestion membres tenant — monté sur /v1/admin/members si fourni. */
@@ -535,6 +539,12 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.bankConnection) {
       v1Admin.route("/bank", adminBankRoute(services.bankConnection));
+    }
+    if (services.billing && services.subscription) {
+      v1Admin.route(
+        "/billing",
+        adminBillingRoute(services.billing, services.subscription, services.tenant),
+      );
     }
     if (services.shopifyConnection) {
       v1Admin.route("/shopify", adminShopifyRoute(services.shopifyConnection));

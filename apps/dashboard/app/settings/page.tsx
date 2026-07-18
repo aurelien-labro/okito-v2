@@ -3,9 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LoginGate } from "../_components/login-gate";
 import {
+  type BillingState,
   type HealthStatus,
   type Tenant,
   type TenantUpdate,
+  createBillingCheckout,
+  createBillingPortal,
+  getBilling,
   getHealth,
   getTenant,
   listTenants,
@@ -330,6 +334,8 @@ function SettingsView() {
         </form>
       )}
 
+      {tenantId && <BillingSection tenantId={tenantId} />}
+
       <section className="mt-12">
         <h2 className="text-base font-semibold text-stone-900">Providers (lecture seule)</h2>
         <p className="mt-1 text-xs text-stone-500">
@@ -362,6 +368,103 @@ function SettingsView() {
         </div>
       </section>
     </div>
+  );
+}
+
+/**
+ * Abonnement OKITO du tenant (facturation SaaS, vague 5).
+ * 404 sur GET = facturation non configurée côté serveur (STRIPE_* absents) →
+ * la section ne s'affiche pas, pas d'erreur.
+ */
+function BillingSection({ tenantId }: { tenantId: string }) {
+  const [billing, setBilling] = useState<BillingState | null>(null);
+  const [available, setAvailable] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    setErr(null);
+    getBilling(tenantId)
+      .then((res) => {
+        setBilling(res.data);
+        setAvailable(true);
+      })
+      .catch((e: { status?: number }) => {
+        // 404 = facturation non configurée ; pas de status = API injoignable
+        // (dev/e2e sans serveur) → dans les deux cas on cache la section.
+        if (e.status === 404 || e.status === undefined) setAvailable(false);
+        else setErr(extractMessage(e));
+      });
+  }, [tenantId]);
+
+  async function go(action: "checkout" | "portal") {
+    setBusy(true);
+    setErr(null);
+    try {
+      const res =
+        action === "checkout"
+          ? await createBillingCheckout(tenantId)
+          : await createBillingPortal(tenantId);
+      window.location.href = res.data.url;
+    } catch (e) {
+      setErr(extractMessage(e));
+      setBusy(false);
+    }
+  }
+
+  if (!available) return null;
+
+  const sub = billing?.subscription ?? null;
+  const statusLabel =
+    billing?.tenantStatus === "active"
+      ? "Abonnement actif"
+      : billing?.tenantStatus === "suspended"
+        ? "Suspendu — paiement requis"
+        : "Période d'essai";
+
+  return (
+    <section className="mt-12 rounded-lg border border-stone-200 bg-white p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-base font-semibold text-stone-900">Abonnement OKITO</h2>
+          <p className="mt-1 text-sm text-stone-500">
+            {billing ? statusLabel : "Chargement…"}
+            {sub?.currentPeriodEnd && (
+              <>
+                {" "}
+                — renouvellement le {new Date(sub.currentPeriodEnd).toLocaleDateString("fr-FR")}
+                {sub.cancelAtPeriodEnd && " (résiliation programmée)"}
+              </>
+            )}
+          </p>
+        </div>
+        {billing &&
+          (sub ? (
+            <button
+              type="button"
+              onClick={() => go("portal")}
+              disabled={busy}
+              className="rounded border border-stone-300 px-4 py-2 text-sm font-medium text-stone-900 hover:bg-stone-50 disabled:opacity-50"
+            >
+              {busy ? "Redirection…" : "Gérer mon abonnement"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => go("checkout")}
+              disabled={busy}
+              className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            >
+              {busy ? "Redirection…" : "S'abonner"}
+            </button>
+          ))}
+      </div>
+      {err && (
+        <div className="mt-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {err}
+        </div>
+      )}
+    </section>
   );
 }
 

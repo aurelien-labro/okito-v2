@@ -1669,3 +1669,26 @@ export interface VoiceCall {
 export async function listVoiceCalls(tenantId: string): Promise<{ data: VoiceCall[] }> {
   return request(`/v1/admin/voice/${tenantId}/calls`);
 }
+
+// --- Facturation SaaS (abonnement OKITO du tenant, vague 5) ---
+
+export interface BillingState {
+  tenantStatus: "trial" | "active" | "suspended";
+  subscription: {
+    status: string;
+    currentPeriodEnd: string | null;
+    cancelAtPeriodEnd: boolean;
+  } | null;
+}
+
+export async function getBilling(tenantId: string): Promise<{ data: BillingState }> {
+  return request(`/v1/admin/billing/${tenantId}`);
+}
+
+export async function createBillingCheckout(tenantId: string): Promise<{ data: { url: string } }> {
+  return request(`/v1/admin/billing/${tenantId}/checkout`, { method: "POST" });
+}
+
+export async function createBillingPortal(tenantId: string): Promise<{ data: { url: string } }> {
+  return request(`/v1/admin/billing/${tenantId}/portal`, { method: "POST" });
+}
