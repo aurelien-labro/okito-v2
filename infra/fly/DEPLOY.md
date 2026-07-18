@@ -33,7 +33,7 @@ Puis configurer les secrets (un seul appel) :
 
 ```bash
 fly secrets set \
-  DATABASE_URL="postgresql://..." \
+  DATABASE_URL="postgresql://postgres.<ref>:...@aws-0-eu-west-3.pooler.supabase.com:5432/postgres" \
   SUPABASE_JWT_SECRET="..." \
   GEMINI_API_KEY="..." \
   RESEND_API_KEY="re_..." \
@@ -45,8 +45,29 @@ fly secrets set \
   TWILIO_VALIDATE_WEBHOOK="true" \
   VAPI_WEBHOOK_SECRET="$(openssl rand -hex 32)" \
   INNGEST_SIGNING_KEY="signkey-..." \
-  SENTRY_DSN="https://...@sentry.io/..."
+  SENTRY_DSN="https://...@sentry.io/..." \
+  PUBLIC_API_URL="https://api.okito.app" \
+  PORTAL_URL="https://dashboard.okito.app/r" \
+  ICAL_FEED_SECRET="$(openssl rand -hex 32)" \
+  REVIEW_LINK_SECRET="$(openssl rand -hex 32)" \
+  MAILBOX_ENC_KEY="$(openssl rand -hex 32)" \
+  GOOGLE_CLIENT_ID="..." \
+  GOOGLE_CLIENT_SECRET="..." \
+  GOOGLE_REDIRECT_URI="https://api.okito.app/oauth/google/callback" \
+  DEEPGRAM_API_KEY="..." \
+  ELEVENLABS_API_KEY="..." \
+  ELEVENLABS_VOICE_ID="..." \
+  VOICE_STREAM_SECRET="$(openssl rand -hex 32)" \
+  VOICE_STREAM_PUBLIC_URL="wss://api.okito.app/v1/voice/stream"
 ```
+
+⚠ **Secrets à RÉGÉNÉRER avant la prod** (ils ont transité en clair pendant le dev) :
+`GOOGLE_CLIENT_SECRET`, `DEEPGRAM_API_KEY`, `ELEVENLABS_API_KEY`. Ne jamais
+réutiliser les valeurs de `.env.local`.
+
+DATABASE_URL : passer par le **pooler** `aws-0-eu-west-3.pooler.supabase.com:5432`
+avec user `postgres.<ref>` — l'hôte direct Supabase est IPv6-only (injoignable
+depuis certains runtimes).
 
 Puis :
 
