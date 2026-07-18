@@ -88,4 +88,23 @@ describe("JarvisExecutor", () => {
     const [failed] = await actions.list(tenantId, "failed");
     expect(failed?.result).toEqual({ error: "tool inconnu : reminder.send" });
   });
+
+  it("type ext.* sans tool exact : routé vers le tool de repli (marketplace)", async () => {
+    const fallback = {
+      type: "ext.",
+      matches: (type: string) => type.startsWith("ext."),
+      execute: vi.fn(async () => ({ delivered: true })),
+    };
+    // Type inconnu → policy approval : le patron valide, puis l'Executor route.
+    const action = await actions.propose(tenantId, "ext.meteo-alerts", "Alerte orage");
+    await actions.approve(tenantId, action.id);
+    const executor = new JarvisExecutor(ctx.db, actions, [], undefined, fallback);
+
+    const result = await executor.runOnce();
+
+    expect(result).toMatchObject({ executed: 1, failed: 0 });
+    expect(fallback.execute).toHaveBeenCalledTimes(1);
+    const [row] = await actions.list(tenantId, "executed");
+    expect(row?.result).toEqual({ delivered: true });
+  });
 });

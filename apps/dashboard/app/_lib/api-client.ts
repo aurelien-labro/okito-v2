@@ -750,6 +750,54 @@ export async function patchJarvisTool(
   });
 }
 
+/** Connecteur tiers installé (marketplace, vague 5). Secret jamais exposé. */
+export interface ConnectorStatus {
+  connectorId: string;
+  name: string;
+  description: string;
+  publisher: string;
+  version: string;
+  endpoint: string;
+  enabled: boolean;
+  actionType: string;
+  installedAt: string;
+}
+
+export async function listConnectors(tenantId: string): Promise<{ data: ConnectorStatus[] }> {
+  return request(`/v1/admin/connectors/${tenantId}`);
+}
+
+export async function installConnector(
+  tenantId: string,
+  manifest: string,
+  signature: string,
+): Promise<{ data: ConnectorStatus }> {
+  return request(`/v1/admin/connectors/${tenantId}`, {
+    method: "POST",
+    body: JSON.stringify({ manifest, signature }),
+  });
+}
+
+export async function patchConnector(
+  tenantId: string,
+  connectorId: string,
+  patch: { enabled: boolean },
+): Promise<{ data: ConnectorStatus }> {
+  return request(`/v1/admin/connectors/${tenantId}/${encodeURIComponent(connectorId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function uninstallConnector(
+  tenantId: string,
+  connectorId: string,
+): Promise<{ data: { ok: true } }> {
+  return request(`/v1/admin/connectors/${tenantId}/${encodeURIComponent(connectorId)}`, {
+    method: "DELETE",
+  });
+}
+
 export async function listJarvisActions(
   tenantId: string,
   status?: JarvisActionStatus,
