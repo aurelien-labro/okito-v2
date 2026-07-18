@@ -312,6 +312,12 @@ if (env.DATABASE_URL) {
   logger.warn("DATABASE_URL absent — démarrage en mode dégradé (health only)");
 }
 
+// Drain Fly : SIGTERM → /health passe 503 (machine sortie de rotation),
+// les sessions voix en cours sont coupées proprement, puis le serveur ferme.
+let shuttingDown = false;
+services.isShuttingDown = () => shuttingDown;
+const activeVoiceSockets = new Set<{ stop: () => void }>();
+
 const app = createApp(env, services);
 
 // Streaming voix v2 (Twilio Media Streams) : monté hors createApp car le
@@ -348,8 +354,20 @@ if (
     "/v1/voice/stream",
     nodeWs.upgradeWebSocket(() => {
       let session: VoiceStreamSession | undefined;
+      let handle: { stop: () => void } | undefined;
       return {
         onOpen(_evt, ws) {
+          if (shuttingDown) {
+            ws.close();
+            return;
+          }
+          handle = {
+            stop: () => {
+              void session?.handleMessage({ event: "stop" });
+              ws.close();
+            },
+          };
+          activeVoiceSockets.add(handle);
           const voiceOps = services.voiceOps;
           session = new VoiceStreamSession({
             stt: streamStt,
@@ -372,6 +390,7 @@ if (
         },
         onClose() {
           // Ferme le socket Deepgram et coupe la synthèse en cours.
+          if (handle) activeVoiceSockets.delete(handle);
           void session?.handleMessage({ event: "stop" });
         },
       };
@@ -406,3 +425,25 @@ const server = serve(
   },
 );
 injectWebSocket?.(server);
+
+// Arrêt propre : Fly envoie SIGINT/SIGTERM puis tue après kill_timeout.
+// Ordre : health→503 (drain LB) → fermer les WS voix → server.close() →
+// exit. Garde-fou : exit forcé avant le kill_timeout si un socket traîne.
+const FORCE_EXIT_MS = 25_000;
+function shutdown(signal: string) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info({ signal, voiceSockets: activeVoiceSockets.size }, "arrêt en cours — drain");
+  for (const socket of activeVoiceSockets) socket.stop();
+  activeVoiceSockets.clear();
+  server.close(() => {
+    logger.info("okito-api arrêté proprement");
+    process.exit(0);
+  });
+  setTimeout(() => {
+    logger.warn("arrêt forcé après timeout de drain");
+    process.exit(1);
+  }, FORCE_EXIT_MS).unref();
+}
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));

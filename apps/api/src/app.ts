@@ -135,6 +135,8 @@ export interface AppServices {
   chat?: ChatService;
   /** Si fourni, /health ping la DB. Sinon /health remonte db.status="not_configured". */
   db?: Database;
+  /** Drain Fly : quand vrai, /health répond 503 (machine sortie de rotation avant kill). */
+  isShuttingDown?: () => boolean;
   /** Tenant pré-rempli dans la page de playground (dev). */
   defaultTenantId?: string;
   /** Clé publique Vapi pour le SDK Web (sûre côté client). */
@@ -297,7 +299,7 @@ export function createApp(env: Env, services: AppServices = {}) {
   });
 
   app.route("/metrics", metricsRoute());
-  app.route("/health", healthRoute(env, services.db));
+  app.route("/health", healthRoute(env, services.db, services.isShuttingDown));
 
   if (env.NODE_ENV !== "production") {
     app.route(

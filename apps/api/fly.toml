@@ -7,14 +7,20 @@
 #                   RESEND_API_KEY=... RESEND_FROM_EMAIL=... \
 #                   TWILIO_ACCOUNT_SID=... TWILIO_AUTH_TOKEN=... TWILIO_WHATSAPP_FROM=... \
 #                   VAPI_WEBHOOK_SECRET=... INNGEST_SIGNING_KEY=... SENTRY_DSN=...
+#   (liste complète, dont pipeline voix : infra/fly/DEPLOY.md)
 #   fly deploy
 #
 # Région CDG = Paris (proche Supabase EU Paris).
+#
+# ⚠ /v1/voice/stream = WebSocket long-lived (appels Twilio) :
+#   - auto_stop off + min_machines_running=1 (jamais 0 machine pour décrocher)
+#   - concurrency par connexions (un appel ouvert compte 1, pas une requête infinie)
+#   - kill_timeout 30s > drain applicatif 25s (index.ts ferme les WS sur SIGTERM)
 
 app = "okito-api"
 primary_region = "cdg"
-kill_signal = "SIGINT"
-kill_timeout = "5s"
+kill_signal = "SIGTERM"
+kill_timeout = "30s"
 
 [build]
   dockerfile = "Dockerfile"
@@ -34,7 +40,7 @@ kill_timeout = "5s"
   processes = ["app"]
 
   [http_service.concurrency]
-    type = "requests"
+    type = "connections"
     soft_limit = 50
     hard_limit = 100
 

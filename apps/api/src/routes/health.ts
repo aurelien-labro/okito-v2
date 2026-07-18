@@ -5,10 +5,18 @@ import type { Env } from "../lib/env.js";
 
 type ProviderStatus = "configured" | "not_configured";
 
-export function healthRoute(env: Env, db?: Database) {
+export function healthRoute(env: Env, db?: Database, isShuttingDown?: () => boolean) {
   const app = new Hono();
 
   app.get("/", async (c) => {
+    // Drain : pendant l'arrêt (SIGTERM Fly), on répond 503 pour que le
+    // load-balancer sorte la machine de la rotation avant le kill.
+    if (isShuttingDown?.()) {
+      return c.json(
+        { status: "shutting_down", service: "okito-api", timestamp: new Date().toISOString() },
+        503,
+      );
+    }
     const dbStatus = db ? await pingDb(db) : { status: "not_configured" as const };
     const overall = dbStatus.status === "error" ? "degraded" : "ok";
 
