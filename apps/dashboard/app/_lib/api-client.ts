@@ -1611,3 +1611,13 @@ export async function createVoiceProfile(
 export async function deleteVoiceProfile(tenantId: string): Promise<void> {
   await request(`/v1/admin/voice/${tenantId}/profile`, { method: "DELETE" });
 }
+
+export async function previewVoiceProfile(
+  tenantId: string,
+  text?: string,
+): Promise<{ data: { audioBase64: string; mime: string } }> {
+  return request(`/v1/admin/voice/${tenantId}/preview`, {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
+}

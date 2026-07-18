@@ -109,6 +109,19 @@ export function adminVoiceRoute(service: VoiceTurnService, voiceProfile?: VoiceP
       return c.json({ data: profile }, 201);
     });
 
+    // POST /v1/admin/voice/:tenantId/preview — extrait mp3 du clone (sans appel).
+    app.post("/:tenantId/preview", async (c) => {
+      const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");
+      const body = await c.req.json().catch(() => ({}));
+      const text =
+        typeof body?.text === "string" && body.text.trim().length > 0
+          ? body.text.trim().slice(0, 400)
+          : "Bonjour, je suis votre assistant vocal. Voici un extrait de ma voix.";
+      const result = await voiceProfile.preview(tenantId, text);
+      if (!result) throw new BadRequestError("Aucun profil vocal actif", "no_profile");
+      return c.json({ data: { audioBase64: result.audio.toString("base64"), mime: result.mime } });
+    });
+
     // DELETE /v1/admin/voice/:tenantId/profile
     app.delete("/:tenantId/profile", async (c) => {
       const tenantId = parseOrThrow(uuidParam, c.req.param("tenantId"), "tenantId");

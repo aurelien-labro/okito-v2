@@ -9,6 +9,7 @@ import {
   deleteVoiceProfile,
   getCurrentTenantId,
   getVoiceProfile,
+  previewVoiceProfile,
 } from "../_lib/api-client";
 
 /**
@@ -73,6 +74,7 @@ export default function VoicePage() {
       {tenantId && !loading && profile && (
         <ProfileCard
           profile={profile}
+          tenantId={tenantId}
           onDelete={async () => {
             if (
               !window.confirm("Supprimer le clone vocal ? Le bot reprendra la voix par défaut.")
@@ -96,7 +98,35 @@ export default function VoicePage() {
   );
 }
 
-function ProfileCard({ profile, onDelete }: { profile: VoiceProfile; onDelete: () => void }) {
+function ProfileCard({
+  profile,
+  tenantId,
+  onDelete,
+}: {
+  profile: VoiceProfile;
+  tenantId: string;
+  onDelete: () => void;
+}) {
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function playPreview() {
+    setBusy(true);
+    setErr(null);
+    try {
+      const { data } = await previewVoiceProfile(tenantId);
+      const bytes = Uint8Array.from(atob(data.audioBase64), (c) => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: data.mime });
+      const url = URL.createObjectURL(blob);
+      setAudioUrl(url);
+    } catch (e) {
+      setErr((e as ApiError).message ?? "Écoute échouée");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="mt-6 rounded-lg border border-stone-200 bg-white p-5">
       <div className="flex items-center justify-between">
@@ -120,13 +150,29 @@ function ProfileCard({ profile, onDelete }: { profile: VoiceProfile; onDelete: (
         Consentement donné par <strong>{profile.consentGivenBy}</strong> le{" "}
         {new Date(profile.consentAt).toLocaleString("fr-FR")}.
       </div>
-      <button
-        type="button"
-        onClick={onDelete}
-        className="mt-4 rounded border border-red-200 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50"
-      >
-        Supprimer le clone
-      </button>
+      <div className="mt-4 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => void playPreview()}
+          disabled={busy || profile.status !== "active"}
+          className="rounded border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-50 disabled:opacity-50"
+        >
+          {busy ? "Génération…" : "Écouter un extrait"}
+        </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          className="rounded border border-red-200 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50"
+        >
+          Supprimer le clone
+        </button>
+      </div>
+      {audioUrl && (
+        <audio src={audioUrl} controls className="mt-3 w-full">
+          <track kind="captions" />
+        </audio>
+      )}
+      {err && <div className="mt-3 text-sm text-red-700">{err}</div>}
     </div>
   );
 }
