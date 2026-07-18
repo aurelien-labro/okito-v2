@@ -99,7 +99,7 @@ switch ($Stage) {
     Push-Location apps\api
     try {
       Write-Host "→ fly deploy $ApiApp…" -ForegroundColor Cyan
-      fly deploy -a $ApiApp
+      fly deploy --config fly.demo.toml -a $ApiApp
       Write-Host "→ Sanity check /health" -ForegroundColor Cyan
       try {
         $r = Invoke-RestMethod "https://$ApiApp.fly.dev/health" -TimeoutSec 30
@@ -126,7 +126,7 @@ switch ($Stage) {
     Push-Location apps\dashboard
     try {
       Write-Host "→ fly deploy $DashApp…" -ForegroundColor Cyan
-      fly deploy -a $DashApp
+      fly deploy --config fly.demo.toml -a $DashApp
       Write-Host "✅ Dashboard déployé : https://$DashApp.fly.dev" -ForegroundColor Green
     } finally { Pop-Location }
   }
