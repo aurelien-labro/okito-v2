@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getCurrentTenantId, listTenants } from "../_lib/api-client";
 import { getSupabase, isSupabaseConfigured } from "../_lib/supabase";
@@ -34,15 +35,18 @@ export function Header() {
   }
 
   return (
-    <header className="flex items-center justify-between border-b border-stone-200 bg-white px-4 py-2.5">
+    <header className="okito-hairline-b flex items-center justify-between bg-white px-4 py-2.5">
       <div className="flex items-center gap-2.5">
-        <div className="flex size-7 items-center justify-center rounded-lg bg-stone-900 text-xs font-medium text-white">
+        <div className="flex size-7 items-center justify-center rounded-md bg-black text-xs font-medium text-white">
           O
         </div>
         <span className="text-sm font-semibold tracking-tight">OKITO</span>
-        {tenantName && <span className="text-xs text-stone-400">· {tenantName}</span>}
+        {tenantName && <span className="text-xs text-slate-400">· {tenantName}</span>}
       </div>
-      <div className="flex items-center gap-4 text-stone-500">
+      <div className="flex items-center gap-4 text-slate-500">
+        <Link href="/pricing" className="text-xs font-medium text-slate-600 hover:text-slate-900">
+          Tarifs
+        </Link>
         <span className="ti ti-search text-[17px]" aria-hidden="true" />
         <span className="relative">
           <span className="ti ti-bell text-[17px]" aria-hidden="true" />
@@ -52,7 +56,7 @@ export function Header() {
           type="button"
           onClick={logout}
           title={email ? `${email} — se déconnecter` : "Se déconnecter"}
-          className="flex size-7 items-center justify-center rounded-full bg-indigo-100 text-[11px] font-medium text-indigo-700 hover:ring-2 hover:ring-indigo-200"
+          className="okito-hairline flex size-7 items-center justify-center rounded-full bg-slate-50 text-[11px] font-medium text-slate-700 hover:bg-slate-100"
         >
           {initials}
         </button>

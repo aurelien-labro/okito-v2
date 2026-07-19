@@ -2,21 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Tokens style Vercel : noir/blanc, gris fins, monospace pour la data.
+ * Un seul accent indigo #4F46E5 pour l'action primaire. */
 :root {
   --okito-bg: #ffffff;
-  --okito-fg: #0f172a;
+  --okito-fg: #0a0a0a;
+  --okito-muted: #666666;
+  --okito-subtle: #a1a1a1;
+  --okito-border: rgba(10, 10, 10, 0.08);
+  --okito-surface: #fafafa;
   --okito-accent: #4f46e5;
-  --okito-border: rgba(15, 23, 42, 0.08);
+  --okito-font-mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, "Roboto Mono",
+    monospace;
 }
 
 body {
   background: var(--okito-bg);
   color: var(--okito-fg);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Bordures 0.5px : Tailwind border/border-stone-200 est en 1px. Cette classe
- * remplace border 1px partout où on veut le trait fin premium. */
+/* Trait fin premium — remplace border-1px partout où on veut le look Vercel. */
 .okito-hairline {
   border: 0.5px solid var(--okito-border);
 }
@@ -25,4 +33,14 @@ body {
 }
 .okito-hairline-r {
   border-right: 0.5px solid var(--okito-border);
+}
+.okito-hairline-t {
+  border-top: 0.5px solid var(--okito-border);
+}
+
+/* Données numériques : monospace pour tabular figures. */
+.okito-num {
+  font-family: var(--okito-font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
