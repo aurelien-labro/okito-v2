@@ -16,6 +16,7 @@ import { CalendarSyncService } from "./services/calendar-sync.js";
 import { CampaignService } from "./services/campaign.js";
 import { CapacityService } from "./services/capacity.js";
 import { ChatService } from "./services/chat.js";
+import { CoachService } from "./services/coach.js";
 import { ConversationService } from "./services/conversation.js";
 import { CustomerPrivacyService } from "./services/customer-privacy.js";
 import { CustomerTimelineService } from "./services/customer-timeline.js";
@@ -274,6 +275,7 @@ if (env.DATABASE_URL) {
       webhooks: services.eventBus,
     });
     services.jarvisAdvisor = new JarvisAdvisorService(db, llm, eventBus, notifier);
+    services.coach = new CoachService(db, llm);
     jarvisExecutor.registerTool(new ReviewReplyTool(db, llm, notifier));
     jarvisExecutor.registerTool(new InvoiceRemindTool(db, llm, notifier, invoice));
     if (services.googleBusiness) {

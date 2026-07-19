@@ -14,6 +14,7 @@ import { adminBankRoute } from "./routes/admin-bank.js";
 import { adminBillingRoute } from "./routes/admin-billing.js";
 import { adminCalendarsRoute, googleCalendarCallbackRoute } from "./routes/admin-calendars.js";
 import { adminCampaignsRoute } from "./routes/admin-campaigns.js";
+import { adminCoachRoute } from "./routes/admin-coach.js";
 import { adminCustomerTimelineRoute } from "./routes/admin-customer-timeline.js";
 import { adminCustomersRoute } from "./routes/admin-customers.js";
 import { adminGoogleAdsRoute, googleAdsCallbackRoute } from "./routes/admin-google-ads.js";
@@ -77,6 +78,7 @@ import type { CalendarSyncService } from "./services/calendar-sync.js";
 import type { CampaignService } from "./services/campaign.js";
 import type { CapacityService } from "./services/capacity.js";
 import type { ChatService } from "./services/chat.js";
+import type { CoachService } from "./services/coach.js";
 import type { CustomerPrivacyService } from "./services/customer-privacy.js";
 import type { CustomerTimelineService } from "./services/customer-timeline.js";
 import { type BusinessEventEmitter, EventBusService } from "./services/event-bus.js";
@@ -195,6 +197,8 @@ export interface AppServices {
   jarvisExecutor?: JarvisExecutor;
   /** Advisor Jarvis — ajoute la function Inngest brief matinal si fourni. */
   jarvisAdvisor?: JarvisAdvisorService;
+  /** Coach — monté sur /v1/admin/coach si fourni (LLM requis). */
+  coach?: CoachService;
   /** Observer Jarvis — ajoute la function Inngest 10-min si fourni. */
   jarvisObserver?: JarvisObserverService;
   /** Boîtes Gmail — monté sur /v1/admin/mailboxes + /oauth/google/callback si OAuth configuré. */
@@ -517,6 +521,7 @@ export function createApp(env: Env, services: AppServices = {}) {
         "/jarvis-brief",
         adminJarvisBriefRoute(services.db, services.jarvisAdvisor, services.jarvisVoice),
       );
+      v1Admin.route("/coach", adminCoachRoute(services.coach));
       v1Admin.route("/site-analytics", adminSiteAnalyticsRoute(services.db));
     }
     if (services.mailbox || services.imapMailbox || services.microsoftMailbox) {

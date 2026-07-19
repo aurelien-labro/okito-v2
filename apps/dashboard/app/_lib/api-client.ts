@@ -842,6 +842,20 @@ export async function voiceChatJarvis(
   });
 }
 
+/** Skill Coach — plan de journée structuré. */
+export interface CoachPlan {
+  tenantId: string;
+  priorities: Array<{ text: string; why: string }>;
+  nudge: { label: string; urgent: boolean } | null;
+  eventCount: number;
+  pendingApprovals: number;
+  generatedAt: string;
+}
+
+export async function generateCoachPlan(tenantId: string): Promise<{ data: CoachPlan }> {
+  return request(`/v1/admin/coach/${tenantId}/plan`, { method: "POST" });
+}
+
 // --- Fiche client 360° --------------------------------------------------------
 
 export interface TimelineEntry {
