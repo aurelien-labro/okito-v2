@@ -1,472 +1,317 @@
-"use client";
-
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { LoginGate } from "./_components/login-gate";
-import {
-  type JarvisAction,
-  type JarvisBrief,
-  type JarvisChatMessage,
-  type ReviewSummary,
-  type SiteAnalytics,
-  chatWithJarvis,
-  getCurrentTenantId,
-  getJarvisBrief,
-  getReviewSummary,
-  getSiteAnalytics,
-  listInvoices,
-  listJarvisActions,
-  listReservations,
-  regenerateJarvisBrief,
-  voiceChatJarvis,
-} from "./_lib/api-client";
-import { playAudioBase64, speak, useMicRecorder, useVoiceInput } from "./_lib/use-voice";
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-export default function OverviewPage() {
+export default function LandingPage() {
   return (
-    <LoginGate>
-      <Overview />
-    </LoginGate>
+    <>
+      <Hero />
+      <TrustStrip />
+      <Skills />
+      <HowItWorks />
+      <Modules />
+      <PricingPreview />
+      <FinalCTA />
+      <Footer />
+    </>
   );
 }
 
-/**
- * Home post-refonte : brief Jarvis conversationnel plein écran.
- * KPIs + actions récentes en panneau latéral droit, replié par défaut sur
- * petit écran. Style Vercel : blanc pur, monospace pour les chiffres, un
- * seul accent indigo pour l'action primaire.
- */
-function Overview() {
-  const [sideOpen, setSideOpen] = useState(true);
+function Hero() {
   return (
-    <div className="mx-auto flex h-[calc(100vh-3.5rem-3rem)] max-w-6xl gap-4">
-      <div className="flex min-w-0 flex-1 flex-col">
-        <JarvisThread />
+    <section className="mx-auto max-w-5xl px-6 pt-16 pb-14 text-center md:pt-24 md:pb-20">
+      <div className="okito-hairline mx-auto mb-6 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] text-slate-600">
+        <span className="size-1.5 rounded-full bg-emerald-500" />
+        Nouveau — Skills auto-pilotés par Jarvis
       </div>
-      <aside
-        className={`${
-          sideOpen ? "w-72" : "w-10"
-        } okito-hairline hidden shrink-0 flex-col overflow-hidden rounded-[12px] bg-white transition-all lg:flex`}
-      >
-        <button
-          type="button"
-          onClick={() => setSideOpen((v) => !v)}
-          className="okito-hairline-b flex items-center gap-2 px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-slate-500 hover:bg-slate-50"
+      <h1 className="mx-auto max-w-3xl text-4xl font-medium tracking-tight text-slate-900 md:text-5xl">
+        L'OS de ton commerce.
+        <br />
+        <span className="text-slate-500">Piloté par Jarvis.</span>
+      </h1>
+      <p className="mx-auto mt-5 max-w-xl text-base text-slate-600">
+        Avis Google, réservations, factures, marketing, réseaux sociaux, appels — Jarvis prend la
+        main pendant que tu bosses.
+      </p>
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <Link
+          href="/pricing"
+          className="rounded-md bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
         >
-          <span
-            className={`ti ${sideOpen ? "ti-chevron-right" : "ti-chevron-left"} text-[13px]`}
-            aria-hidden="true"
-          />
-          {sideOpen && <span>Coup d'œil</span>}
-        </button>
-        {sideOpen && (
-          <div className="flex-1 overflow-y-auto p-3">
-            <Indicators />
-            <RecentActions />
-          </div>
-        )}
-      </aside>
-    </div>
-  );
-}
-
-/**
- * Thread conversationnel : ouvre par le brief Jarvis (fetch/regénère), puis
- * l'utilisateur peut discuter dans la même fenêtre.
- */
-function JarvisThread() {
-  const [brief, setBrief] = useState<JarvisBrief | null>(null);
-  const [briefState, setBriefState] = useState<"loading" | "empty" | "ready" | "unavailable">(
-    "loading",
-  );
-  const [briefBusy, setBriefBusy] = useState(false);
-  const [messages, setMessages] = useState<JarvisChatMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const loadBrief = useCallback(async () => {
-    const tenantId = getCurrentTenantId();
-    if (!tenantId) return;
-    try {
-      const res = await getJarvisBrief(tenantId);
-      setBrief(res.data);
-      setBriefState("ready");
-    } catch {
-      setBriefState("empty");
-    }
-  }, []);
-
-  useEffect(() => {
-    loadBrief();
-  }, [loadBrief]);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: on veut re-scroll à chaque changement
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, briefState, sending]);
-
-  async function regenerateBrief() {
-    const tenantId = getCurrentTenantId();
-    if (!tenantId) return;
-    setBriefBusy(true);
-    try {
-      const res = await regenerateJarvisBrief(tenantId);
-      setBrief(res.data);
-      setBriefState("ready");
-    } catch (e) {
-      setBriefState(
-        (e as { code?: string }).code === "advisor_unavailable" ? "unavailable" : "empty",
-      );
-    } finally {
-      setBriefBusy(false);
-    }
-  }
-
-  async function send(text?: string, fromVoice = false) {
-    const tenantId = getCurrentTenantId();
-    const q = (text ?? input).trim();
-    if (!tenantId || !q || sending) return;
-    const next: JarvisChatMessage[] = [...messages, { role: "user", content: q }];
-    setMessages(next);
-    setInput("");
-    setSending(true);
-    setErr(null);
-    try {
-      const res = await chatWithJarvis(tenantId, next);
-      setMessages([...next, { role: "model", content: res.data.reply }]);
-      if (fromVoice) speak(res.data.reply);
-    } catch (e) {
-      const code = (e as { code?: string }).code;
-      setErr(code === "advisor_unavailable" ? "LLM non configuré." : "Jarvis n'a pas pu répondre.");
-      setMessages(messages);
-      setInput(q);
-    } finally {
-      setSending(false);
-    }
-  }
-
-  const [serverVoiceOff, setServerVoiceOff] = useState(false);
-
-  async function sendVoiceAudio(audioBase64: string, mime: string) {
-    const tenantId = getCurrentTenantId();
-    if (!tenantId || sending) return;
-    setSending(true);
-    setErr(null);
-    try {
-      const res = await voiceChatJarvis(tenantId, {
-        audioBase64,
-        mime,
-        history: messages.slice(-18),
-      });
-      setMessages([
-        ...messages,
-        { role: "user", content: res.data.transcript },
-        { role: "model", content: res.data.reply },
-      ]);
-      playAudioBase64(res.data.audioBase64, res.data.mime);
-    } catch (e) {
-      const code = (e as { code?: string }).code;
-      if (code === "voice_unavailable") {
-        setServerVoiceOff(true);
-        setErr("Voix serveur non configurée — bascule sur la reco du navigateur.");
-      } else if (code === "empty_transcript") {
-        setErr("Je n'ai rien entendu — réessaie.");
-      } else {
-        setErr("Jarvis n'a pas pu répondre.");
-      }
-    } finally {
-      setSending(false);
-    }
-  }
-
-  const mic = useMicRecorder({
-    onAudio: (audioBase64, mime) => void sendVoiceAudio(audioBase64, mime),
-    onError: setErr,
-  });
-  const voice = useVoiceInput({
-    onInterim: setInput,
-    onFinal: (text) => send(text, true),
-  });
-  const useServerVoice = mic.supported && !serverVoiceOff;
-  const micActive = useServerVoice ? mic.recording : voice.listening;
-  const micSupported = useServerVoice || voice.supported;
-  const micToggle = useServerVoice ? mic.toggle : voice.toggle;
-
-  return (
-    <div className="okito-hairline flex min-h-0 flex-1 flex-col rounded-[12px] bg-white">
-      <div className="okito-hairline-b flex items-center gap-2 px-4 py-2.5">
-        <span className="ti ti-sparkles text-[15px] text-indigo-600" aria-hidden="true" />
-        <h1 className="text-sm font-medium">Jarvis</h1>
-        <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
-          Mode auto
-        </span>
-        <button
-          type="button"
-          onClick={regenerateBrief}
-          disabled={briefBusy}
-          className="ml-auto text-[11px] text-slate-500 hover:text-slate-900 disabled:opacity-50"
+          Commencer — 1 mois offert
+        </Link>
+        <Link
+          href="/app"
+          className="okito-hairline rounded-md bg-white px-5 py-2.5 text-sm font-medium text-slate-900 hover:bg-slate-50"
         >
-          {briefBusy ? "Génération…" : "Refaire le point"}
-        </button>
-      </div>
-
-      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-        {briefState === "loading" && <MsgSkeleton />}
-        {briefState !== "loading" && (
-          <MsgModel>
-            {briefState === "ready" && brief ? (
-              <>
-                <div className="whitespace-pre-wrap leading-relaxed">{brief.text}</div>
-                {(brief.pendingApprovals ?? 0) > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <Link
-                      href="/jarvis"
-                      className="okito-hairline rounded-md bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-800"
-                    >
-                      <span className="ti ti-alert-triangle mr-1" aria-hidden="true" />
-                      {brief.pendingApprovals} action(s) à valider
-                    </Link>
-                  </div>
-                )}
-              </>
-            ) : briefState === "unavailable" ? (
-              <span>Le brief nécessite un LLM configuré côté API (GEMINI_API_KEY).</span>
-            ) : (
-              <span>
-                Bonjour. Je n'ai pas encore fait le point de ta journée — clique sur « Refaire le
-                point » ou pose-moi une question directement.
-              </span>
-            )}
-          </MsgModel>
-        )}
-
-        {messages.map((m, i) =>
-          m.role === "user" ? (
-            <MsgUser key={`u-${i}-${m.content.slice(0, 8)}`}>{m.content}</MsgUser>
-          ) : (
-            <MsgModel key={`m-${i}-${m.content.slice(0, 8)}`}>{m.content}</MsgModel>
-          ),
-        )}
-        {sending && <MsgSkeleton />}
-      </div>
-
-      {err && (
-        <div className="px-4 pb-2 text-[11px] text-rose-700" role="alert">
-          {err}
-        </div>
-      )}
-      <div className="okito-hairline-t flex items-center gap-2 px-3 py-2.5">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") send();
-          }}
-          placeholder="Parle à Jarvis…"
-          className="okito-hairline min-w-0 flex-1 rounded-md bg-white px-3 py-1.5 text-[13px] outline-none focus:border-indigo-400"
-        />
-        <button
-          type="button"
-          onClick={micToggle}
-          disabled={!micSupported || sending}
-          aria-label={micActive ? "Arrêter l'écoute" : "Parler à Jarvis"}
-          className={`okito-hairline flex items-center justify-center rounded-md px-2.5 py-1.5 ${
-            micActive
-              ? "animate-pulse border-rose-400 bg-rose-50 text-rose-600"
-              : "text-slate-500 hover:bg-slate-50 disabled:opacity-40"
-          }`}
-        >
-          <span className="ti ti-microphone text-[15px]" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          onClick={() => send()}
-          disabled={sending || !input.trim()}
-          className="rounded-md bg-indigo-600 px-3 py-1.5 text-[12px] font-medium text-white hover:bg-indigo-500 disabled:opacity-40"
-        >
-          Envoyer
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function MsgModel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex gap-2.5">
-      <span
-        className="ti ti-sparkles mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-[13px] text-indigo-600"
-        aria-hidden="true"
-      />
-      <div className="max-w-[85%] rounded-xl bg-slate-50 px-3 py-2 text-[13px] text-slate-800">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function MsgUser({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="ml-auto max-w-[85%] rounded-xl bg-black px-3 py-2 text-[13px] text-white">
-      {children}
-    </div>
-  );
-}
-
-function MsgSkeleton() {
-  return (
-    <div className="flex gap-2.5">
-      <span
-        className="ti ti-sparkles mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-[13px] text-indigo-600"
-        aria-hidden="true"
-      />
-      <div className="rounded-xl bg-slate-50 px-3 py-2 text-[13px] text-slate-400">…</div>
-    </div>
-  );
-}
-
-function Indicators() {
-  const [reservations, setReservations] = useState<number | null>(null);
-  const [reviews, setReviews] = useState<ReviewSummary | null>(null);
-  const [revenueCents, setRevenueCents] = useState<number | null>(null);
-  const [visits, setVisits] = useState<SiteAnalytics | null>(null);
-
-  useEffect(() => {
-    const tenantId = getCurrentTenantId();
-    if (!tenantId) return;
-    getSiteAnalytics(tenantId)
-      .then((r) => setVisits(r.data))
-      .catch(() => setVisits(null));
-    listReservations(todayIso())
-      .then((r) => setReservations(r.data.length))
-      .catch(() => setReservations(null));
-    getReviewSummary(tenantId)
-      .then((r) => setReviews(r.data))
-      .catch(() => setReviews(null));
-    listInvoices(tenantId, "paid")
-      .then((r) => {
-        const today = todayIso();
-        const sum = r.data
-          .filter((inv) => inv.paidAt?.slice(0, 10) === today)
-          .reduce((acc, inv) => acc + inv.amountCents, 0);
-        setRevenueCents(sum);
-      })
-      .catch(() => setRevenueCents(null));
-  }, []);
-
-  const revenue =
-    revenueCents === null
-      ? null
-      : new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(
-          revenueCents / 100,
-        );
-
-  return (
-    <div className="mb-4">
-      <div className="pb-2 text-[10px] font-medium uppercase tracking-wide text-slate-400">
-        Aujourd'hui
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <Metric label="Chiffre" value={revenue ?? "—"} href="/admin" />
-        <Metric
-          label="Visites"
-          value={visits === null ? "—" : String(visits.today)}
-          href="/integrations"
-        />
-        <Metric
-          label="Résas"
-          value={reservations === null ? "—" : String(reservations)}
-          href="/reservations"
-        />
-        <Metric
-          label="Note"
-          value={reviews && reviews.count > 0 ? `${reviews.average}★` : "—"}
-          href="/loyalty"
-        />
-      </div>
-    </div>
-  );
-}
-
-function Metric({ label, value, href }: { label: string; value: string; href: string }) {
-  return (
-    <Link href={href} className="okito-hairline rounded-md bg-white px-2.5 py-2 hover:bg-slate-50">
-      <div className="text-[10px] uppercase tracking-wide text-slate-400">{label}</div>
-      <div className="okito-num mt-0.5 text-base text-slate-900">{value}</div>
-    </Link>
-  );
-}
-
-const ACTION_ICON: Record<string, string> = {
-  "review.reply": "ti-star",
-  "invoice.remind": "ti-file-invoice",
-  "email.reply": "ti-mail",
-  "reservation.confirm": "ti-calendar-check",
-  "reminder.send": "ti-bell",
-};
-
-function RecentActions() {
-  const [actions, setActions] = useState<JarvisAction[] | null>(null);
-
-  useEffect(() => {
-    const tenantId = getCurrentTenantId();
-    if (!tenantId) return;
-    listJarvisActions(tenantId)
-      .then((r) => setActions([...r.data].reverse().slice(0, 5)))
-      .catch(() => setActions([]));
-  }, []);
-
-  return (
-    <div>
-      <div className="flex items-center pb-2 text-[10px] font-medium uppercase tracking-wide text-slate-400">
-        Jarvis a agi
-        <Link href="/jarvis" className="ml-auto normal-case hover:text-slate-700">
-          voir tout
+          Se connecter
         </Link>
       </div>
-      {actions === null ? (
-        <p className="text-[11px] text-slate-400">…</p>
-      ) : actions.length === 0 ? (
-        <p className="text-[11px] text-slate-400">Rien pour l'instant.</p>
-      ) : (
-        <div className="okito-hairline divide-y divide-slate-100 rounded-md bg-white">
-          {actions.map((a) => (
-            <div key={a.id} className="flex items-start gap-2 px-2.5 py-2">
-              <span
-                className={`ti ${ACTION_ICON[a.type] ?? "ti-point"} mt-0.5 text-[13px] text-slate-400`}
-                aria-hidden="true"
-              />
-              <div className="min-w-0 flex-1 text-[12px] text-slate-700">
-                <div className="truncate">{a.summary}</div>
-              </div>
-              <ActionBadge status={a.status} />
+      <p className="mt-4 text-[11px] text-slate-400">Sans engagement. Résiliation en un clic.</p>
+    </section>
+  );
+}
+
+function TrustStrip() {
+  const stats = [
+    { value: "12h", label: "gagnées par semaine" },
+    { value: "+38%", label: "d'avis Google traités" },
+    { value: "24/7", label: "sur ton commerce" },
+    { value: "3 min", label: "à installer" },
+  ];
+  return (
+    <section className="okito-hairline-t okito-hairline-b bg-slate-50/60">
+      <div className="mx-auto grid max-w-5xl grid-cols-2 gap-6 px-6 py-8 md:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.label} className="text-center">
+            <div className="okito-num text-2xl font-medium text-slate-900">{s.value}</div>
+            <div className="text-[11px] uppercase tracking-wide text-slate-500">{s.label}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Skills() {
+  const skills = [
+    {
+      icon: "ti-run",
+      title: "Coach quotidien",
+      desc: "Ton brief du matin, tes rappels dans la journée, ton débrief du soir.",
+    },
+    {
+      icon: "ti-brand-instagram",
+      title: "Social auto-piloté",
+      desc: "Jarvis rédige et programme Insta/Facebook/Google à partir de ton actu.",
+    },
+    {
+      icon: "ti-trending-up",
+      title: "Prévisions & staffing",
+      desc: "Combien de couverts la semaine prochaine ? Combien de personnes prévoir ?",
+    },
+    {
+      icon: "ti-radar-2",
+      title: "Radar concurrence",
+      desc: "Jarvis surveille tes concurrents locaux et te remonte l'essentiel.",
+    },
+  ];
+  return (
+    <section id="skills" className="mx-auto max-w-5xl px-6 py-20">
+      <SectionHead
+        eyebrow="Skills"
+        title="Jarvis a des mains, pas juste une bouche."
+        desc="Contrairement aux assistants qui « conseillent », les Skills OKITO exécutent le travail à ta place — avec ton feu vert quand c'est sensible."
+      />
+      <div className="mt-10 grid gap-4 md:grid-cols-2">
+        {skills.map((s) => (
+          <div key={s.title} className="okito-hairline rounded-[12px] bg-white p-5">
+            <span
+              className={`ti ${s.icon} mb-3 flex size-9 items-center justify-center rounded-md bg-indigo-50 text-[17px] text-indigo-600`}
+              aria-hidden="true"
+            />
+            <div className="text-sm font-medium text-slate-900">{s.title}</div>
+            <p className="mt-1.5 text-[13px] text-slate-600">{s.desc}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function HowItWorks() {
+  const steps = [
+    {
+      n: "01",
+      title: "Connecte tes outils",
+      desc: "Google, Instagram, ton mail pro, ton POS. 3 min chrono.",
+    },
+    {
+      n: "02",
+      title: "Jarvis observe une semaine",
+      desc: "Il apprend ton commerce, ta clientèle, ton rythme. Aucune action sans ton accord.",
+    },
+    {
+      n: "03",
+      title: "Jarvis prend la main",
+      desc: "Tu valides ce qui est sensible depuis le brief. Le reste, il le fait tout seul.",
+    },
+  ];
+  return (
+    <section className="okito-hairline-t bg-slate-50/40">
+      <div className="mx-auto max-w-5xl px-6 py-20">
+        <SectionHead eyebrow="Comment ça marche" title="3 étapes. C'est tout." />
+        <div className="mt-10 grid gap-6 md:grid-cols-3">
+          {steps.map((s) => (
+            <div key={s.n} className="okito-hairline rounded-[12px] bg-white p-6">
+              <div className="okito-num mb-3 text-xs font-medium text-slate-400">{s.n}</div>
+              <div className="text-sm font-medium text-slate-900">{s.title}</div>
+              <p className="mt-1.5 text-[13px] text-slate-600">{s.desc}</p>
             </div>
           ))}
         </div>
-      )}
-    </div>
+      </div>
+    </section>
   );
 }
 
-function ActionBadge({ status }: { status: JarvisAction["status"] }) {
-  const map: Record<JarvisAction["status"], { label: string; cls: string }> = {
-    awaiting_approval: { label: "•", cls: "text-amber-600" },
-    scheduled: { label: "•", cls: "text-blue-600" },
-    executed: { label: "•", cls: "text-emerald-600" },
-    cancelled: { label: "•", cls: "text-slate-400" },
-    failed: { label: "•", cls: "text-rose-600" },
-  };
-  const { label, cls } = map[status];
+function Modules() {
+  const mods = [
+    { icon: "ti-inbox", label: "Inbox unifiée" },
+    { icon: "ti-calendar", label: "Agenda & réservations" },
+    { icon: "ti-users", label: "Fichier clients" },
+    { icon: "ti-file-invoice", label: "Factures & compta" },
+    { icon: "ti-speakerphone", label: "Marketing" },
+    { icon: "ti-microphone", label: "Voix Jarvis" },
+    { icon: "ti-world", label: "Site web" },
+    { icon: "ti-plug", label: "Intégrations" },
+  ];
   return (
-    <span className={`text-[10px] ${cls}`} aria-label={status}>
-      {label}
-    </span>
+    <section id="modules" className="mx-auto max-w-5xl px-6 py-20">
+      <SectionHead
+        eyebrow="Modules"
+        title="Un outil, pas dix onglets."
+        desc="Tout ce dont ton commerce a besoin, dans une seule interface."
+      />
+      <div className="mt-10 grid grid-cols-2 gap-3 md:grid-cols-4">
+        {mods.map((m) => (
+          <div
+            key={m.label}
+            className="okito-hairline flex items-center gap-2.5 rounded-md bg-white px-3 py-3 text-[13px] text-slate-800"
+          >
+            <span className={`ti ${m.icon} text-[15px] text-slate-500`} aria-hidden="true" />
+            {m.label}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function PricingPreview() {
+  const plans = [
+    { name: "Starter", price: "0€", note: "1 mois offert", cta: "Essayer" },
+    { name: "Pro", price: "49€", note: "par mois", cta: "S'abonner", highlighted: true },
+    { name: "Scale", price: "129€", note: "par mois", cta: "Découvrir" },
+  ];
+  return (
+    <section className="okito-hairline-t bg-slate-50/40">
+      <div className="mx-auto max-w-5xl px-6 py-20">
+        <SectionHead
+          eyebrow="Tarifs"
+          title="Un abonnement clair. Pas de piège."
+          desc="Change quand tu veux. Résilie quand tu veux."
+        />
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
+          {plans.map((p) => (
+            <div
+              key={p.name}
+              className={
+                p.highlighted
+                  ? "relative rounded-[12px] border-2 border-indigo-600 bg-white p-6"
+                  : "okito-hairline rounded-[12px] bg-white p-6"
+              }
+            >
+              {p.highlighted && (
+                <span className="absolute -top-2.5 left-6 rounded-full bg-indigo-600 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white">
+                  Recommandé
+                </span>
+              )}
+              <div className="text-sm font-medium text-slate-900">{p.name}</div>
+              <div className="mt-1 flex items-baseline gap-1.5">
+                <span className="okito-num text-3xl font-medium text-slate-900">{p.price}</span>
+                <span className="text-xs text-slate-500">{p.note}</span>
+              </div>
+              <Link
+                href="/pricing"
+                className={
+                  p.highlighted
+                    ? "mt-5 block w-full rounded-md bg-indigo-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-indigo-500"
+                    : "okito-hairline mt-5 block w-full rounded-md bg-white px-4 py-2 text-center text-sm font-medium text-slate-900 hover:bg-slate-50"
+                }
+              >
+                {p.cta}
+              </Link>
+            </div>
+          ))}
+        </div>
+        <p className="mt-6 text-center text-[12px] text-slate-500">
+          <Link href="/pricing" className="text-indigo-600 hover:underline">
+            Voir le détail des plans →
+          </Link>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function FinalCTA() {
+  return (
+    <section className="mx-auto max-w-3xl px-6 py-24 text-center">
+      <h2 className="text-3xl font-medium tracking-tight text-slate-900 md:text-4xl">
+        Prêt à laisser Jarvis bosser à ta place ?
+      </h2>
+      <p className="mx-auto mt-4 max-w-xl text-sm text-slate-600">
+        Installe OKITO en 3 min. Un mois offert. Aucun engagement.
+      </p>
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <Link
+          href="/pricing"
+          className="rounded-md bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
+        >
+          Commencer
+        </Link>
+        <Link
+          href="/app"
+          className="okito-hairline rounded-md bg-white px-5 py-2.5 text-sm font-medium text-slate-900 hover:bg-slate-50"
+        >
+          J'ai déjà un compte
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="okito-hairline-t bg-white">
+      <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-4 px-6 py-8 text-[12px] text-slate-500 md:flex-row">
+        <div className="flex items-center gap-2">
+          <div className="flex size-6 items-center justify-center rounded bg-black text-[10px] font-medium text-white">
+            O
+          </div>
+          <span>© {new Date().getFullYear()} OKITO</span>
+        </div>
+        <nav className="flex gap-5">
+          <Link href="/pricing" className="hover:text-slate-900">
+            Tarifs
+          </Link>
+          <Link href="/app" className="hover:text-slate-900">
+            Dashboard
+          </Link>
+          <a href="mailto:hello@okito.app" className="hover:text-slate-900">
+            Contact
+          </a>
+        </nav>
+      </div>
+    </footer>
+  );
+}
+
+function SectionHead({
+  eyebrow,
+  title,
+  desc,
+}: {
+  eyebrow: string;
+  title: string;
+  desc?: string;
+}) {
+  return (
+    <div className="mx-auto max-w-2xl text-center">
+      <div className="mb-2 text-[10px] font-medium uppercase tracking-widest text-slate-400">
+        {eyebrow}
+      </div>
+      <h2 className="text-2xl font-medium tracking-tight text-slate-900 md:text-3xl">{title}</h2>
+      {desc && <p className="mx-auto mt-3 max-w-xl text-sm text-slate-600">{desc}</p>}
+    </div>
   );
 }

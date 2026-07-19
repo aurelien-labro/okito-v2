@@ -7,7 +7,7 @@ import { TenantSwitcher } from "./tenant-switcher";
 type NavItem = { href: string; label: string; icon: string };
 
 const TOP: NavItem[] = [
-  { href: "/", label: "Vue globale", icon: "ti-layout-dashboard" },
+  { href: "/app", label: "Vue globale", icon: "ti-layout-dashboard" },
   { href: "/jarvis", label: "Jarvis", icon: "ti-sparkles" },
   { href: "/onboarding", label: "Diagnostic", icon: "ti-stethoscope" },
 ];
@@ -47,7 +47,8 @@ const ADMIN: NavItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const isActive = (href: string) =>
+    href === "/app" ? pathname === "/app" : pathname.startsWith(href);
 
   return (
     <aside className="okito-hairline-r flex w-52 flex-col bg-white px-2.5 py-3">

@@ -96,7 +96,7 @@ function MagicLinkForm() {
       const sb = getSupabase();
       const { error } = await sb.auth.signInWithOtp({
         email: email.trim(),
-        options: { emailRedirectTo: window.location.origin },
+        options: { emailRedirectTo: `${window.location.origin}/app` },
       });
       if (error) throw error;
       setSent(true);

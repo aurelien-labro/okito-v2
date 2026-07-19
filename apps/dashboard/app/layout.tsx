@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Header } from "./_components/header";
-import { Sidebar } from "./_components/sidebar";
+import { Chrome } from "./_components/chrome";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "OKITO — Dashboard",
-  description: "L'OS de ton commerce, piloté par Jarvis",
+  title: "OKITO — L'OS de ton commerce",
+  description: "Jarvis prend en charge ton quotidien : avis, réservations, factures, marketing.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -19,13 +18,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="bg-white text-slate-900">
-        <div className="flex min-h-screen flex-col">
-          <Header />
-          <div className="flex min-h-0 flex-1">
-            <Sidebar />
-            <main className="flex-1 overflow-y-auto px-6 py-6">{children}</main>
-          </div>
-        </div>
+        <Chrome>{children}</Chrome>
       </body>
     </html>
   );
