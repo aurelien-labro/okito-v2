@@ -64,24 +64,56 @@ const PLANS: Plan[] = [
 ];
 
 export default function PricingPage() {
+  const [annual, setAnnual] = useState(false);
   return (
     <div className="mx-auto max-w-5xl py-6">
-      <div className="mb-10 text-center">
+      <div className="mb-8 text-center">
         <div className="mb-2 text-[11px] font-medium uppercase tracking-widest text-slate-400">
           Tarifs
         </div>
         <h1 className="text-3xl font-medium tracking-tight text-slate-900">
-          Un abonnement clair. Pas de piège.
+          Un prix. Zéro surprise.
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm text-slate-500">
-          Choisis le plan qui colle à ton commerce. Change quand tu veux, résilie quand tu veux.
+          Résilie en un clic. Aucun engagement.
         </p>
+        <div className="okito-hairline mx-auto mt-6 inline-flex items-center rounded-full bg-white p-0.5 text-[11px]">
+          <button
+            type="button"
+            onClick={() => setAnnual(false)}
+            className={`rounded-full px-3 py-1 font-medium ${!annual ? "bg-slate-900 text-white" : "text-slate-500"}`}
+          >
+            Mensuel
+          </button>
+          <button
+            type="button"
+            onClick={() => setAnnual(true)}
+            className={`rounded-full px-3 py-1 font-medium ${annual ? "bg-slate-900 text-white" : "text-slate-500"}`}
+          >
+            Annuel <span className="text-emerald-500">−20%</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         {PLANS.map((plan) => (
-          <PlanCard key={plan.id} plan={plan} />
+          <PlanCard key={plan.id} plan={plan} annual={annual} />
         ))}
+      </div>
+
+      <div className="okito-hairline-t mx-auto mt-10 flex max-w-3xl flex-wrap items-center justify-around gap-4 pt-6 text-[12px] text-slate-600">
+        <span className="flex items-center gap-1.5">
+          <span className="ti ti-shield-check text-[14px] text-slate-400" aria-hidden="true" />
+          Données FR · RGPD
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="ti ti-refresh-off text-[14px] text-slate-400" aria-hidden="true" />
+          Sans engagement
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="ti ti-headset text-[14px] text-slate-400" aria-hidden="true" />
+          Support humain 7j/7
+        </span>
       </div>
 
       <FAQ />
@@ -89,7 +121,16 @@ export default function PricingPage() {
   );
 }
 
-function PlanCard({ plan }: { plan: Plan }) {
+function computePrice(plan: Plan, annual: boolean): { price: string; cadence: string } {
+  if (plan.id === "starter") return { price: plan.price, cadence: plan.cadence };
+  const monthly = plan.id === "pro" ? 49 : 129;
+  if (!annual) return { price: `${monthly}€`, cadence: "par mois" };
+  const reduced = Math.round(monthly * 0.8);
+  return { price: `${reduced}€`, cadence: "par mois, facturé annuellement" };
+}
+
+function PlanCard({ plan, annual }: { plan: Plan; annual: boolean }) {
+  const { price, cadence } = computePrice(plan, annual);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -128,9 +169,14 @@ function PlanCard({ plan }: { plan: Plan }) {
       )}
       <div className="mb-1 text-sm font-medium text-slate-900">{plan.name}</div>
       <div className="flex items-baseline gap-1.5">
-        <span className="okito-num text-3xl font-medium text-slate-900">{plan.price}</span>
-        <span className="text-xs text-slate-500">{plan.cadence}</span>
+        <span className="okito-num text-3xl font-medium text-slate-900">{price}</span>
+        <span className="text-xs text-slate-500">{cadence}</span>
       </div>
+      {plan.id === "pro" && (
+        <div className="mt-1 text-[11px] font-medium text-emerald-700">
+          ROI moyen · 12h/sem gagnées ≈ 400€
+        </div>
+      )}
       <p className="mt-2 text-[12px] text-slate-600">{plan.pitch}</p>
 
       <ul className="my-5 space-y-2 text-[13px] text-slate-700">

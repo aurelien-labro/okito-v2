@@ -17,36 +17,62 @@ export default function LandingPage() {
 
 function Hero() {
   return (
-    <section className="mx-auto max-w-5xl px-6 pt-16 pb-14 text-center md:pt-24 md:pb-20">
+    <section className="mx-auto max-w-5xl px-6 pt-16 pb-10 text-center md:pt-24 md:pb-14">
       <div className="okito-hairline mx-auto mb-6 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] text-slate-600">
-        <span className="size-1.5 rounded-full bg-emerald-500" />
-        Nouveau — Skills auto-pilotés par Jarvis
+        <span className="relative flex size-1.5">
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+        </span>
+        En direct — Jarvis a traité 4 avis Google ce matin
       </div>
       <h1 className="mx-auto max-w-3xl text-4xl font-medium tracking-tight text-slate-900 md:text-5xl">
-        L'OS de ton commerce.
+        Ton commerce tourne.
         <br />
-        <span className="text-slate-500">Piloté par Jarvis.</span>
+        <span className="text-slate-500">Toi, tu vis.</span>
       </h1>
       <p className="mx-auto mt-5 max-w-xl text-base text-slate-600">
-        Avis Google, réservations, factures, marketing, réseaux sociaux, appels — Jarvis prend la
-        main pendant que tu bosses.
+        Jarvis répond aux avis, confirme les résas, relance les factures, poste sur Insta — pendant
+        que tu bosses en salle.
       </p>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
         <Link
           href="/pricing"
           className="rounded-md bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
         >
-          Commencer — 1 mois offert
+          Commencer — 1 mois offert →
         </Link>
         <Link
-          href="/app"
+          href="#skills"
           className="okito-hairline rounded-md bg-white px-5 py-2.5 text-sm font-medium text-slate-900 hover:bg-slate-50"
         >
-          Se connecter
+          Voir une démo (60 s)
         </Link>
       </div>
-      <p className="mt-4 text-[11px] text-slate-400">Sans engagement. Résiliation en un clic.</p>
+      <p className="mt-4 text-[11px] text-slate-400">
+        Sans CB · Installé en 3 min · Résiliation en un clic
+      </p>
+      <ProductPreview />
     </section>
+  );
+}
+
+function ProductPreview() {
+  return (
+    <div className="okito-hairline mx-auto mt-10 grid max-w-2xl grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[12px] bg-white px-3 py-3 text-left">
+      <span
+        className="ti ti-sparkles flex size-9 items-center justify-center rounded-md bg-indigo-50 text-[16px] text-indigo-600"
+        aria-hidden="true"
+      />
+      <div className="min-w-0">
+        <div className="text-[11px] text-slate-500">Ce matin, Jarvis a fait</div>
+        <div className="truncate text-[13px] font-medium text-slate-900">
+          3 réponses aux avis · 2 relances facture · 1 post Instagram programmé
+        </div>
+      </div>
+      <span className="okito-num rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700">
+        +47 min
+      </span>
+    </div>
   );
 }
 

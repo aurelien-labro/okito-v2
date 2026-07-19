@@ -395,11 +395,22 @@ function Indicators() {
   );
 }
 
-function Metric({ label, value, href }: { label: string; value: string; href: string }) {
+function Metric({
+  label,
+  value,
+  href,
+  delta,
+}: {
+  label: string;
+  value: string;
+  href: string;
+  delta?: string;
+}) {
   return (
     <Link href={href} className="okito-hairline rounded-md bg-white px-2.5 py-2 hover:bg-slate-50">
       <div className="text-[10px] uppercase tracking-wide text-slate-400">{label}</div>
       <div className="okito-num mt-0.5 text-base text-slate-900">{value}</div>
+      {delta && <div className="okito-num text-[10px] font-medium text-emerald-600">{delta}</div>}
     </Link>
   );
 }
@@ -445,6 +456,14 @@ function RecentActions() {
               />
               <div className="min-w-0 flex-1 text-[12px] text-slate-700">
                 <div className="truncate">{a.summary}</div>
+                {a.createdAt && (
+                  <div className="okito-num text-[10px] text-slate-400">
+                    {new Date(a.createdAt).toLocaleTimeString("fr-FR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                )}
               </div>
               <ActionBadge status={a.status} />
             </div>
