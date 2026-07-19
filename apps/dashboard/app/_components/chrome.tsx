@@ -7,7 +7,7 @@ import { LandingHeader } from "./landing-header";
 import { Sidebar } from "./sidebar";
 
 // Routes publiques (sans sidebar/login). Tout le reste = app.
-const PUBLIC_PREFIXES = ["/pricing", "/legal"];
+const PUBLIC_PREFIXES = ["/pricing", "/legal", "/welcome"];
 
 function isPublic(pathname: string): boolean {
   if (pathname === "/") return true;
