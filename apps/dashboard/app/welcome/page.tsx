@@ -67,11 +67,14 @@ export default function WelcomePage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-14">
       <section className="text-center">
-        <div className="okito-hairline mx-auto mb-5 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] text-slate-600">
+        <div className="okito-hairline anim-fade-up mx-auto mb-5 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] text-slate-600">
           <span className="ti ti-check text-[13px] text-emerald-600" aria-hidden="true" />
           Connexion réussie
         </div>
-        <h1 className="text-3xl font-medium tracking-tight text-slate-900 md:text-4xl">
+        <h1
+          className="anim-fade-up text-3xl font-medium tracking-tight text-slate-900 md:text-4xl"
+          style={{ animationDelay: "80ms" }}
+        >
           {name ? `Bienvenue ${name}.` : "Bienvenue."}
         </h1>
         <p className="mx-auto mt-3 max-w-lg text-sm text-slate-600">
@@ -87,9 +90,9 @@ export default function WelcomePage() {
           </div>
           <div className="text-[11px] text-slate-400">6 mots à connaître</div>
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="anim-stagger grid gap-3 md:grid-cols-2">
           {GLOSSARY.map((t) => (
-            <div key={t.word} className="okito-hairline rounded-[12px] bg-white p-4">
+            <div key={t.word} className="okito-hairline okito-hover rounded-[12px] bg-white p-4">
               <div className="flex items-start gap-3">
                 <span
                   className={`ti ${t.icon} mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-indigo-50 text-[15px] text-indigo-600`}

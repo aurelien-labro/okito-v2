@@ -2,19 +2,23 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getCurrentTenantId, listTenants } from "../_lib/api-client";
+import { listAccessibleTenants } from "../_lib/api-client";
 import { getSupabase, isSupabaseConfigured } from "../_lib/supabase";
+import { useTenantId } from "../_lib/tenant-context";
 
 export function Header() {
+  const tenantId = useTenantId();
   const [tenantName, setTenantName] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    const id = getCurrentTenantId();
-    if (id) {
-      listTenants()
-        .then((r) => setTenantName(r.data.find((t) => t.id === id)?.name ?? null))
+    if (tenantId) {
+      // listAccessibleTenants marche pour tous les rôles (pas juste admin).
+      listAccessibleTenants()
+        .then((r) => setTenantName(r.data.find((t) => t.id === tenantId)?.name ?? null))
         .catch(() => setTenantName(null));
+    } else {
+      setTenantName(null);
     }
     if (isSupabaseConfigured()) {
       getSupabase()
@@ -22,7 +26,7 @@ export function Header() {
         .then(({ data }) => setEmail(data.session?.user.email ?? null))
         .catch(() => setEmail(null));
     }
-  }, []);
+  }, [tenantId]);
 
   const initials = (email ?? "?").split("@")[0]?.slice(0, 2).toUpperCase();
 
@@ -36,13 +40,13 @@ export function Header() {
 
   return (
     <header className="okito-hairline-b flex items-center justify-between bg-white px-4 py-2.5">
-      <div className="flex items-center gap-2.5">
-        <div className="flex size-7 items-center justify-center rounded-md bg-black text-xs font-medium text-white">
+      <Link href="/app" className="flex items-center gap-2.5 group">
+        <div className="okito-brand-mark flex size-7 items-center justify-center rounded-md text-xs font-medium text-white transition-transform group-hover:scale-105">
           O
         </div>
         <span className="text-sm font-semibold tracking-tight">OKITO</span>
-        {tenantName && <span className="text-xs text-slate-400">· {tenantName}</span>}
-      </div>
+        {tenantName && <span className="anim-fade-in text-xs text-slate-400">· {tenantName}</span>}
+      </Link>
       <div className="flex items-center gap-4 text-slate-500">
         <Link href="/pricing" className="text-xs font-medium text-slate-600 hover:text-slate-900">
           Tarifs

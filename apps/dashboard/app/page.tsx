@@ -17,38 +17,59 @@ export default function LandingPage() {
 
 function Hero() {
   return (
-    <section className="mx-auto max-w-5xl px-6 pt-16 pb-10 text-center md:pt-24 md:pb-14">
-      <div className="okito-hairline mx-auto mb-6 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] text-slate-600">
+    <section className="relative mx-auto max-w-5xl px-6 pt-16 pb-10 text-center md:pt-24 md:pb-14">
+      {/* Halo chaud très discret derrière le hero — sort du "flat blanc". */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px]"
+        style={{
+          background:
+            "radial-gradient(600px 320px at 50% 20%, rgba(249,115,22,0.06), transparent 70%)",
+        }}
+      />
+      <div className="anim-fade-up okito-hairline mx-auto mb-6 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] text-slate-600">
         <span className="relative flex size-1.5">
           <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
           <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
         </span>
         En direct — Jarvis a traité 4 avis Google ce matin
       </div>
-      <h1 className="mx-auto max-w-3xl text-4xl font-medium tracking-tight text-slate-900 md:text-5xl">
+      <h1
+        className="anim-fade-up mx-auto max-w-3xl text-4xl font-medium tracking-tight text-slate-900 md:text-5xl"
+        style={{ animationDelay: "80ms" }}
+      >
         Ton commerce tourne.
         <br />
         <span className="text-slate-500">Toi, tu vis.</span>
       </h1>
-      <p className="mx-auto mt-5 max-w-xl text-base text-slate-600">
+      <p
+        className="anim-fade-up mx-auto mt-5 max-w-xl text-base text-slate-600"
+        style={{ animationDelay: "160ms" }}
+      >
         Jarvis répond aux avis, confirme les résas, relance les factures, poste sur Insta — pendant
         que tu bosses en salle.
       </p>
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+      <div
+        className="anim-fade-up mt-8 flex flex-wrap items-center justify-center gap-3"
+        style={{ animationDelay: "220ms" }}
+      >
         <Link
           href="/pricing"
-          className="rounded-md bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
+          className="okito-hover rounded-md bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
         >
           Commencer — 1 mois offert →
         </Link>
         <Link
           href="#skills"
-          className="okito-hairline rounded-md bg-white px-5 py-2.5 text-sm font-medium text-slate-900 hover:bg-slate-50"
+          className="okito-hairline okito-hover rounded-md bg-white px-5 py-2.5 text-sm font-medium text-slate-900 hover:bg-slate-50"
         >
           Voir une démo (60 s)
         </Link>
       </div>
-      <p className="mt-4 text-[11px] text-slate-400">
+      <p
+        className="anim-fade-up mt-4 text-[11px] text-slate-400"
+        style={{ animationDelay: "280ms" }}
+      >
         Sans CB · Installé en 3 min · Résiliation en un clic
       </p>
       <ProductPreview />
@@ -58,7 +79,10 @@ function Hero() {
 
 function ProductPreview() {
   return (
-    <div className="okito-hairline mx-auto mt-10 grid max-w-2xl grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[12px] bg-white px-3 py-3 text-left">
+    <div
+      className="okito-hairline okito-hover anim-fade-up mx-auto mt-10 grid max-w-2xl grid-cols-[auto_1fr_auto] items-center gap-3 rounded-[12px] bg-white px-3 py-3 text-left"
+      style={{ animationDelay: "360ms" }}
+    >
       <span
         className="ti ti-sparkles flex size-9 items-center justify-center rounded-md bg-indigo-50 text-[16px] text-indigo-600"
         aria-hidden="true"
@@ -85,7 +109,7 @@ function TrustStrip() {
   ];
   return (
     <section className="okito-hairline-t okito-hairline-b bg-slate-50/60">
-      <div className="mx-auto grid max-w-5xl grid-cols-2 gap-6 px-6 py-8 md:grid-cols-4">
+      <div className="anim-stagger mx-auto grid max-w-5xl grid-cols-2 gap-6 px-6 py-8 md:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="text-center">
             <div className="okito-num text-2xl font-medium text-slate-900">{s.value}</div>
@@ -127,9 +151,9 @@ function Skills() {
         title="Jarvis a des mains, pas juste une bouche."
         desc="Contrairement aux assistants qui « conseillent », les Skills OKITO exécutent le travail à ta place — avec ton feu vert quand c'est sensible."
       />
-      <div className="mt-10 grid gap-4 md:grid-cols-2">
+      <div className="anim-stagger mt-10 grid gap-4 md:grid-cols-2">
         {skills.map((s) => (
-          <div key={s.title} className="okito-hairline rounded-[12px] bg-white p-5">
+          <div key={s.title} className="okito-hairline okito-hover rounded-[12px] bg-white p-5">
             <span
               className={`ti ${s.icon} mb-3 flex size-9 items-center justify-center rounded-md bg-indigo-50 text-[17px] text-indigo-600`}
               aria-hidden="true"
