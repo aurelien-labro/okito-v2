@@ -21,6 +21,17 @@ COPY apps/dashboard apps/dashboard
 
 # Next 15 supporte le mode standalone — bundle minimal avec node_modules nécessaires.
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Vars NEXT_PUBLIC_* : Next les inline dans les chunks côté client au moment
+# du build, pas au runtime — les passer en fly secrets ne suffit pas. Elles
+# arrivent ici via `fly deploy --build-arg NEXT_PUBLIC_...=...`.
+ARG NEXT_PUBLIC_OKITO_API_URL
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_OKITO_API_URL=$NEXT_PUBLIC_OKITO_API_URL
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+
 RUN pnpm --filter @okito/dashboard build
 
 # ------------------------------------------------------------------

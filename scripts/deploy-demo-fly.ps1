@@ -125,10 +125,17 @@ switch ($Stage) {
   }
 
   "dashboard-deploy" {
+    # Les vars NEXT_PUBLIC_* sont inline par Next au BUILD (pas runtime), donc
+    # `fly secrets set` ne suffit pas : il faut les passer en build-arg pour
+    # que le Dockerfile les injecte avant `next build`.
+    Require-Env @("OKITO_SUPABASE_URL","OKITO_SUPABASE_ANON")
     Write-Host "-> fly deploy $DashApp (contexte = racine du repo)..." -ForegroundColor Cyan
     fly deploy `
       --config apps\dashboard\fly.demo.toml `
       --dockerfile apps\dashboard\Dockerfile `
+      --build-arg "NEXT_PUBLIC_OKITO_API_URL=https://$ApiApp.fly.dev" `
+      --build-arg "NEXT_PUBLIC_SUPABASE_URL=$env:OKITO_SUPABASE_URL" `
+      --build-arg "NEXT_PUBLIC_SUPABASE_ANON_KEY=$env:OKITO_SUPABASE_ANON" `
       -a $DashApp
     Write-Host "[OK] Dashboard deploye : https://$DashApp.fly.dev" -ForegroundColor Green
   }
