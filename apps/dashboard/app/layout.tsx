@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css"
         />
       </head>
-      <body className="bg-stone-50 text-stone-900">
+      <body className="bg-white text-slate-900">
         <div className="flex min-h-screen flex-col">
           <Header />
           <div className="flex min-h-0 flex-1">

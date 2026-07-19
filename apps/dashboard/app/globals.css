@@ -3,12 +3,26 @@
 @tailwind utilities;
 
 :root {
-  --okito-bg: #fafaf9;
-  --okito-fg: #1c1917;
+  --okito-bg: #ffffff;
+  --okito-fg: #0f172a;
+  --okito-accent: #4f46e5;
+  --okito-border: rgba(15, 23, 42, 0.08);
 }
 
 body {
   background: var(--okito-bg);
   color: var(--okito-fg);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Bordures 0.5px : Tailwind border/border-stone-200 est en 1px. Cette classe
+ * remplace border 1px partout où on veut le trait fin premium. */
+.okito-hairline {
+  border: 0.5px solid var(--okito-border);
+}
+.okito-hairline-b {
+  border-bottom: 0.5px solid var(--okito-border);
+}
+.okito-hairline-r {
+  border-right: 0.5px solid var(--okito-border);
 }
