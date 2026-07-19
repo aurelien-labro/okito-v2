@@ -1,7 +1,7 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
-import { getSupabase } from "../_lib/supabase";
+import { getSupabase, isSupabaseConfigured } from "../_lib/supabase";
 
 /**
  * Formulaire de connexion pur (sans gate). Utilisé plein écran par l'AuthGate.
@@ -14,6 +14,19 @@ export function LoginForm() {
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const configured = isSupabaseConfigured();
+
+  if (!configured) {
+    return (
+      <div className="okito-hairline rounded-md bg-amber-50 p-4 text-[12px] text-amber-800">
+        <div className="font-medium">Auth non configurée</div>
+        <p className="mt-1">
+          NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY doivent être injectés au build.
+        </p>
+      </div>
+    );
+  }
 
   async function handleMagic(e: FormEvent) {
     e.preventDefault();
@@ -35,18 +48,33 @@ export function LoginForm() {
   }
 
   async function handleGoogle() {
-    setBusy(true);
+    setGoogleBusy(true);
     setErr(null);
     try {
       const sb = getSupabase();
       const { error } = await sb.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/welcome` },
+        options: {
+          redirectTo: `${window.location.origin}/welcome`,
+          queryParams: {
+            // Force le consent screen pour proposer clairement le compte à
+            // utiliser (utile si le user a plusieurs comptes Google).
+            prompt: "select_account",
+          },
+        },
       });
       if (error) throw error;
+      // Redirect en cours — busy reste true jusqu'au navigate.
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Erreur connexion Google");
-      setBusy(false);
+      const msg =
+        e instanceof Error
+          ? e.message.includes("Provider is not enabled") ||
+            e.message.includes("provider is not enabled")
+            ? "Google OAuth n'est pas activé côté Supabase. Authentication → Providers → Google → Enable."
+            : e.message
+          : "Erreur connexion Google";
+      setErr(msg);
+      setGoogleBusy(false);
     }
   }
 
@@ -105,11 +133,20 @@ export function LoginForm() {
       <button
         type="button"
         onClick={handleGoogle}
-        disabled={busy}
+        disabled={busy || googleBusy}
         className="okito-hairline okito-hover flex w-full items-center justify-center gap-2.5 rounded-md bg-white px-4 py-2.5 text-[13px] font-medium text-slate-900 hover:bg-slate-50 disabled:opacity-50"
       >
-        <GoogleIcon />
-        Continuer avec Google
+        {googleBusy ? (
+          <>
+            <span className="ti ti-loader-2 animate-spin text-[14px]" aria-hidden="true" />
+            Redirection vers Google…
+          </>
+        ) : (
+          <>
+            <GoogleIcon />
+            Continuer avec Google
+          </>
+        )}
       </button>
 
       <div className="my-5 flex items-center gap-3 text-[10px] uppercase tracking-widest text-slate-400">
