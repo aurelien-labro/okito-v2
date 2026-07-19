@@ -34,7 +34,7 @@ const STATUS_COLOR: Record<JarvisActionStatus, string> = {
   awaiting_approval: "bg-amber-100 text-amber-800",
   scheduled: "bg-blue-100 text-blue-800",
   executed: "bg-emerald-100 text-emerald-800",
-  cancelled: "bg-stone-200 text-stone-700",
+  cancelled: "bg-slate-200 text-slate-700",
   failed: "bg-rose-100 text-rose-800",
 };
 
@@ -131,7 +131,7 @@ function JarvisView() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Jarvis</h1>
-        <p className="mt-1 text-sm text-stone-500">
+        <p className="mt-1 text-sm text-slate-500">
           Le brief du matin et tout ce que l&apos;agent a fait ou propose de faire. Les actions
           programmées restent annulables jusqu&apos;à la fin de leur fenêtre de retrait.
         </p>
@@ -152,10 +152,10 @@ function JarvisView() {
         {briefErr && <p className="text-sm text-rose-700">{briefErr}</p>}
         {!briefErr && brief && (
           <>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-stone-800">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
               {brief.text}
             </p>
-            <p className="mt-3 text-xs text-stone-500">
+            <p className="mt-3 text-xs text-slate-500">
               {brief.at ? `Généré ${fmtRelative(brief.at)}` : "Généré à l'instant"}
               {typeof brief.eventCount === "number" && ` · ${brief.eventCount} événements analysés`}
               {typeof brief.pendingApprovals === "number" &&
@@ -165,7 +165,7 @@ function JarvisView() {
           </>
         )}
         {!briefErr && !brief && (
-          <p className="text-sm text-stone-500">
+          <p className="text-sm text-slate-500">
             Aucun brief pour l&apos;instant — il arrive chaque matin à 8h, ou clique sur « Refaire
             le point ».
           </p>
@@ -180,7 +180,7 @@ function JarvisView() {
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as JarvisActionStatus | "all")}
-            className="rounded border border-stone-300 bg-white px-3 py-1.5 text-sm"
+            className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm"
           >
             <option value="all">Toutes</option>
             <option value="awaiting_approval">À valider</option>
@@ -192,7 +192,7 @@ function JarvisView() {
           <button
             type="button"
             onClick={fetchActions}
-            className="rounded bg-stone-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-stone-700"
+            className="rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
           >
             Recharger
           </button>
@@ -206,17 +206,17 @@ function JarvisView() {
       )}
 
       {loading && actions.length === 0 ? (
-        <div className="rounded border border-stone-200 bg-white px-4 py-8 text-center text-sm text-stone-500">
+        <div className="rounded border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
           Chargement…
         </div>
       ) : actions.length === 0 ? (
-        <div className="rounded border border-stone-200 bg-white px-4 py-8 text-center text-sm text-stone-500">
+        <div className="rounded border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
           Aucune action pour l&apos;instant. Jarvis en proposera dès qu&apos;il aura matière à agir.
         </div>
       ) : (
-        <div className="overflow-hidden rounded border border-stone-200 bg-white">
+        <div className="overflow-hidden rounded border border-slate-200 bg-white">
           <table className="w-full text-sm">
-            <thead className="border-b border-stone-200 bg-stone-50 text-left text-xs uppercase tracking-wide text-stone-500">
+            <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-2">Action</th>
                 <th className="px-4 py-2">Type</th>
@@ -228,9 +228,9 @@ function JarvisView() {
             </thead>
             <tbody>
               {actions.map((a) => (
-                <tr key={a.id} className="border-b border-stone-100 last:border-0">
+                <tr key={a.id} className="border-b border-slate-100 last:border-0">
                   <td className="px-4 py-3 font-medium">{a.summary}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-stone-500">{a.type}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-slate-500">{a.type}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`rounded px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[a.status]}`}
@@ -241,12 +241,12 @@ function JarvisView() {
                       <div className="mt-1 text-xs text-rose-700">{String(a.result.error)}</div>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-xs text-stone-500">
+                  <td className="px-4 py-3 text-xs text-slate-500">
                     {a.status === "scheduled" && a.cancellableUntil
                       ? fmtDateTime(a.cancellableUntil)
                       : "—"}
                   </td>
-                  <td className="px-4 py-3 text-xs text-stone-500">{fmtRelative(a.createdAt)}</td>
+                  <td className="px-4 py-3 text-xs text-slate-500">{fmtRelative(a.createdAt)}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2 text-xs">
                       {a.status === "awaiting_approval" && (
@@ -335,7 +335,7 @@ function JarvisToolShop() {
     <div className="mt-10">
       <div className="mb-1">
         <h2 className="text-lg font-semibold tracking-tight">Boutique d&apos;automatisations</h2>
-        <p className="mt-1 text-sm text-stone-500">
+        <p className="mt-1 text-sm text-slate-500">
           Chaque boucle autonome peut être coupée ou passée sur validation. Une boucle coupée ne
           propose plus rien ; ses actions déjà programmées sont retirées.
         </p>
@@ -350,13 +350,13 @@ function JarvisToolShop() {
           <div
             key={tool.type}
             className={`rounded-lg border p-4 ${
-              tool.enabled ? "border-stone-200 bg-white" : "border-stone-200 bg-stone-50 opacity-75"
+              tool.enabled ? "border-slate-200 bg-white" : "border-slate-200 bg-slate-50 opacity-75"
             }`}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold">{tool.label}</h3>
-                <p className="mt-1 text-xs leading-relaxed text-stone-500">{tool.description}</p>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">{tool.description}</p>
               </div>
               <button
                 type="button"
@@ -366,7 +366,7 @@ function JarvisToolShop() {
                 disabled={busy === tool.type}
                 onClick={() => handlePatch(tool.type, { enabled: !tool.enabled })}
                 className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
-                  tool.enabled ? "bg-emerald-500" : "bg-stone-300"
+                  tool.enabled ? "bg-emerald-500" : "bg-slate-300"
                 }`}
               >
                 <span
@@ -377,7 +377,7 @@ function JarvisToolShop() {
               </button>
             </div>
             <div className="mt-3 flex items-center gap-2 text-xs">
-              <span className="text-stone-500">Politique :</span>
+              <span className="text-slate-500">Politique :</span>
               <select
                 value={tool.policyOverride ?? ""}
                 disabled={busy === tool.type || !tool.enabled}
@@ -386,14 +386,14 @@ function JarvisToolShop() {
                     policyOverride: e.target.value === "" ? null : (e.target.value as JarvisPolicy),
                   })
                 }
-                className="rounded border border-stone-300 bg-white px-2 py-1 text-xs disabled:opacity-50"
+                className="rounded border border-slate-300 bg-white px-2 py-1 text-xs disabled:opacity-50"
               >
                 <option value="">{`Défaut (${POLICY_LABEL[tool.defaultPolicy]})`}</option>
                 <option value="auto">Automatique</option>
                 <option value="auto_cancellable">Annulable 24 h</option>
                 <option value="approval">Sur validation</option>
               </select>
-              <span className="ml-auto font-mono text-[10px] text-stone-400">{tool.type}</span>
+              <span className="ml-auto font-mono text-[10px] text-slate-400">{tool.type}</span>
             </div>
           </div>
         ))}
@@ -486,11 +486,11 @@ function JarvisChat() {
   const micToggle = useServerVoice ? mic.toggle : voice.toggle;
 
   return (
-    <div className="mb-8 rounded-lg border border-stone-200 bg-white p-5">
+    <div className="mb-8 rounded-lg border border-slate-200 bg-white p-5">
       <h2 className="mb-3 text-sm font-semibold">Demander à Jarvis</h2>
       <div className="mb-3 max-h-72 space-y-2 overflow-y-auto">
         {messages.length === 0 && (
-          <p className="text-sm text-stone-400">
+          <p className="text-sm text-slate-400">
             Pose une question sur ton activité : « Combien de résas cette semaine ? », « Des avis
             négatifs récents ? », « Qu&apos;est-ce que tu as fait aujourd&apos;hui ? »
           </p>
@@ -500,15 +500,15 @@ function JarvisChat() {
             key={`${i}-${m.role}`}
             className={
               m.role === "user"
-                ? "ml-auto w-fit max-w-[85%] rounded-lg bg-stone-900 px-3 py-2 text-sm text-white"
-                : "w-fit max-w-[85%] rounded-lg bg-stone-100 px-3 py-2 text-sm text-stone-800"
+                ? "ml-auto w-fit max-w-[85%] rounded-lg bg-slate-900 px-3 py-2 text-sm text-white"
+                : "w-fit max-w-[85%] rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-800"
             }
           >
             {m.content}
           </div>
         ))}
         {sending && (
-          <div className="w-fit rounded-lg bg-stone-100 px-3 py-2 text-sm text-stone-400">…</div>
+          <div className="w-fit rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-400">…</div>
         )}
       </div>
       {chatErr && <p className="mb-2 text-xs text-rose-700">{chatErr}</p>}
@@ -521,7 +521,7 @@ function JarvisChat() {
             if (e.key === "Enter") handleSend();
           }}
           placeholder="Pose ta question…"
-          className="flex-1 rounded border border-stone-300 px-3 py-1.5 text-sm"
+          className="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm"
         />
         <button
           type="button"
@@ -538,7 +538,7 @@ function JarvisChat() {
           className={`flex items-center justify-center rounded border px-2.5 py-1.5 ${
             micActive
               ? "animate-pulse border-rose-400 bg-rose-50 text-rose-600"
-              : "border-stone-300 text-stone-500 hover:bg-stone-50 disabled:opacity-40"
+              : "border-slate-300 text-slate-500 hover:bg-slate-50 disabled:opacity-40"
           }`}
         >
           <span className="ti ti-microphone text-[15px]" aria-hidden="true" />
@@ -547,7 +547,7 @@ function JarvisChat() {
           type="button"
           onClick={() => handleSend()}
           disabled={sending || input.trim().length === 0}
-          className="rounded bg-stone-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+          className="rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
         >
           Envoyer
         </button>

@@ -294,7 +294,7 @@ function ManualTokenGate({ children }: { children: ReactNode }) {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-end gap-3 text-xs text-stone-500">
+      <div className="mb-4 flex items-center justify-end gap-3 text-xs text-slate-500">
         <span className="rounded bg-amber-100 px-2 py-0.5 text-amber-800">JWT manuel</span>
         <button
           type="button"
@@ -302,7 +302,7 @@ function ManualTokenGate({ children }: { children: ReactNode }) {
             clearToken();
             setLocalToken(null);
           }}
-          className="hover:text-stone-900 hover:underline"
+          className="hover:text-slate-900 hover:underline"
         >
           Se déconnecter
         </button>
@@ -317,7 +317,7 @@ function ManualTokenForm({ onAuth }: { onAuth: (token: string) => void }) {
   return (
     <div className="mx-auto max-w-md py-12">
       <h2 className="text-xl font-semibold tracking-tight">Authentification (manuel)</h2>
-      <p className="mt-2 text-sm text-stone-600">
+      <p className="mt-2 text-sm text-slate-600">
         Supabase Auth n'est pas configuré pour ce dashboard. Colle un JWT Supabase récupéré dans
         Studio → Auth → user → JWT pour accéder aux endpoints.
       </p>
@@ -336,16 +336,16 @@ function ManualTokenForm({ onAuth }: { onAuth: (token: string) => void }) {
           onChange={(e) => setValue(e.target.value)}
           placeholder="eyJhbGc..."
           rows={4}
-          className="w-full rounded border border-stone-300 px-3 py-2 font-mono text-xs"
+          className="w-full rounded border border-slate-300 px-3 py-2 font-mono text-xs"
         />
         <button
           type="submit"
-          className="w-full rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
+          className="w-full rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
         >
           Continuer
         </button>
       </form>
-      <p className="mt-4 text-xs text-stone-500">
+      <p className="mt-4 text-xs text-slate-500">
         Pour activer le magic-link : renseigne <code>NEXT_PUBLIC_SUPABASE_URL</code> et{" "}
         <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> au build du dashboard.
       </p>

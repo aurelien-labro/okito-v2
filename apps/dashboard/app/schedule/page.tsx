@@ -98,7 +98,7 @@ function ScheduleView() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Horaires & fermetures</h1>
-        <p className="mt-1 text-sm text-stone-500">
+        <p className="mt-1 text-sm text-slate-500">
           Jours de fermeture hebdomadaire, congés et horaires exceptionnels. L&apos;assistant refuse
           automatiquement les réservations sur les jours fermés — les horaires spéciaux priment sur
           tout (utile pour ouvrir un jour férié).
@@ -115,17 +115,17 @@ function ScheduleView() {
 
       <div className="mt-6">
         {loading && rows.length === 0 ? (
-          <div className="rounded border border-stone-200 bg-white px-4 py-8 text-center text-sm text-stone-500">
+          <div className="rounded border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
             Chargement…
           </div>
         ) : rows.length === 0 ? (
-          <div className="rounded border border-stone-200 bg-white px-4 py-8 text-center text-sm text-stone-500">
+          <div className="rounded border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
             Aucune règle. L&apos;établissement suit ses horaires normaux 7j/7.
           </div>
         ) : (
-          <div className="overflow-hidden rounded border border-stone-200 bg-white">
+          <div className="overflow-hidden rounded border border-slate-200 bg-white">
             <table className="w-full text-sm">
-              <thead className="border-b border-stone-200 bg-stone-50 text-left text-xs uppercase tracking-wide text-stone-500">
+              <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-4 py-2">Type</th>
                   <th className="px-4 py-2">Règle</th>
@@ -135,8 +135,8 @@ function ScheduleView() {
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.id} className="border-b border-stone-100 last:border-0">
-                    <td className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-stone-500">
+                  <tr key={r.id} className="border-b border-slate-100 last:border-0">
+                    <td className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-slate-500">
                       {KIND_LABELS[r.kind]}
                     </td>
                     <td className="px-4 py-3">{describeRule(r)}</td>
@@ -145,7 +145,7 @@ function ScheduleView() {
                         className={`rounded px-2 py-0.5 text-xs font-medium ${
                           r.active
                             ? "bg-emerald-100 text-emerald-800"
-                            : "bg-stone-200 text-stone-700"
+                            : "bg-slate-200 text-slate-700"
                         }`}
                       >
                         {r.active ? "active" : "inactive"}
@@ -233,14 +233,14 @@ function NewRuleForm({ onCreated }: { onCreated: () => Promise<void> }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded border border-stone-200 bg-white px-4 py-4">
+    <form onSubmit={handleSubmit} className="rounded border border-slate-200 bg-white px-4 py-4">
       <div className="flex flex-wrap items-end gap-3">
         <label>
-          <span className="text-xs uppercase tracking-wide text-stone-500">Type de règle</span>
+          <span className="text-xs uppercase tracking-wide text-slate-500">Type de règle</span>
           <select
             value={kind}
             onChange={(e) => setKind(e.target.value as ScheduleRuleKind)}
-            className="mt-1 block rounded border border-stone-300 px-3 py-1.5 text-sm"
+            className="mt-1 block rounded border border-slate-300 px-3 py-1.5 text-sm"
           >
             <option value="weekly_closed">Fermeture hebdo</option>
             <option value="date_closed">Congés / jour fermé</option>
@@ -257,8 +257,8 @@ function NewRuleForm({ onCreated }: { onCreated: () => Promise<void> }) {
                 onClick={() => toggleWeekday(d)}
                 className={`rounded border px-3 py-1.5 text-sm ${
                   weekdays.includes(d)
-                    ? "border-stone-900 bg-stone-900 text-white"
-                    : "border-stone-300 text-stone-700 hover:bg-stone-50"
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-slate-300 text-slate-700 hover:bg-slate-50"
                 }`}
               >
                 {label}
@@ -269,47 +269,47 @@ function NewRuleForm({ onCreated }: { onCreated: () => Promise<void> }) {
 
         {kind === "date_closed" && (
           <>
-            <label className="flex items-center gap-2 pb-2 text-sm text-stone-600">
+            <label className="flex items-center gap-2 pb-2 text-sm text-slate-600">
               <input
                 type="checkbox"
                 checked={range}
                 onChange={(e) => setRange(e.target.checked)}
-                className="rounded border-stone-300"
+                className="rounded border-slate-300"
               />
               Période
             </label>
             {range ? (
               <>
                 <label>
-                  <span className="text-xs uppercase tracking-wide text-stone-500">Du</span>
+                  <span className="text-xs uppercase tracking-wide text-slate-500">Du</span>
                   <input
                     type="date"
                     required
                     value={from}
                     onChange={(e) => setFrom(e.target.value)}
-                    className="mt-1 block rounded border border-stone-300 px-3 py-1.5 text-sm"
+                    className="mt-1 block rounded border border-slate-300 px-3 py-1.5 text-sm"
                   />
                 </label>
                 <label>
-                  <span className="text-xs uppercase tracking-wide text-stone-500">Au</span>
+                  <span className="text-xs uppercase tracking-wide text-slate-500">Au</span>
                   <input
                     type="date"
                     required
                     value={to}
                     onChange={(e) => setTo(e.target.value)}
-                    className="mt-1 block rounded border border-stone-300 px-3 py-1.5 text-sm"
+                    className="mt-1 block rounded border border-slate-300 px-3 py-1.5 text-sm"
                   />
                 </label>
               </>
             ) : (
               <label>
-                <span className="text-xs uppercase tracking-wide text-stone-500">Date</span>
+                <span className="text-xs uppercase tracking-wide text-slate-500">Date</span>
                 <input
                   type="date"
                   required
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="mt-1 block rounded border border-stone-300 px-3 py-1.5 text-sm"
+                  className="mt-1 block rounded border border-slate-300 px-3 py-1.5 text-sm"
                 />
               </label>
             )}
@@ -319,43 +319,43 @@ function NewRuleForm({ onCreated }: { onCreated: () => Promise<void> }) {
         {kind === "date_special" && (
           <>
             <label>
-              <span className="text-xs uppercase tracking-wide text-stone-500">Date</span>
+              <span className="text-xs uppercase tracking-wide text-slate-500">Date</span>
               <input
                 type="date"
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="mt-1 block rounded border border-stone-300 px-3 py-1.5 text-sm"
+                className="mt-1 block rounded border border-slate-300 px-3 py-1.5 text-sm"
               />
             </label>
             <label>
-              <span className="text-xs uppercase tracking-wide text-stone-500">Label</span>
+              <span className="text-xs uppercase tracking-wide text-slate-500">Label</span>
               <input
                 type="text"
                 required
                 value={specialLabel}
                 onChange={(e) => setSpecialLabel(e.target.value)}
-                className="mt-1 block w-40 rounded border border-stone-300 px-3 py-1.5 text-sm"
+                className="mt-1 block w-40 rounded border border-slate-300 px-3 py-1.5 text-sm"
               />
             </label>
             <label>
-              <span className="text-xs uppercase tracking-wide text-stone-500">De</span>
+              <span className="text-xs uppercase tracking-wide text-slate-500">De</span>
               <input
                 type="time"
                 required
                 value={specialStart}
                 onChange={(e) => setSpecialStart(e.target.value)}
-                className="mt-1 block rounded border border-stone-300 px-3 py-1.5 text-sm"
+                className="mt-1 block rounded border border-slate-300 px-3 py-1.5 text-sm"
               />
             </label>
             <label>
-              <span className="text-xs uppercase tracking-wide text-stone-500">À</span>
+              <span className="text-xs uppercase tracking-wide text-slate-500">À</span>
               <input
                 type="time"
                 required
                 value={specialEnd}
                 onChange={(e) => setSpecialEnd(e.target.value)}
-                className="mt-1 block rounded border border-stone-300 px-3 py-1.5 text-sm"
+                className="mt-1 block rounded border border-slate-300 px-3 py-1.5 text-sm"
               />
             </label>
           </>
@@ -364,7 +364,7 @@ function NewRuleForm({ onCreated }: { onCreated: () => Promise<void> }) {
         <button
           type="submit"
           disabled={busy}
-          className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+          className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
         >
           {busy ? "…" : "Ajouter"}
         </button>

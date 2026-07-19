@@ -61,7 +61,7 @@ function InboxView() {
       <div className="mb-5 flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Inbox</h1>
-          <p className="mt-1 text-sm text-stone-500">
+          <p className="mt-1 text-sm text-slate-500">
             Les emails reçus sur les boîtes connectées. Jarvis les lit pour son brief et peut
             répondre aux plus simples.
           </p>
@@ -69,7 +69,7 @@ function InboxView() {
         <button
           type="button"
           onClick={fetchFirst}
-          className="rounded bg-stone-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-stone-700"
+          className="rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
         >
           Recharger
         </button>
@@ -90,20 +90,20 @@ function InboxView() {
         </Empty>
       ) : (
         <>
-          <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
+          <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
             {messages.map((m, i) => (
               <div
                 key={m.id}
-                className={`flex items-start gap-3 px-4 py-3 ${i < messages.length - 1 ? "border-b border-stone-100" : ""}`}
+                className={`flex items-start gap-3 px-4 py-3 ${i < messages.length - 1 ? "border-b border-slate-100" : ""}`}
               >
-                <span className="ti ti-mail mt-0.5 text-base text-stone-400" aria-hidden="true" />
+                <span className="ti ti-mail mt-0.5 text-base text-slate-400" aria-hidden="true" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2">
                     <span className="truncate text-sm font-medium">{cleanFrom(m.from)}</span>
-                    <span className="shrink-0 text-xs text-stone-400">{fmtDate(m)}</span>
+                    <span className="shrink-0 text-xs text-slate-400">{fmtDate(m)}</span>
                   </div>
                   <div className="truncate text-sm">{m.subject ?? "(sans objet)"}</div>
-                  {m.snippet && <div className="truncate text-xs text-stone-400">{m.snippet}</div>}
+                  {m.snippet && <div className="truncate text-xs text-slate-400">{m.snippet}</div>}
                 </div>
               </div>
             ))}
@@ -114,7 +114,7 @@ function InboxView() {
                 type="button"
                 onClick={loadMore}
                 disabled={loading}
-                className="rounded border border-stone-300 px-4 py-1.5 text-sm hover:bg-stone-100 disabled:opacity-50"
+                className="rounded border border-slate-300 px-4 py-1.5 text-sm hover:bg-slate-100 disabled:opacity-50"
               >
                 {loading ? "…" : "Charger plus"}
               </button>
@@ -144,7 +144,7 @@ function fmtDate(m: InboxMessage): string {
 
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-white px-4 py-10 text-center text-sm text-stone-500">
+    <div className="rounded-lg border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500">
       {children}
     </div>
   );

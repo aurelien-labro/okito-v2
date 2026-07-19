@@ -117,19 +117,19 @@ function VatView() {
     <div className="mx-auto max-w-4xl">
       <div className="mb-5">
         <div className="flex items-center gap-3 text-sm">
-          <Link href="/admin" className="text-stone-500 hover:text-stone-800 hover:underline">
+          <Link href="/admin" className="text-slate-500 hover:text-slate-800 hover:underline">
             Factures clients
           </Link>
           <Link
             href="/admin/fournisseurs"
-            className="text-stone-500 hover:text-stone-800 hover:underline"
+            className="text-slate-500 hover:text-slate-800 hover:underline"
           >
             Fournisseurs
           </Link>
-          <span className="font-semibold text-stone-900">TVA</span>
+          <span className="font-semibold text-slate-900">TVA</span>
         </div>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Préparation TVA</h1>
-        <p className="mt-1 text-sm text-stone-500">
+        <p className="mt-1 text-sm text-slate-500">
           Régime des encaissements : factures clients encaissées et factures fournisseurs payées sur
           le mois.
         </p>
@@ -145,7 +145,7 @@ function VatView() {
         <select
           value={month}
           onChange={(e) => setMonth(Number(e.target.value))}
-          className="rounded border border-stone-300 bg-white px-3 py-1.5 text-sm"
+          className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm"
         >
           {MONTHS.map((m, i) => (
             <option key={m} value={i + 1}>
@@ -156,7 +156,7 @@ function VatView() {
         <select
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
-          className="rounded border border-stone-300 bg-white px-3 py-1.5 text-sm"
+          className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm"
         >
           {[now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map((y) => (
             <option key={y} value={y}>
@@ -168,7 +168,7 @@ function VatView() {
           type="button"
           onClick={exportCsv}
           disabled={!report}
-          className="ml-auto rounded bg-stone-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+          className="ml-auto rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
         >
           Exporter CSV
         </button>
@@ -181,7 +181,7 @@ function VatView() {
       )}
 
       {loading ? (
-        <div className="rounded-lg border border-stone-200 bg-white p-8 text-center text-sm text-stone-500">
+        <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
           Calcul…
         </div>
       ) : report ? (
@@ -216,11 +216,11 @@ function SummaryCard({
   return (
     <div
       className={`rounded-lg border p-4 ${
-        highlight ? "border-indigo-300 bg-indigo-50" : "border-stone-200 bg-white"
+        highlight ? "border-indigo-300 bg-indigo-50" : "border-slate-200 bg-white"
       }`}
     >
-      <div className="text-[11px] text-stone-500">{label}</div>
-      <div className="mt-1 text-xl font-semibold text-stone-900">{euros(cents)}</div>
+      <div className="text-[11px] text-slate-500">{label}</div>
+      <div className="mt-1 text-xl font-semibold text-slate-900">{euros(cents)}</div>
     </div>
   );
 }
@@ -228,10 +228,10 @@ function SummaryCard({
 function VatTable({ title, lines }: { title: string; lines: VatReport["sales"]["lines"] }) {
   return (
     <div className="mb-6">
-      <h2 className="mb-2 text-sm font-semibold text-stone-700">{title}</h2>
-      <div className="overflow-x-auto rounded-lg border border-stone-200 bg-white">
+      <h2 className="mb-2 text-sm font-semibold text-slate-700">{title}</h2>
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
         <table className="w-full text-sm">
-          <thead className="bg-stone-50 text-left text-xs text-stone-500">
+          <thead className="bg-slate-50 text-left text-xs text-slate-500">
             <tr>
               <th className="px-4 py-2">Taux</th>
               <th className="px-4 py-2">Factures</th>
@@ -243,15 +243,15 @@ function VatTable({ title, lines }: { title: string; lines: VatReport["sales"]["
           <tbody>
             {lines.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-stone-400">
+                <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
                   Rien sur cette période.
                 </td>
               </tr>
             ) : (
               lines.map((l) => (
-                <tr key={l.rateBps} className="border-t border-stone-100">
+                <tr key={l.rateBps} className="border-t border-slate-100">
                   <td className="px-4 py-2 font-medium">{rateLabel(l.rateBps)}</td>
-                  <td className="px-4 py-2 text-stone-500">{l.count}</td>
+                  <td className="px-4 py-2 text-slate-500">{l.count}</td>
                   <td className="px-4 py-2 text-right">{euros(l.grossCents)}</td>
                   <td className="px-4 py-2 text-right">{euros(l.netCents)}</td>
                   <td className="px-4 py-2 text-right font-medium">{euros(l.vatCents)}</td>

@@ -69,7 +69,7 @@ const MAILBOX_STATUS_LABEL: Record<Mailbox["status"], string> = {
 
 const MAILBOX_STATUS_COLOR: Record<Mailbox["status"], string> = {
   active: "bg-emerald-100 text-emerald-800",
-  paused: "bg-stone-200 text-stone-700",
+  paused: "bg-slate-200 text-slate-700",
   error: "bg-rose-100 text-rose-800",
 };
 
@@ -159,7 +159,7 @@ function YahooLogo() {
 }
 
 function ImapLogo() {
-  return <span className="ti ti-server-2 text-[26px] text-stone-500" aria-hidden="true" />;
+  return <span className="ti ti-server-2 text-[26px] text-slate-500" aria-hidden="true" />;
 }
 
 function MailboxesSection() {
@@ -255,14 +255,14 @@ function MailboxesSection() {
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Intégrations — Email</h1>
-          <p className="mt-1 text-sm text-stone-500">
+          <p className="mt-1 text-sm text-slate-500">
             Branche les boîtes du commerce : chaque email entre dans le journal de Jarvis, qui trie,
             résume et répondra bientôt tout seul.
           </p>
         </div>
         <div className="relative">
           <span
-            className="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-sm text-stone-400"
+            className="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400"
             aria-hidden="true"
           />
           <input
@@ -270,7 +270,7 @@ function MailboxesSection() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher une intégration…"
-            className="w-64 rounded-lg border border-stone-300 py-2 pl-9 pr-3 text-sm focus:border-stone-500 focus:outline-none"
+            className="w-64 rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm focus:border-slate-500 focus:outline-none"
           />
         </div>
       </div>
@@ -300,7 +300,7 @@ function MailboxesSection() {
           />
         ))}
         {providers.length === 0 && (
-          <div className="col-span-full rounded-lg border border-stone-200 bg-white px-4 py-8 text-center text-sm text-stone-500">
+          <div className="col-span-full rounded-lg border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
             Aucune intégration ne correspond à « {search} ».
           </div>
         )}
@@ -319,19 +319,19 @@ function MailboxesSection() {
 
       {boxes.length > 0 && (
         <div className="mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-stone-700">Boîtes connectées</h2>
+          <h2 className="mb-3 text-sm font-semibold text-slate-700">Boîtes connectées</h2>
           <div className="space-y-3">
             {boxes.map((box) => (
               <div
                 key={box.id}
-                className="rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm"
+                className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
                     {PROVIDER_LOGO[box.provider] ?? <ImapLogo />}
                     <div className="min-w-0">
                       <div className="truncate font-medium">{box.emailAddress}</div>
-                      <div className="mt-0.5 text-xs text-stone-500">
+                      <div className="mt-0.5 text-xs text-slate-500">
                         {box.lastSyncAt
                           ? `Dernière sync : ${new Date(box.lastSyncAt).toLocaleString("fr-FR")}`
                           : "Jamais synchronisée (première sync dans les 5 min)"}
@@ -419,7 +419,7 @@ function ImapConnectForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 rounded-lg border border-stone-200 bg-white p-4">
+    <form onSubmit={handleSubmit} className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
       <div className="mb-3 flex items-center gap-2">
         {isYahoo ? <YahooLogo /> : <ImapLogo />}
         <h3 className="text-sm font-semibold">
@@ -436,7 +436,7 @@ function ImapConnectForm({
         {!isYahoo && (
           <>
             <div>
-              <label className="mb-1 block text-xs font-medium text-stone-500" htmlFor="imap-host">
+              <label className="mb-1 block text-xs font-medium text-slate-500" htmlFor="imap-host">
                 Serveur IMAP
               </label>
               <input
@@ -446,11 +446,11 @@ function ImapConnectForm({
                 value={host}
                 onChange={(e) => setHost(e.target.value)}
                 placeholder="imap.mondomaine.fr"
-                className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-stone-500" htmlFor="imap-port">
+              <label className="mb-1 block text-xs font-medium text-slate-500" htmlFor="imap-port">
                 Port
               </label>
               <input
@@ -459,13 +459,13 @@ function ImapConnectForm({
                 inputMode="numeric"
                 value={port}
                 onChange={(e) => setPort(e.target.value)}
-                className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
               />
             </div>
           </>
         )}
         <div>
-          <label className="mb-1 block text-xs font-medium text-stone-500" htmlFor="imap-user">
+          <label className="mb-1 block text-xs font-medium text-slate-500" htmlFor="imap-user">
             Adresse email
           </label>
           <input
@@ -475,11 +475,11 @@ function ImapConnectForm({
             value={user}
             onChange={(e) => setUser(e.target.value)}
             placeholder={isYahoo ? "boulangerie@yahoo.fr" : "contact@mondomaine.fr"}
-            className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-stone-500" htmlFor="imap-pass">
+          <label className="mb-1 block text-xs font-medium text-slate-500" htmlFor="imap-pass">
             {isYahoo ? "Mot de passe d'application" : "Mot de passe"}
           </label>
           <input
@@ -488,7 +488,7 @@ function ImapConnectForm({
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
           />
         </div>
       </div>
@@ -496,20 +496,20 @@ function ImapConnectForm({
         <button
           type="submit"
           disabled={busy}
-          className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+          className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
         >
           {busy ? "Vérification…" : "Connecter"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded border border-stone-300 px-4 py-2 text-sm text-stone-600 hover:bg-stone-100"
+          className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-100"
         >
           Annuler
         </button>
         {err && <div className="text-sm text-rose-700">{err}</div>}
       </div>
-      <p className="mt-2 text-[11px] text-stone-400">
+      <p className="mt-2 text-[11px] text-slate-400">
         Le mot de passe est chiffré (AES-256) et ne ressort jamais de l'API. Seuls les nouveaux
         emails reçus après la connexion sont lus.
       </p>
@@ -533,12 +533,12 @@ function ProviderCard({
     <div
       className={`flex flex-col rounded-lg border bg-white p-4 transition ${
         provider.available
-          ? "border-stone-200 hover:border-stone-400 hover:shadow-sm"
-          : "border-stone-200 opacity-70"
+          ? "border-slate-200 hover:border-slate-400 hover:shadow-sm"
+          : "border-slate-200 opacity-70"
       }`}
     >
       <div className="flex items-start justify-between">
-        <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-stone-100 bg-stone-50">
+        <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-100 bg-slate-50">
           {provider.logo}
         </div>
         {connected ? (
@@ -546,24 +546,24 @@ function ProviderCard({
             {connectedCount} connectée{connectedCount > 1 ? "s" : ""}
           </span>
         ) : provider.available ? (
-          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
             Disponible
           </span>
         ) : (
-          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-400">
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-400">
             Bientôt
           </span>
         )}
       </div>
-      <div className="mt-3 text-sm font-semibold text-stone-900">{provider.name}</div>
-      <p className="mt-1 flex-1 text-xs leading-relaxed text-stone-500">{provider.description}</p>
+      <div className="mt-3 text-sm font-semibold text-slate-900">{provider.name}</div>
+      <p className="mt-1 flex-1 text-xs leading-relaxed text-slate-500">{provider.description}</p>
       <div className="mt-4">
         {provider.available && onConnect ? (
           <button
             type="button"
             onClick={onConnect}
             disabled={connecting}
-            className="w-full rounded bg-stone-900 px-3 py-2 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+            className="w-full rounded bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-50"
           >
             {connecting ? "Redirection…" : connected ? "Ajouter une boîte" : "Connecter"}
           </button>
@@ -571,7 +571,7 @@ function ProviderCard({
           <button
             type="button"
             disabled
-            className="w-full cursor-not-allowed rounded border border-stone-200 px-3 py-2 text-xs font-medium text-stone-400"
+            className="w-full cursor-not-allowed rounded border border-slate-200 px-3 py-2 text-xs font-medium text-slate-400"
           >
             Bientôt disponible
           </button>
@@ -682,7 +682,7 @@ function GoogleBusinessSection() {
   return (
     <div className="mb-10">
       <h2 className="text-2xl font-semibold tracking-tight">Avis Google</h2>
-      <p className="mt-1 mb-4 text-sm text-stone-500">
+      <p className="mt-1 mb-4 text-sm text-slate-500">
         Connecte la fiche Google Business du commerce : Jarvis suit les nouveaux avis et propose une
         réponse (annulable 24h) publiée directement sur la fiche.
       </p>
@@ -693,31 +693,31 @@ function GoogleBusinessSection() {
         </div>
       )}
 
-      <div className="rounded-lg border border-stone-200 bg-white p-5">
+      <div className="rounded-lg border border-slate-200 bg-white p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <GoogleBusinessLogo />
             <div>
-              <div className="text-sm font-semibold text-stone-900">Google Business Profile</div>
-              <p className="text-xs text-stone-500">Avis Google — réponse autonome par Jarvis.</p>
+              <div className="text-sm font-semibold text-slate-900">Google Business Profile</div>
+              <p className="text-xs text-slate-500">Avis Google — réponse autonome par Jarvis.</p>
             </div>
           </div>
           <button
             type="button"
             onClick={handleConnect}
-            className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
           >
             {connections.length > 0 ? "Connecter une autre fiche" : "Connecter"}
           </button>
         </div>
 
         {connections.length > 0 && (
-          <div className="mt-4 space-y-3 border-t border-stone-100 pt-4">
+          <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
             {connections.map((conn) => (
               <div key={conn.id} className="flex items-start justify-between gap-4 text-sm">
                 <div className="min-w-0">
                   <div className="truncate font-medium">{conn.locationTitle}</div>
-                  <div className="mt-0.5 text-xs text-stone-500">
+                  <div className="mt-0.5 text-xs text-slate-500">
                     {conn.lastSyncAt
                       ? `Dernière sync : ${new Date(conn.lastSyncAt).toLocaleString("fr-FR")}`
                       : "Jamais synchronisée (première sync dans les 15 min)"}
@@ -910,23 +910,23 @@ function ConnectableCard({
   // Module non monté côté API : même rendu que les intégrations « Bientôt ».
   if (unavailable) {
     return (
-      <div className="flex flex-col rounded-lg border border-stone-200 bg-white p-4 opacity-75">
+      <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-4 opacity-75">
         <div className="flex items-start justify-between">
-          <span className={`ti ${icon} text-[26px] text-stone-500`} aria-hidden="true" />
-          <span className="rounded bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-500">
+          <span className={`ti ${icon} text-[26px] text-slate-500`} aria-hidden="true" />
+          <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
             Bientôt
           </span>
         </div>
-        <div className="mt-3 text-sm font-semibold text-stone-900">{name}</div>
-        <p className="mt-1 flex-1 text-xs leading-relaxed text-stone-500">{description}</p>
+        <div className="mt-3 text-sm font-semibold text-slate-900">{name}</div>
+        <p className="mt-1 flex-1 text-xs leading-relaxed text-slate-500">{description}</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col rounded-lg border border-stone-200 bg-white p-4">
+    <div className="flex flex-col rounded-lg border border-slate-200 bg-white p-4">
       <div className="flex items-start justify-between">
-        <span className={`ti ${icon} text-[26px] text-stone-700`} aria-hidden="true" />
+        <span className={`ti ${icon} text-[26px] text-slate-700`} aria-hidden="true" />
         {connections[0] ? (
           <span
             className={`rounded px-2 py-0.5 text-[11px] font-medium ${MAILBOX_STATUS_COLOR[connections[0].status]}`}
@@ -939,16 +939,16 @@ function ConnectableCard({
           </span>
         )}
       </div>
-      <div className="mt-3 text-sm font-semibold text-stone-900">{name}</div>
-      <p className="mt-1 flex-1 text-xs leading-relaxed text-stone-500">{description}</p>
+      <div className="mt-3 text-sm font-semibold text-slate-900">{name}</div>
+      <p className="mt-1 flex-1 text-xs leading-relaxed text-slate-500">{description}</p>
 
       {connections.length > 0 && (
-        <div className="mt-3 space-y-2 border-t border-stone-100 pt-3">
+        <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
           {connections.map((conn) => (
             <div key={conn.id} className="flex items-center justify-between gap-2 text-xs">
               <div className="min-w-0">
-                <div className="truncate font-medium text-stone-800">{labelOf(conn)}</div>
-                <div className="text-[11px] text-stone-500">
+                <div className="truncate font-medium text-slate-800">{labelOf(conn)}</div>
+                <div className="text-[11px] text-slate-500">
                   {conn.lastSyncAt
                     ? `Sync : ${new Date(conn.lastSyncAt).toLocaleString("fr-FR")}`
                     : "Première sync dans les 15 min"}
@@ -985,7 +985,7 @@ function ConnectableCard({
           type="button"
           onClick={handleConnect}
           disabled={busy}
-          className="mt-3 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+          className="mt-3 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-50"
         >
           {connections.length > 0 ? (connectMoreLabel ?? "Connecter un autre compte") : "Connecter"}
         </button>
@@ -1001,13 +1001,13 @@ function ConnectableCard({
                 placeholder={f.placeholder}
                 autoComplete="off"
                 required
-                className="min-w-0 rounded border border-stone-300 px-2 py-1.5 text-xs"
+                className="min-w-0 rounded border border-slate-300 px-2 py-1.5 text-xs"
               />
             ))}
             <button
               type="submit"
               disabled={busy || fields.some((f) => !(fieldValues[f.key] ?? "").trim())}
-              className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+              className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-50"
             >
               {busy ? "…" : "Valider"}
             </button>
@@ -1022,12 +1022,12 @@ function ConnectableCard({
               autoComplete="off"
               required
               minLength={10}
-              className="min-w-0 flex-1 rounded border border-stone-300 px-2 py-1.5 text-xs"
+              className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1.5 text-xs"
             />
             <button
               type="submit"
               disabled={busy || secret.trim().length < 10}
-              className="rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+              className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 disabled:opacity-50"
             >
               {busy ? "…" : "Valider"}
             </button>
@@ -1037,7 +1037,7 @@ function ConnectableCard({
         <button
           type="button"
           onClick={() => setShowForm(true)}
-          className="mt-3 rounded-lg bg-stone-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-stone-700"
+          className="mt-3 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700"
         >
           {connections.length > 0 ? "Ajouter un compte" : "Connecter"}
         </button>
@@ -1239,7 +1239,7 @@ function EcosystemSection() {
   return (
     <div className="mb-10">
       <h2 className="text-2xl font-semibold tracking-tight">Écosystème</h2>
-      <p className="mt-1 mb-4 text-sm text-stone-500">
+      <p className="mt-1 mb-4 text-sm text-slate-500">
         La suite : brancher tout le commerce à Jarvis. Ces intégrations arrivent — dis-nous celle
         qui te manque le plus.
       </p>
@@ -1247,7 +1247,7 @@ function EcosystemSection() {
       <div className="space-y-6">
         {ECOSYSTEM.map((group) => (
           <div key={group.category}>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-400">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
               {group.category}
             </h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -1257,19 +1257,19 @@ function EcosystemSection() {
                 ) : (
                   <div
                     key={item.name}
-                    className="flex flex-col rounded-lg border border-stone-200 bg-white p-4 opacity-75"
+                    className="flex flex-col rounded-lg border border-slate-200 bg-white p-4 opacity-75"
                   >
                     <div className="flex items-start justify-between">
                       <span
-                        className={`ti ${item.icon} text-[26px] text-stone-500`}
+                        className={`ti ${item.icon} text-[26px] text-slate-500`}
                         aria-hidden="true"
                       />
-                      <span className="rounded bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-500">
+                      <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
                         Bientôt
                       </span>
                     </div>
-                    <div className="mt-3 text-sm font-semibold text-stone-900">{item.name}</div>
-                    <p className="mt-1 flex-1 text-xs leading-relaxed text-stone-500">
+                    <div className="mt-3 text-sm font-semibold text-slate-900">{item.name}</div>
+                    <p className="mt-1 flex-1 text-xs leading-relaxed text-slate-500">
                       {item.description}
                     </p>
                   </div>
@@ -1303,19 +1303,19 @@ function TrackerSection() {
   return (
     <div className="mb-10">
       <h2 className="text-2xl font-semibold tracking-tight">Tracker de visites</h2>
-      <p className="mt-1 text-sm text-stone-500">
+      <p className="mt-1 text-sm text-slate-500">
         Colle cette ligne dans le <code>&lt;head&gt;</code> de ton site : chaque visite alimente la
         carte « Visites site » et le journal de Jarvis. Aucune donnée personnelle collectée (ni IP,
         ni cookie tiers).
       </p>
       <div className="mt-3 flex items-center gap-2">
-        <code className="min-w-0 flex-1 overflow-x-auto rounded border border-stone-200 bg-white px-3 py-2 text-xs text-stone-800">
+        <code className="min-w-0 flex-1 overflow-x-auto rounded border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800">
           {snippet}
         </code>
         <button
           type="button"
           onClick={copy}
-          className="shrink-0 rounded bg-stone-900 px-3 py-2 text-xs font-medium text-white hover:bg-stone-700"
+          className="shrink-0 rounded bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-700"
         >
           {copied ? "Copié !" : "Copier"}
         </button>
@@ -1390,7 +1390,7 @@ function IntegrationsView() {
 
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Intégrations — Webhooks</h1>
-        <p className="mt-1 text-sm text-stone-500">
+        <p className="mt-1 text-sm text-slate-500">
           À chaque événement (réservation créée, annulée, no-show, entrée en liste d&apos;attente),
           OKITO envoie un POST JSON signé (header <code>X-Okito-Signature</code>) à vos URLs. Idéal
           pour brancher Zapier, Make, ou votre propre système.
@@ -1407,30 +1407,30 @@ function IntegrationsView() {
 
       <div className="mt-6 space-y-3">
         {loading && rows.length === 0 ? (
-          <div className="rounded border border-stone-200 bg-white px-4 py-8 text-center text-sm text-stone-500">
+          <div className="rounded border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
             Chargement…
           </div>
         ) : rows.length === 0 ? (
-          <div className="rounded border border-stone-200 bg-white px-4 py-8 text-center text-sm text-stone-500">
+          <div className="rounded border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
             Aucun webhook. Ajoute une URL ci-dessus pour recevoir les événements.
           </div>
         ) : (
           rows.map((w) => (
-            <div key={w.id} className="rounded border border-stone-200 bg-white px-4 py-3 text-sm">
+            <div key={w.id} className="rounded border border-slate-200 bg-white px-4 py-3 text-sm">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="truncate font-medium">{w.url}</div>
-                  <div className="mt-1 text-xs text-stone-500">
+                  <div className="mt-1 text-xs text-slate-500">
                     {w.events.length === 0 ? "Tous les événements" : w.events.join(", ")}
                   </div>
-                  <div className="mt-1 font-mono text-[10px] text-stone-400">
+                  <div className="mt-1 font-mono text-[10px] text-slate-400">
                     secret : {w.secret.slice(0, 12)}…
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-3 text-xs">
                   <span
                     className={`rounded px-2 py-0.5 font-medium ${
-                      w.active ? "bg-emerald-100 text-emerald-800" : "bg-stone-200 text-stone-700"
+                      w.active ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"
                     }`}
                   >
                     {w.active ? "actif" : "inactif"}
@@ -1494,20 +1494,20 @@ function NewWebhookForm({ onCreated }: { onCreated: () => Promise<void> }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded border border-stone-200 bg-white px-4 py-4">
+    <form onSubmit={handleSubmit} className="rounded border border-slate-200 bg-white px-4 py-4">
       <label className="block">
-        <span className="text-xs uppercase tracking-wide text-stone-500">URL du endpoint</span>
+        <span className="text-xs uppercase tracking-wide text-slate-500">URL du endpoint</span>
         <input
           type="url"
           required
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://hooks.zapier.com/…"
-          className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm"
         />
       </label>
       <div className="mt-3">
-        <span className="text-xs uppercase tracking-wide text-stone-500">
+        <span className="text-xs uppercase tracking-wide text-slate-500">
           Événements (aucun sélectionné = tous)
         </span>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -1518,8 +1518,8 @@ function NewWebhookForm({ onCreated }: { onCreated: () => Promise<void> }) {
               onClick={() => toggleEvent(ev)}
               className={`rounded border px-3 py-1.5 text-xs ${
                 events.includes(ev)
-                  ? "border-stone-900 bg-stone-900 text-white"
-                  : "border-stone-300 text-stone-700 hover:bg-stone-50"
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "border-slate-300 text-slate-700 hover:bg-slate-50"
               }`}
             >
               {ev}
@@ -1531,7 +1531,7 @@ function NewWebhookForm({ onCreated }: { onCreated: () => Promise<void> }) {
         <button
           type="submit"
           disabled={busy || !url.trim()}
-          className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+          className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
         >
           {busy ? "…" : "Ajouter le webhook"}
         </button>

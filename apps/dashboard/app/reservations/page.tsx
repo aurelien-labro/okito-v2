@@ -90,17 +90,17 @@ function ReservationsList() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Réservations</h1>
-          <p className="mt-1 text-sm text-stone-500">Filtre par date — défaut : aujourd'hui.</p>
+          <p className="mt-1 text-sm text-slate-500">Filtre par date — défaut : aujourd'hui.</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex overflow-hidden rounded border border-stone-300 text-sm">
+          <div className="flex overflow-hidden rounded border border-slate-300 text-sm">
             <button
               type="button"
               onClick={() => setView("list")}
               className={
                 view === "list"
-                  ? "bg-stone-900 px-3 py-2 text-white"
-                  : "px-3 py-2 hover:bg-stone-50"
+                  ? "bg-slate-900 px-3 py-2 text-white"
+                  : "px-3 py-2 hover:bg-slate-50"
               }
             >
               Liste
@@ -110,8 +110,8 @@ function ReservationsList() {
               onClick={() => setView("agenda")}
               className={
                 view === "agenda"
-                  ? "bg-stone-900 px-3 py-2 text-white"
-                  : "px-3 py-2 hover:bg-stone-50"
+                  ? "bg-slate-900 px-3 py-2 text-white"
+                  : "px-3 py-2 hover:bg-slate-50"
               }
             >
               Agenda
@@ -121,12 +121,12 @@ function ReservationsList() {
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="rounded border border-stone-300 px-3 py-2 text-sm"
+            className="rounded border border-slate-300 px-3 py-2 text-sm"
           />
           <button
             type="button"
             onClick={fetchData}
-            className="rounded border border-stone-300 px-4 py-2 text-sm font-medium hover:bg-stone-50"
+            className="rounded border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50"
           >
             Recharger
           </button>
@@ -134,7 +134,7 @@ function ReservationsList() {
           <button
             type="button"
             onClick={() => setShowCreate(true)}
-            className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
+            className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
           >
             + Nouvelle résa
           </button>
@@ -161,16 +161,16 @@ function ReservationsList() {
       {view === "agenda" ? (
         <AgendaView rows={rows} loading={loading} />
       ) : (
-        <div className="mt-6 overflow-hidden rounded-lg border border-stone-200 bg-white">
+        <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white">
           {loading ? (
-            <div className="p-8 text-center text-sm text-stone-500">Chargement…</div>
+            <div className="p-8 text-center text-sm text-slate-500">Chargement…</div>
           ) : rows.length === 0 ? (
-            <div className="p-8 text-center text-sm text-stone-500">
+            <div className="p-8 text-center text-sm text-slate-500">
               Aucune réservation pour ce jour.
             </div>
           ) : (
             <table className="w-full text-sm">
-              <thead className="bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                   <Th>Heure</Th>
                   <Th>Client</Th>
@@ -185,7 +185,7 @@ function ReservationsList() {
                 {rows.map((r) => {
                   const stats = loyalty[r.customerPhone];
                   return (
-                    <tr key={r.id} className="border-t border-stone-100">
+                    <tr key={r.id} className="border-t border-slate-100">
                       <Td className="font-medium">{r.heure.slice(0, 5)}</Td>
                       <Td>
                         <div className="flex items-center gap-2">
@@ -196,16 +196,16 @@ function ReservationsList() {
                             </span>
                           )}
                           {stats && !stats.isReturning && stats.visitCount >= 2 && (
-                            <span className="text-[10px] text-stone-400">
+                            <span className="text-[10px] text-slate-400">
                               {stats.visitCount}× déjà vu
                             </span>
                           )}
                         </div>
                       </Td>
-                      <Td className="text-stone-600">{r.customerPhone}</Td>
+                      <Td className="text-slate-600">{r.customerPhone}</Td>
                       <Td>{r.couverts}</Td>
                       <Td>
-                        <span className="rounded bg-stone-100 px-2 py-0.5 text-xs uppercase tracking-wide text-stone-600">
+                        <span className="rounded bg-slate-100 px-2 py-0.5 text-xs uppercase tracking-wide text-slate-600">
                           {r.source}
                         </span>
                       </Td>
@@ -216,7 +216,7 @@ function ReservationsList() {
                         <div className="flex items-center gap-3">
                           <Link
                             href={`/reservations/${r.id}`}
-                            className="text-xs text-stone-700 hover:underline"
+                            className="text-xs text-slate-700 hover:underline"
                           >
                             Éditer
                           </Link>
@@ -273,14 +273,14 @@ function AgendaView({ rows, loading }: { rows: Reservation[]; loading: boolean }
   const active = rows.filter((r) => r.status !== "cancelled");
   if (loading) {
     return (
-      <div className="mt-6 rounded-lg border border-stone-200 bg-white p-8 text-center text-sm text-stone-500">
+      <div className="mt-6 rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
         Chargement…
       </div>
     );
   }
   if (active.length === 0) {
     return (
-      <div className="mt-6 rounded-lg border border-stone-200 bg-white p-8 text-center text-sm text-stone-500">
+      <div className="mt-6 rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
         Aucune réservation active pour ce jour.
       </div>
     );
@@ -308,13 +308,13 @@ function AgendaView({ rows, loading }: { rows: Reservation[]; loading: boolean }
   for (let h = startHour; h < endHour; h++) hours.push(h);
 
   return (
-    <div className="mt-6 overflow-hidden rounded-lg border border-stone-200 bg-white">
+    <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white">
       <div className="relative flex" style={{ height: totalHeight }}>
-        <div className="w-16 shrink-0 border-r border-stone-100">
+        <div className="w-16 shrink-0 border-r border-slate-100">
           {hours.map((h) => (
             <div
               key={h}
-              className="relative text-right text-[10px] text-stone-400"
+              className="relative text-right text-[10px] text-slate-400"
               style={{ height: 60 * PX_PER_MIN }}
             >
               <span className="absolute -top-1.5 right-2">{String(h % 24).padStart(2, "0")}h</span>
@@ -325,7 +325,7 @@ function AgendaView({ rows, loading }: { rows: Reservation[]; loading: boolean }
           {hours.map((h) => (
             <div
               key={h}
-              className="border-t border-stone-100"
+              className="border-t border-slate-100"
               style={{ height: 60 * PX_PER_MIN }}
             />
           ))}
@@ -391,7 +391,7 @@ function IcalButton() {
       type="button"
       onClick={handleClick}
       disabled={busy}
-      className="rounded border border-stone-300 px-4 py-2 text-sm font-medium hover:bg-stone-50 disabled:opacity-50"
+      className="rounded border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
     >
       {busy ? "…" : "Exporter iCal"}
     </button>
@@ -438,14 +438,14 @@ function CreateModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 p-4">
-      <div className="w-full max-w-lg rounded-xl border border-stone-200 bg-white p-6 shadow-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+      <div className="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-lg">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Nouvelle réservation</h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-sm text-stone-400 hover:text-stone-700"
+            className="text-sm text-slate-400 hover:text-slate-700"
           >
             Fermer
           </button>
@@ -453,17 +453,17 @@ function CreateModal({
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="grid gap-3 md:grid-cols-2">
             <label className="block">
-              <span className="text-xs uppercase tracking-wide text-stone-500">Nom *</span>
+              <span className="text-xs uppercase tracking-wide text-slate-500">Nom *</span>
               <input
                 required
                 minLength={2}
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm"
               />
             </label>
             <label className="block">
-              <span className="text-xs uppercase tracking-wide text-stone-500">Téléphone *</span>
+              <span className="text-xs uppercase tracking-wide text-slate-500">Téléphone *</span>
               <input
                 type="tel"
                 required
@@ -471,31 +471,31 @@ function CreateModal({
                 maxLength={20}
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
-                className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm"
               />
             </label>
             <label className="block">
-              <span className="text-xs uppercase tracking-wide text-stone-500">Date *</span>
+              <span className="text-xs uppercase tracking-wide text-slate-500">Date *</span>
               <input
                 type="date"
                 required
                 value={dateReservation}
                 onChange={(e) => setDateReservation(e.target.value)}
-                className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm"
               />
             </label>
             <label className="block">
-              <span className="text-xs uppercase tracking-wide text-stone-500">Heure *</span>
+              <span className="text-xs uppercase tracking-wide text-slate-500">Heure *</span>
               <input
                 type="time"
                 required
                 value={heure}
                 onChange={(e) => setHeure(e.target.value)}
-                className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm"
               />
             </label>
             <label className="block">
-              <span className="text-xs uppercase tracking-wide text-stone-500">Couverts *</span>
+              <span className="text-xs uppercase tracking-wide text-slate-500">Couverts *</span>
               <input
                 type="number"
                 min={1}
@@ -503,19 +503,19 @@ function CreateModal({
                 required
                 value={couverts}
                 onChange={(e) => setCouverts(Number(e.target.value))}
-                className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm"
               />
             </label>
           </div>
           <label className="block">
-            <span className="text-xs uppercase tracking-wide text-stone-500">Notes</span>
+            <span className="text-xs uppercase tracking-wide text-slate-500">Notes</span>
             <textarea
               rows={2}
               maxLength={500}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Allergies, demandes spéciales…"
-              className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm"
             />
           </label>
           {err && <div className="text-sm text-rose-700">{err}</div>}
@@ -523,14 +523,14 @@ function CreateModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded border border-stone-300 px-4 py-2 text-sm hover:bg-stone-50"
+              className="rounded border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50"
             >
               Annuler
             </button>
             <button
               type="submit"
               disabled={busy || !customerName.trim() || !customerPhone.trim()}
-              className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+              className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
             >
               {busy ? "Création…" : "Créer"}
             </button>
@@ -560,7 +560,7 @@ function StatusBadge({ status }: { status: string }) {
     status === "confirmed"
       ? "bg-emerald-50 text-emerald-800 border-emerald-200"
       : status === "cancelled"
-        ? "bg-stone-100 text-stone-500 border-stone-200"
+        ? "bg-slate-100 text-slate-500 border-slate-200"
         : "bg-amber-50 text-amber-800 border-amber-200";
   return (
     <span

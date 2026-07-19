@@ -150,12 +150,12 @@ function SiteEditor() {
 
   if (unavailable) {
     return (
-      <div className="p-8 text-sm text-stone-500">
+      <div className="p-8 text-sm text-slate-500">
         Module site non monté côté API (redémarrer l&apos;API après mise à jour).
       </div>
     );
   }
-  if (!loaded) return <div className="p-8 text-sm text-stone-500">Chargement…</div>;
+  if (!loaded) return <div className="p-8 text-sm text-slate-500">Chargement…</div>;
 
   const publicUrl = site ? `${LANDING_URL}/s/${site.slug}` : null;
 
@@ -164,7 +164,7 @@ function SiteEditor() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Site web</h1>
-          <p className="mt-1 text-sm text-stone-500">
+          <p className="mt-1 text-sm text-slate-500">
             Votre site vitrine hébergé par OKITO : remplissez les blocs, prévisualisez, publiez.
           </p>
         </div>
@@ -175,7 +175,7 @@ function SiteEditor() {
                 En ligne
               </span>
             ) : (
-              <span className="rounded bg-stone-200 px-2 py-0.5 text-xs font-medium text-stone-700">
+              <span className="rounded bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-700">
                 Brouillon
               </span>
             )}
@@ -193,7 +193,7 @@ function SiteEditor() {
               type="button"
               onClick={handlePublishToggle}
               disabled={busy}
-              className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
               {site.status === "published" ? "Dépublier" : "Publier"}
             </button>
@@ -215,14 +215,14 @@ function SiteEditor() {
       <form onSubmit={handleSave} className="mt-6 space-y-6">
         <Card title="Adresse du site">
           <label className="block max-w-md">
-            <span className="mb-1 block text-xs font-medium text-stone-700">Slug public</span>
+            <span className="mb-1 block text-xs font-medium text-slate-700">Slug public</span>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-stone-500">okito.app/s/</span>
+              <span className="text-sm text-slate-500">okito.app/s/</span>
               <input
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
                 placeholder="mon-commerce"
-                className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
               />
             </div>
           </label>
@@ -313,13 +313,13 @@ function SiteEditor() {
             placeholder="12 rue de la Paix, 75002 Paris"
           />
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-stone-700">Horaires</span>
+            <span className="mb-1 block text-xs font-medium text-slate-700">Horaires</span>
             <textarea
               value={infoHours}
               onChange={(e) => setInfoHours(e.target.value)}
               rows={3}
               placeholder={"Mar–Sam : 12h–14h30 / 19h–22h\nDim–Lun : fermé"}
-              className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
             />
           </label>
           <div className="grid gap-4 md:grid-cols-2">
@@ -357,7 +357,7 @@ function SiteEditor() {
           <button
             type="submit"
             disabled={busy}
-            className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
           >
             {busy ? "Enregistrement…" : site ? "Enregistrer" : "Créer mon site"}
           </button>
@@ -373,7 +373,7 @@ function patch(items: OfferItem[], index: number, change: Partial<OfferItem>): O
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-4 rounded-lg border border-stone-200 bg-white p-6">
+    <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-6">
       <h2 className="text-lg font-semibold">{title}</h2>
       {children}
     </section>
@@ -395,12 +395,12 @@ function Field({
 }) {
   return (
     <label className={`block ${className ?? ""}`}>
-      <span className="mb-1 block text-xs font-medium text-stone-700">{label}</span>
+      <span className="mb-1 block text-xs font-medium text-slate-700">{label}</span>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+        className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
       />
     </label>
   );

@@ -117,7 +117,7 @@ function TenantDetail() {
   }
 
   if (loading) {
-    return <div className="p-8 text-sm text-stone-500">Chargement…</div>;
+    return <div className="p-8 text-sm text-slate-500">Chargement…</div>;
   }
 
   if (err && !tenant) {
@@ -135,7 +135,7 @@ function TenantDetail() {
     return (
       <div>
         <BackLink />
-        <div className="mt-4 text-sm text-stone-500">Tenant introuvable.</div>
+        <div className="mt-4 text-sm text-slate-500">Tenant introuvable.</div>
       </div>
     );
   }
@@ -147,14 +147,14 @@ function TenantDetail() {
       <header className="mt-4 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{tenant.name}</h1>
-          <p className="mt-1 text-sm text-stone-500">
-            <code className="rounded bg-stone-100 px-1 py-0.5 text-xs">{tenant.slug}</code>
+          <p className="mt-1 text-sm text-slate-500">
+            <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">{tenant.slug}</code>
             <span className="ml-2">{tenant.industry}</span>
             <span className="ml-2">·</span>
             <StatusBadge className="ml-2" status={tenant.status} />
           </p>
         </div>
-        <div className="text-right text-xs text-stone-500">
+        <div className="text-right text-xs text-slate-500">
           <div>Créé : {fmtDate(tenant.createdAt)}</div>
           <div>MAJ : {fmtDate(tenant.updatedAt)}</div>
         </div>
@@ -168,14 +168,14 @@ function TenantDetail() {
                 value={form.name}
                 onChange={(e) => patchForm({ name: e.target.value })}
                 required
-                className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
               />
             </Field>
             <Field label="Vertical">
               <select
                 value={form.industry}
                 onChange={(e) => patchForm({ industry: e.target.value })}
-                className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
               >
                 {INDUSTRIES.map((i) => (
                   <option key={i} value={i}>
@@ -190,7 +190,7 @@ function TenantDetail() {
                 value={form.contactEmail ?? ""}
                 onChange={(e) => patchForm({ contactEmail: e.target.value || null })}
                 placeholder="manager@bistrot.fr"
-                className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
               />
             </Field>
             <Field label="Téléphone contact">
@@ -199,7 +199,7 @@ function TenantDetail() {
                 value={form.contactPhone ?? ""}
                 onChange={(e) => patchForm({ contactPhone: e.target.value || null })}
                 placeholder="+33 6 12 34 56 78"
-                className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
               />
             </Field>
           </div>
@@ -211,7 +211,7 @@ function TenantDetail() {
               <select
                 value={form.timezone}
                 onChange={(e) => patchForm({ timezone: e.target.value })}
-                className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
               >
                 {(TIMEZONES.includes(form.timezone)
                   ? TIMEZONES
@@ -230,14 +230,14 @@ function TenantDetail() {
                 max={10000}
                 value={form.capacityMax}
                 onChange={(e) => patchForm({ capacityMax: Number(e.target.value) })}
-                className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
               />
             </Field>
             <Field label="Statut">
               <select
                 value={form.status}
                 onChange={(e) => patchForm({ status: e.target.value as FormState["status"] })}
-                className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
               >
                 {STATUSES.map((s) => (
                   <option key={s} value={s}>
@@ -258,7 +258,7 @@ function TenantDetail() {
         </Section>
 
         <Section title="Feature flags">
-          <p className="-mt-2 mb-4 text-xs text-stone-500">
+          <p className="-mt-2 mb-4 text-xs text-slate-500">
             Active/désactive les modules optionnels pour ce tenant. Toujours sauvegardé en un seul
             bloc.
           </p>
@@ -276,7 +276,7 @@ function TenantDetail() {
         </Section>
 
         <Section title="Horaires de service">
-          <p className="-mt-2 mb-4 text-xs text-stone-500">
+          <p className="-mt-2 mb-4 text-xs text-slate-500">
             Plages d'ouverture pendant lesquelles les réservations sont acceptées. Tant que cette
             liste est vide, OKITO retombe sur les créneaux historiques (déjeuner 12h-14h30, dîner
             19h-22h). Ajoute des plages pour les surcharger.
@@ -293,8 +293,8 @@ function TenantDetail() {
           </div>
         )}
 
-        <div className="flex items-center justify-between border-t border-stone-200 pt-4">
-          <div className="text-xs text-stone-500">
+        <div className="flex items-center justify-between border-t border-slate-200 pt-4">
+          <div className="text-xs text-slate-500">
             {dirty
               ? "Modifications non sauvegardées."
               : savedAt
@@ -305,14 +305,14 @@ function TenantDetail() {
             <button
               type="button"
               onClick={() => router.push("/tenants")}
-              className="rounded border border-stone-300 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
+              className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
             >
               Retour
             </button>
             <button
               type="submit"
               disabled={!dirty || saving}
-              className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
               {saving ? "Sauvegarde…" : "Sauvegarder"}
             </button>
@@ -409,8 +409,8 @@ const FEATURE_HINT: Record<FeatureKey, string> = {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-stone-200 bg-white p-6">
-      <h2 className="text-base font-semibold text-stone-900">{title}</h2>
+    <section className="rounded-lg border border-slate-200 bg-white p-6">
+      <h2 className="text-base font-semibold text-slate-900">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -419,7 +419,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="block">
-      <span className="mb-1 block text-xs font-medium text-stone-700">{label}</span>
+      <span className="mb-1 block text-xs font-medium text-slate-700">{label}</span>
       {children}
     </div>
   );
@@ -445,7 +445,7 @@ function ServicesEditor({
   return (
     <div className="space-y-3">
       {services.length === 0 ? (
-        <div className="rounded border border-dashed border-stone-300 px-4 py-6 text-center text-sm text-stone-500">
+        <div className="rounded border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500">
           Aucune plage personnalisée.
         </div>
       ) : (
@@ -454,7 +454,7 @@ function ServicesEditor({
           return (
             <div
               key={`${i}-${s.label}`}
-              className="grid items-end gap-3 rounded border border-stone-200 p-3 md:grid-cols-[2fr_1fr_1fr_auto]"
+              className="grid items-end gap-3 rounded border border-slate-200 p-3 md:grid-cols-[2fr_1fr_1fr_auto]"
             >
               <Field label="Nom">
                 <input
@@ -462,7 +462,7 @@ function ServicesEditor({
                   onChange={(e) => update(i, { label: e.target.value })}
                   maxLength={40}
                   placeholder="Déjeuner, Check-in, Atelier matin…"
-                  className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                  className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
                 />
               </Field>
               <Field label="Début">
@@ -470,7 +470,7 @@ function ServicesEditor({
                   type="time"
                   value={s.start}
                   onChange={(e) => update(i, { start: e.target.value })}
-                  className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                  className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
                 />
               </Field>
               <Field label="Fin">
@@ -479,14 +479,14 @@ function ServicesEditor({
                   value={s.end}
                   onChange={(e) => update(i, { end: e.target.value })}
                   className={`w-full rounded border px-3 py-2 text-sm ${
-                    invalid ? "border-red-300 bg-red-50" : "border-stone-300"
+                    invalid ? "border-red-300 bg-red-50" : "border-slate-300"
                   }`}
                 />
               </Field>
               <button
                 type="button"
                 onClick={() => remove(i)}
-                className="rounded border border-stone-300 px-3 py-2 text-xs text-stone-600 hover:bg-stone-50"
+                className="rounded border border-slate-300 px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"
                 aria-label="Supprimer cette plage"
               >
                 Retirer
@@ -500,12 +500,12 @@ function ServicesEditor({
           type="button"
           onClick={add}
           disabled={services.length >= 10}
-          className="rounded border border-stone-300 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 disabled:opacity-50"
+          className="rounded border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
         >
           + Ajouter une plage
         </button>
         {services.length >= 10 && (
-          <span className="ml-3 text-xs text-stone-500">Maximum 10 plages.</span>
+          <span className="ml-3 text-xs text-slate-500">Maximum 10 plages.</span>
         )}
       </div>
     </div>
@@ -524,16 +524,16 @@ function Toggle({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-start gap-3 rounded border border-stone-200 p-3 hover:bg-stone-50">
+    <label className="flex cursor-pointer items-start gap-3 rounded border border-slate-200 p-3 hover:bg-slate-50">
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-1 h-4 w-4 accent-stone-900"
+        className="mt-1 h-4 w-4 accent-slate-900"
       />
       <span className="flex-1">
-        <span className="block text-sm font-medium text-stone-900">{label}</span>
-        {hint && <span className="mt-0.5 block text-xs text-stone-500">{hint}</span>}
+        <span className="block text-sm font-medium text-slate-900">{label}</span>
+        {hint && <span className="mt-0.5 block text-xs text-slate-500">{hint}</span>}
       </span>
     </label>
   );
@@ -541,7 +541,7 @@ function Toggle({
 
 function BackLink() {
   return (
-    <Link href="/tenants" className="text-sm text-stone-500 hover:text-stone-900 hover:underline">
+    <Link href="/tenants" className="text-sm text-slate-500 hover:text-slate-900 hover:underline">
       ← Tenants
     </Link>
   );

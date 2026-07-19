@@ -58,7 +58,7 @@ export default function VoicePage() {
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="text-2xl font-semibold tracking-tight">Voix clonée</h1>
-      <p className="mt-1 text-sm text-stone-500">
+      <p className="mt-1 text-sm text-slate-500">
         L'assistant téléphonique parle avec la voix du patron. Sans profil, il garde la voix par
         défaut.
       </p>
@@ -73,7 +73,7 @@ export default function VoicePage() {
           {error}
         </div>
       )}
-      {loading && <div className="mt-6 text-sm text-stone-500">Chargement…</div>}
+      {loading && <div className="mt-6 text-sm text-slate-500">Chargement…</div>}
 
       {tenantId && !loading && profile && (
         <ProfileCard
@@ -133,14 +133,14 @@ function HealthCard({ tenantId }: { tenantId: string }) {
   }, [check]);
 
   return (
-    <div className="mt-6 rounded-lg border border-stone-200 bg-white p-5">
+    <div className="mt-6 rounded-lg border border-slate-200 bg-white p-5">
       <div className="flex items-center justify-between">
         <h2 className="font-medium">Santé du pipeline</h2>
         <button
           type="button"
           onClick={() => void check()}
           disabled={busy}
-          className="rounded border border-stone-300 px-3 py-1 text-xs hover:bg-stone-50 disabled:opacity-50"
+          className="rounded border border-slate-300 px-3 py-1 text-xs hover:bg-slate-50 disabled:opacity-50"
         >
           {busy ? "Vérification…" : "Re-vérifier"}
         </button>
@@ -206,10 +206,10 @@ function HealthLine({
   neutral?: boolean;
 }) {
   const icon = ok ? "✓" : neutral ? "—" : "✗";
-  const color = ok ? "text-emerald-700" : neutral ? "text-stone-400" : "text-red-700";
+  const color = ok ? "text-emerald-700" : neutral ? "text-slate-400" : "text-red-700";
   return (
-    <div className="flex items-center justify-between border-b border-stone-100 pb-1.5 last:border-0">
-      <span className="text-stone-600">{label}</span>
+    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 last:border-0">
+      <span className="text-slate-600">{label}</span>
       <span className={`${color} text-xs`}>
         {icon} {detail}
       </span>
@@ -237,20 +237,20 @@ function CallsCard({ tenantId }: { tenantId: string }) {
   }, [load]);
 
   return (
-    <div className="mt-6 rounded-lg border border-stone-200 bg-white p-5">
+    <div className="mt-6 rounded-lg border border-slate-200 bg-white p-5">
       <div className="flex items-center justify-between">
         <h2 className="font-medium">Derniers appels</h2>
         <button
           type="button"
           onClick={() => void load()}
-          className="rounded border border-stone-300 px-3 py-1 text-xs hover:bg-stone-50"
+          className="rounded border border-slate-300 px-3 py-1 text-xs hover:bg-slate-50"
         >
           Rafraîchir
         </button>
       </div>
       {err && <div className="mt-3 text-sm text-red-700">{err}</div>}
       {calls && calls.length === 0 && (
-        <p className="mt-3 text-sm text-stone-500">
+        <p className="mt-3 text-sm text-slate-500">
           Aucun appel enregistré depuis le démarrage de l'API. Les latences par tour (LLM, premier
           son, total) apparaîtront ici dès le premier appel réel.
         </p>
@@ -258,7 +258,7 @@ function CallsCard({ tenantId }: { tenantId: string }) {
       {calls && calls.length > 0 && (
         <table className="mt-3 w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-stone-200 text-xs uppercase tracking-wide text-stone-400">
+            <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-400">
               <th className="py-1.5 pr-2 font-medium">Appel</th>
               <th className="py-1.5 pr-2 font-medium">Heure</th>
               <th className="py-1.5 pr-2 font-medium">Tours</th>
@@ -273,7 +273,7 @@ function CallsCard({ tenantId }: { tenantId: string }) {
               const first = median(call.turns.map((t) => t.llmMs + t.ttsFirstChunkMs));
               const interrupted = call.turns.filter((t) => t.interrupted).length;
               return (
-                <tr key={call.callSid} className="border-b border-stone-100 last:border-0">
+                <tr key={call.callSid} className="border-b border-slate-100 last:border-0">
                   <td className="py-1.5 pr-2 font-mono text-xs">{call.callSid.slice(0, 10)}…</td>
                   <td className="py-1.5 pr-2">
                     {new Date(call.startedAt).toLocaleTimeString("fr-FR")}
@@ -331,25 +331,25 @@ function ProfileCard({
   }
 
   return (
-    <div className="mt-6 rounded-lg border border-stone-200 bg-white p-5">
+    <div className="mt-6 rounded-lg border border-slate-200 bg-white p-5">
       <div className="flex items-center justify-between">
         <div>
           <div className="font-medium">{profile.label}</div>
-          <div className="mt-0.5 text-xs text-stone-500">
-            voiceId <code className="rounded bg-stone-100 px-1">{profile.voiceId}</code>
+          <div className="mt-0.5 text-xs text-slate-500">
+            voiceId <code className="rounded bg-slate-100 px-1">{profile.voiceId}</code>
           </div>
         </div>
         <span
           className={
             profile.status === "active"
               ? "rounded bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800"
-              : "rounded bg-stone-100 px-2 py-0.5 text-xs text-stone-500"
+              : "rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500"
           }
         >
           {profile.status === "active" ? "active" : profile.status}
         </span>
       </div>
-      <div className="mt-4 rounded border border-stone-100 bg-stone-50 p-3 text-xs text-stone-600">
+      <div className="mt-4 rounded border border-slate-100 bg-slate-50 p-3 text-xs text-slate-600">
         Consentement donné par <strong>{profile.consentGivenBy}</strong> le{" "}
         {new Date(profile.consentAt).toLocaleString("fr-FR")}.
       </div>
@@ -358,7 +358,7 @@ function ProfileCard({
           type="button"
           onClick={() => void playPreview()}
           disabled={busy || profile.status !== "active"}
-          className="rounded border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-50 disabled:opacity-50"
+          className="rounded border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-50"
         >
           {busy ? "Génération…" : "Écouter un extrait"}
         </button>
@@ -434,9 +434,9 @@ function CreateForm({ tenantId, onCreated }: { tenantId: string; onCreated: () =
   const ready = consented && givenBy.trim().length > 0 && samples.length > 0 && !busy;
 
   return (
-    <div className="mt-6 rounded-lg border border-stone-200 bg-white p-5">
+    <div className="mt-6 rounded-lg border border-slate-200 bg-white p-5">
       <h2 className="font-medium">Créer le clone vocal</h2>
-      <p className="mt-1 text-xs text-stone-500">
+      <p className="mt-1 text-xs text-slate-500">
         1 à 10 échantillons audio (mp3, wav, ogg, webm, m4a — max 6 Mo chacun). Une à deux minutes
         de parole naturelle suffisent.
       </p>
@@ -446,7 +446,7 @@ function CreateForm({ tenantId, onCreated }: { tenantId: string; onCreated: () =
         <input
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm"
         />
       </label>
 
@@ -457,25 +457,25 @@ function CreateForm({ tenantId, onCreated }: { tenantId: string; onCreated: () =
           accept={ACCEPTED_MIMES.join(",")}
           multiple
           onChange={(e) => void handleFiles(e.target.files)}
-          className="mt-1 block w-full text-sm text-stone-600 file:mr-3 file:rounded file:border-0 file:bg-stone-900 file:px-3 file:py-1.5 file:text-sm file:text-white hover:file:bg-stone-700"
+          className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-sm file:text-white hover:file:bg-slate-700"
         />
       </label>
       {samples.length > 0 && (
-        <div className="mt-2 text-xs text-stone-500">
+        <div className="mt-2 text-xs text-slate-500">
           {samples.length} fichier{samples.length > 1 ? "s" : ""} prêt
           {samples.length > 1 ? "s" : ""} : {samples.map((s) => s.filename).join(", ")}
         </div>
       )}
 
-      <div className="mt-4 rounded border border-stone-100 bg-stone-50 p-3">
-        <div className="text-xs text-stone-600">{DEFAULT_CONSENT_TEXT}</div>
+      <div className="mt-4 rounded border border-slate-100 bg-slate-50 p-3">
+        <div className="text-xs text-slate-600">{DEFAULT_CONSENT_TEXT}</div>
         <label className="mt-3 block text-sm">
           Nom de la personne qui consent
           <input
             value={givenBy}
             onChange={(e) => setGivenBy(e.target.value)}
             placeholder="Prénom Nom"
-            className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded border border-slate-300 px-3 py-2 text-sm"
           />
         </label>
         <label className="mt-3 flex items-start gap-2 text-sm">
@@ -493,7 +493,7 @@ function CreateForm({ tenantId, onCreated }: { tenantId: string; onCreated: () =
         type="button"
         disabled={!ready}
         onClick={() => void submit()}
-        className="mt-4 rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+        className="mt-4 rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
       >
         {busy ? "Clonage en cours…" : "Cloner la voix"}
       </button>

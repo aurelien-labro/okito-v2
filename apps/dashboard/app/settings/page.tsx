@@ -125,14 +125,14 @@ function SettingsView() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Paramètres</h1>
-          <p className="mt-1 text-sm text-stone-500">
+          <p className="mt-1 text-sm text-slate-500">
             Configure ton restaurant — informations, capacité, notifications, widget.
           </p>
         </div>
         <select
           value={tenantId}
           onChange={(e) => setTenantId(e.target.value)}
-          className="rounded border border-stone-300 px-3 py-2 text-sm"
+          className="rounded border border-slate-300 px-3 py-2 text-sm"
         >
           {tenants.map((t) => (
             <option key={t.id} value={t.id}>
@@ -149,7 +149,7 @@ function SettingsView() {
       )}
 
       {!tenant || !form ? (
-        <div className="mt-8 rounded-lg border border-stone-200 bg-white p-12 text-center text-sm text-stone-500">
+        <div className="mt-8 rounded-lg border border-slate-200 bg-white p-12 text-center text-sm text-slate-500">
           Chargement…
         </div>
       ) : (
@@ -207,7 +207,7 @@ function SettingsView() {
           </Section>
 
           <Section title="Fonctionnalités">
-            <p className="-mt-2 mb-4 text-xs text-stone-500">
+            <p className="-mt-2 mb-4 text-xs text-slate-500">
               Active/désactive les modules. Les pages dashboard liées peuvent rester visibles mais
               le bot ne propose plus les fonctionnalités décochées.
             </p>
@@ -220,7 +220,7 @@ function SettingsView() {
           </Section>
 
           <Section title="Notifications">
-            <p className="-mt-2 mb-4 text-xs text-stone-500">
+            <p className="-mt-2 mb-4 text-xs text-slate-500">
               Choisis qui reçoit quoi sur quel canal. Manager = toi/ton équipe ; Client = la
               personne qui a réservé.
             </p>
@@ -238,7 +238,7 @@ function SettingsView() {
                       branding: { ...form.branding, primaryColor: e.target.value },
                     })
                   }
-                  className="h-10 w-full rounded border border-stone-300 px-1"
+                  className="h-10 w-full rounded border border-slate-300 px-1"
                 />
               </Field>
               <Field label="URL du logo (https://…)">
@@ -273,7 +273,7 @@ function SettingsView() {
           </Section>
 
           <Section title="Acomptes anti-no-show">
-            <p className="-mt-2 mb-4 text-xs text-stone-500">
+            <p className="-mt-2 mb-4 text-xs text-slate-500">
               Retiens un acompte pour réduire le no-show (déduit de l'addition). 0 € = feature
               désactivée.
             </p>
@@ -315,8 +315,8 @@ function SettingsView() {
             </div>
           )}
 
-          <div className="flex items-center justify-between border-t border-stone-200 pt-4">
-            <div className="text-xs text-stone-500">
+          <div className="flex items-center justify-between border-t border-slate-200 pt-4">
+            <div className="text-xs text-slate-500">
               {dirty
                 ? "Modifications non sauvegardées."
                 : savedAt
@@ -326,7 +326,7 @@ function SettingsView() {
             <button
               type="submit"
               disabled={!dirty || saving}
-              className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
               {saving ? "Sauvegarde…" : "Sauvegarder"}
             </button>
@@ -337,8 +337,8 @@ function SettingsView() {
       {tenantId && <BillingSection tenantId={tenantId} />}
 
       <section className="mt-12">
-        <h2 className="text-base font-semibold text-stone-900">Providers (lecture seule)</h2>
-        <p className="mt-1 text-xs text-stone-500">
+        <h2 className="text-base font-semibold text-slate-900">Providers (lecture seule)</h2>
+        <p className="mt-1 text-xs text-slate-500">
           Configuration infra côté serveur. Pour modifier, mettre à jour les variables d'env.
         </p>
         <div className="mt-4 grid gap-4 lg:grid-cols-3">
@@ -423,11 +423,11 @@ function BillingSection({ tenantId }: { tenantId: string }) {
         : "Période d'essai";
 
   return (
-    <section className="mt-12 rounded-lg border border-stone-200 bg-white p-6">
+    <section className="mt-12 rounded-lg border border-slate-200 bg-white p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-base font-semibold text-stone-900">Abonnement OKITO</h2>
-          <p className="mt-1 text-sm text-stone-500">
+          <h2 className="text-base font-semibold text-slate-900">Abonnement OKITO</h2>
+          <p className="mt-1 text-sm text-slate-500">
             {billing ? statusLabel : "Chargement…"}
             {sub?.currentPeriodEnd && (
               <>
@@ -444,7 +444,7 @@ function BillingSection({ tenantId }: { tenantId: string }) {
               type="button"
               onClick={() => go("portal")}
               disabled={busy}
-              className="rounded border border-stone-300 px-4 py-2 text-sm font-medium text-stone-900 hover:bg-stone-50 disabled:opacity-50"
+              className="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-slate-50 disabled:opacity-50"
             >
               {busy ? "Redirection…" : "Gérer mon abonnement"}
             </button>
@@ -453,7 +453,7 @@ function BillingSection({ tenantId }: { tenantId: string }) {
               type="button"
               onClick={() => go("checkout")}
               disabled={busy}
-              className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
               {busy ? "Redirection…" : "S'abonner"}
             </button>
@@ -569,7 +569,7 @@ function NotifMatrix({
   return (
     <table className="w-full text-sm">
       <thead>
-        <tr className="text-xs text-stone-500">
+        <tr className="text-xs text-slate-500">
           <th className="px-2 py-2 text-left font-medium" />
           <th className="px-2 py-2 font-medium">Email</th>
           <th className="px-2 py-2 font-medium">WhatsApp</th>
@@ -581,15 +581,15 @@ function NotifMatrix({
           const branch = prefs[r.audience] as Record<string, ChannelsSet | undefined> | undefined;
           const cs = branch?.[r.event] ?? {};
           return (
-            <tr key={`${r.audience}-${r.event}`} className="border-t border-stone-100">
-              <td className="px-2 py-2 text-stone-700">{r.label}</td>
+            <tr key={`${r.audience}-${r.event}`} className="border-t border-slate-100">
+              <td className="px-2 py-2 text-slate-700">{r.label}</td>
               {(["email", "whatsapp", "sms"] as const).map((ch) => (
                 <td key={ch} className="px-2 py-2 text-center">
                   <input
                     type="checkbox"
                     checked={Boolean(cs[ch])}
                     onChange={() => onToggle(r.audience, r.event, ch)}
-                    className="h-4 w-4 accent-stone-900"
+                    className="h-4 w-4 accent-slate-900"
                   />
                 </td>
               ))}
@@ -641,17 +641,17 @@ function FeaturesGrid({
       {items.map((it) => (
         <label
           key={it.key}
-          className="flex cursor-pointer items-start gap-3 rounded border border-stone-200 p-3 hover:bg-stone-50"
+          className="flex cursor-pointer items-start gap-3 rounded border border-slate-200 p-3 hover:bg-slate-50"
         >
           <input
             type="checkbox"
             checked={Boolean(features[it.key])}
             onChange={() => onToggle(it.key)}
-            className="mt-0.5 h-4 w-4 accent-stone-900"
+            className="mt-0.5 h-4 w-4 accent-slate-900"
           />
           <div>
-            <div className="text-sm font-medium text-stone-900">{it.title}</div>
-            <div className="text-xs text-stone-500">{it.desc}</div>
+            <div className="text-sm font-medium text-slate-900">{it.title}</div>
+            <div className="text-xs text-slate-500">{it.desc}</div>
           </div>
         </label>
       ))}
@@ -661,8 +661,8 @@ function FeaturesGrid({
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-stone-200 bg-white p-6">
-      <h2 className="text-base font-semibold text-stone-900">{title}</h2>
+    <section className="rounded-lg border border-slate-200 bg-white p-6">
+      <h2 className="text-base font-semibold text-slate-900">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -675,7 +675,7 @@ function Grid({ cols, children }: { cols: 2 | 3; children: React.ReactNode }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="block">
-      <span className="mb-1 block text-xs font-medium text-stone-700">{label}</span>
+      <span className="mb-1 block text-xs font-medium text-slate-700">{label}</span>
       {children}
     </div>
   );
@@ -693,7 +693,7 @@ function Input({
     <input
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+      className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
       {...rest}
     />
   );
@@ -712,7 +712,7 @@ function Select({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+      className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
     >
       {options.map((o) => (
         <option key={o} value={o}>
@@ -733,22 +733,22 @@ function Toggle({
   label: string;
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 rounded border border-stone-200 p-2.5 hover:bg-stone-50">
+    <label className="flex cursor-pointer items-center gap-2 rounded border border-slate-200 p-2.5 hover:bg-slate-50">
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 accent-stone-900"
+        className="h-4 w-4 accent-slate-900"
       />
-      <span className="text-sm text-stone-700">{label}</span>
+      <span className="text-sm text-slate-700">{label}</span>
     </label>
   );
 }
 
 function SettingsGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-white px-5 py-4">
-      <h3 className="text-sm font-semibold text-stone-900">{title}</h3>
+    <div className="rounded-lg border border-slate-200 bg-white px-5 py-4">
+      <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
       <dl className="mt-3 space-y-2">{children}</dl>
     </div>
   );
@@ -757,8 +757,8 @@ function SettingsGroup({ title, children }: { title: string; children: React.Rea
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4 text-sm">
-      <dt className="text-stone-500">{label}</dt>
-      <dd className="font-medium text-stone-900">{value}</dd>
+      <dt className="text-slate-500">{label}</dt>
+      <dd className="font-medium text-slate-900">{value}</dd>
     </div>
   );
 }
