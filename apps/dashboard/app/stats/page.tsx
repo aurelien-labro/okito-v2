@@ -70,7 +70,7 @@ function StatsView() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Statistiques</h1>
-          <p className="mt-1 text-sm text-stone-500">
+          <p className="mt-1 text-sm text-slate-500">
             Vue d'ensemble business sur la période — résas, sources, créneaux populaires.
           </p>
         </div>
@@ -78,7 +78,7 @@ function StatsView() {
           <select
             value={tenantId}
             onChange={(e) => setTenantId(e.target.value)}
-            className="rounded border border-stone-300 px-3 py-2 text-sm"
+            className="rounded border border-slate-300 px-3 py-2 text-sm"
           >
             {tenants.map((t) => (
               <option key={t.id} value={t.id}>
@@ -89,7 +89,7 @@ function StatsView() {
           <select
             value={days}
             onChange={(e) => setDays(Number(e.target.value))}
-            className="rounded border border-stone-300 px-3 py-2 text-sm"
+            className="rounded border border-slate-300 px-3 py-2 text-sm"
           >
             {RANGES.map((r) => (
               <option key={r.value} value={r.value}>
@@ -107,7 +107,7 @@ function StatsView() {
       )}
 
       {loading || !stats ? (
-        <div className="mt-8 rounded-lg border border-stone-200 bg-white p-12 text-center text-sm text-stone-500">
+        <div className="mt-8 rounded-lg border border-slate-200 bg-white p-12 text-center text-sm text-slate-500">
           {loading ? "Chargement…" : "Aucune donnée"}
         </div>
       ) : (
@@ -142,9 +142,9 @@ function ReviewsWidget({ reviews }: { reviews: ReviewSummary }) {
         <div className="text-3xl font-semibold tracking-tight">{reviews.average.toFixed(1)}</div>
         <div className="text-sm text-amber-500">
           {"★".repeat(Math.round(reviews.average))}
-          <span className="text-stone-300">{"★".repeat(5 - Math.round(reviews.average))}</span>
+          <span className="text-slate-300">{"★".repeat(5 - Math.round(reviews.average))}</span>
         </div>
-        <div className="text-xs text-stone-500">
+        <div className="text-xs text-slate-500">
           {reviews.count} avis{reviews.count > 1 ? "" : ""}
         </div>
       </div>
@@ -152,10 +152,10 @@ function ReviewsWidget({ reviews }: { reviews: ReviewSummary }) {
         {reviews.recent.map((r, i) => (
           <li
             key={`${r.submittedAt}-${i}`}
-            className="rounded border border-stone-100 px-3 py-2 text-sm"
+            className="rounded border border-slate-100 px-3 py-2 text-sm"
           >
             <span className="text-amber-500">{"★".repeat(r.rating)}</span>
-            {r.comment && <span className="ml-2 text-stone-600">{r.comment}</span>}
+            {r.comment && <span className="ml-2 text-slate-600">{r.comment}</span>}
           </li>
         ))}
       </ul>
@@ -199,24 +199,24 @@ function Kpi({
   warn?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-white p-5">
-      <div className="text-xs uppercase tracking-wide text-stone-500">{label}</div>
+    <div className="rounded-lg border border-slate-200 bg-white p-5">
+      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
       <div
         className={`mt-2 text-3xl font-semibold tracking-tight ${
-          warn ? "text-red-700" : "text-stone-900"
+          warn ? "text-red-700" : "text-slate-900"
         }`}
       >
         {value}
       </div>
-      {hint && <div className="mt-1 text-xs text-stone-500">{hint}</div>}
+      {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
     </div>
   );
 }
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-stone-200 bg-white p-6">
-      <h2 className="text-base font-semibold text-stone-900">{title}</h2>
+    <section className="rounded-lg border border-slate-200 bg-white p-6">
+      <h2 className="text-base font-semibold text-slate-900">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -224,7 +224,7 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 
 function DayChart({ data }: { data: StatsOverview["byDay"] }) {
   if (data.length === 0) {
-    return <div className="text-sm text-stone-500">Aucune résa sur la période.</div>;
+    return <div className="text-sm text-slate-500">Aucune résa sur la période.</div>;
   }
   const max = Math.max(1, ...data.map((d) => d.total));
   return (
@@ -234,10 +234,10 @@ function DayChart({ data }: { data: StatsOverview["byDay"] }) {
         const confirmedPct = d.total > 0 ? Math.round((d.confirmed / d.total) * pct) : 0;
         return (
           <div key={d.date} className="flex items-center gap-3 text-xs">
-            <span className="w-24 shrink-0 text-stone-500">{fmtDate(d.date)}</span>
-            <div className="relative h-5 flex-1 overflow-hidden rounded bg-stone-100">
+            <span className="w-24 shrink-0 text-slate-500">{fmtDate(d.date)}</span>
+            <div className="relative h-5 flex-1 overflow-hidden rounded bg-slate-100">
               <div
-                className="absolute inset-y-0 left-0 bg-stone-300"
+                className="absolute inset-y-0 left-0 bg-slate-300"
                 style={{ width: `${pct}%` }}
               />
               <div
@@ -249,16 +249,16 @@ function DayChart({ data }: { data: StatsOverview["byDay"] }) {
           </div>
         );
       })}
-      <div className="mt-3 flex gap-4 text-xs text-stone-500">
+      <div className="mt-3 flex gap-4 text-xs text-slate-500">
         <Legend color="bg-emerald-500" label="Confirmées" />
-        <Legend color="bg-stone-300" label="Annulées / autres" />
+        <Legend color="bg-slate-300" label="Annulées / autres" />
       </div>
     </div>
   );
 }
 
 function SourceList({ data }: { data: StatsOverview["bySource"] }) {
-  if (data.length === 0) return <div className="text-sm text-stone-500">Aucune donnée.</div>;
+  if (data.length === 0) return <div className="text-sm text-slate-500">Aucune donnée.</div>;
   const total = data.reduce((s, d) => s + d.count, 0);
   return (
     <div className="space-y-2">
@@ -267,14 +267,14 @@ function SourceList({ data }: { data: StatsOverview["bySource"] }) {
         return (
           <div key={d.source}>
             <div className="mb-1 flex items-center justify-between text-xs">
-              <span className="uppercase tracking-wide text-stone-600">
+              <span className="uppercase tracking-wide text-slate-600">
                 {SOURCE_LABEL[d.source] ?? d.source}
               </span>
               <span className="font-medium tabular-nums">
-                {d.count} <span className="text-stone-400">({pct}%)</span>
+                {d.count} <span className="text-slate-400">({pct}%)</span>
               </span>
             </div>
-            <div className="h-2 overflow-hidden rounded bg-stone-100">
+            <div className="h-2 overflow-hidden rounded bg-slate-100">
               <div className="h-full bg-blue-500" style={{ width: `${pct}%` }} />
             </div>
           </div>
@@ -285,7 +285,7 @@ function SourceList({ data }: { data: StatsOverview["bySource"] }) {
 }
 
 function HourList({ data }: { data: StatsOverview["byHour"] }) {
-  if (data.length === 0) return <div className="text-sm text-stone-500">Aucune donnée.</div>;
+  if (data.length === 0) return <div className="text-sm text-slate-500">Aucune donnée.</div>;
   const max = Math.max(1, ...data.map((d) => d.count));
   return (
     <div className="space-y-2">
@@ -294,7 +294,7 @@ function HourList({ data }: { data: StatsOverview["byHour"] }) {
         return (
           <div key={d.hour} className="flex items-center gap-3 text-xs">
             <span className="w-12 shrink-0 font-medium tabular-nums">{d.hour.slice(0, 5)}</span>
-            <div className="h-3 flex-1 overflow-hidden rounded bg-stone-100">
+            <div className="h-3 flex-1 overflow-hidden rounded bg-slate-100">
               <div className="h-full bg-amber-500" style={{ width: `${pct}%` }} />
             </div>
             <span className="w-10 text-right tabular-nums">{d.count}</span>

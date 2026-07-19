@@ -80,7 +80,7 @@ function CatalogView() {
       <div className="mb-6 flex items-end justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Prestations</h1>
-          <p className="mt-1 text-sm text-stone-500">
+          <p className="mt-1 text-sm text-slate-500">
             Catalogue de prestations proposées à la réservation : coupe, vidange, consultation,
             massage… Dès qu&apos;une prestation active existe, l&apos;assistant demande laquelle le
             client veut et note sa durée sur la réservation.
@@ -96,20 +96,20 @@ function CatalogView() {
 
       <NewServiceForm onCreated={fetchData} />
 
-      <div className="mt-6 mb-3 flex items-center gap-3 text-sm text-stone-600">
+      <div className="mt-6 mb-3 flex items-center gap-3 text-sm text-slate-600">
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
             checked={includeInactive}
             onChange={(e) => setIncludeInactive(e.target.checked)}
-            className="rounded border-stone-300"
+            className="rounded border-slate-300"
           />
           Inclure les prestations inactives
         </label>
         <button
           type="button"
           onClick={fetchData}
-          className="ml-auto rounded bg-stone-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-stone-700"
+          className="ml-auto rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
         >
           Recharger
         </button>
@@ -122,17 +122,17 @@ function CatalogView() {
       )}
 
       {loading && rows.length === 0 ? (
-        <div className="rounded border border-stone-200 bg-white px-4 py-8 text-center text-sm text-stone-500">
+        <div className="rounded border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
           Chargement…
         </div>
       ) : rows.length === 0 ? (
-        <div className="rounded border border-stone-200 bg-white px-4 py-8 text-center text-sm text-stone-500">
+        <div className="rounded border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
           Aucune prestation. Ajoute une prestation ci-dessus pour que l&apos;assistant la propose.
         </div>
       ) : (
-        <div className="overflow-hidden rounded border border-stone-200 bg-white">
+        <div className="overflow-hidden rounded border border-slate-200 bg-white">
           <table className="w-full text-sm">
-            <thead className="border-b border-stone-200 bg-stone-50 text-left text-xs uppercase tracking-wide text-stone-500">
+            <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-2">Prestation</th>
                 <th className="px-4 py-2">Durée</th>
@@ -143,17 +143,17 @@ function CatalogView() {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-b border-stone-100 last:border-0">
+                <tr key={r.id} className="border-b border-slate-100 last:border-0">
                   <td className="px-4 py-3">
                     <div className="font-medium">{r.name}</div>
-                    {r.description && <div className="text-xs text-stone-500">{r.description}</div>}
+                    {r.description && <div className="text-xs text-slate-500">{r.description}</div>}
                   </td>
                   <td className="px-4 py-3">{formatDuration(r.durationMinutes)}</td>
                   <td className="px-4 py-3">{formatPrice(r.priceCents, r.currency)}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`rounded px-2 py-0.5 text-xs font-medium ${
-                        r.active ? "bg-emerald-100 text-emerald-800" : "bg-stone-200 text-stone-700"
+                        r.active ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"
                       }`}
                     >
                       {r.active ? "active" : "inactive"}
@@ -229,31 +229,31 @@ function NewServiceForm({ onCreated }: { onCreated: () => Promise<void> }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-wrap items-end gap-3 rounded border border-stone-200 bg-white px-4 py-3"
+      className="flex flex-wrap items-end gap-3 rounded border border-slate-200 bg-white px-4 py-3"
     >
       <label className="min-w-40 flex-1">
-        <span className="text-xs uppercase tracking-wide text-stone-500">Nom</span>
+        <span className="text-xs uppercase tracking-wide text-slate-500">Nom</span>
         <input
           type="text"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Coupe homme, Vidange, Consultation…"
-          className="mt-1 w-full rounded border border-stone-300 px-3 py-1.5 text-sm"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm"
         />
       </label>
       <label className="min-w-40 flex-1">
-        <span className="text-xs uppercase tracking-wide text-stone-500">Description</span>
+        <span className="text-xs uppercase tracking-wide text-slate-500">Description</span>
         <input
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Optionnel"
-          className="mt-1 w-full rounded border border-stone-300 px-3 py-1.5 text-sm"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm"
         />
       </label>
       <label className="w-32">
-        <span className="text-xs uppercase tracking-wide text-stone-500">Durée (min)</span>
+        <span className="text-xs uppercase tracking-wide text-slate-500">Durée (min)</span>
         <input
           type="number"
           min={5}
@@ -262,24 +262,24 @@ function NewServiceForm({ onCreated }: { onCreated: () => Promise<void> }) {
           required
           value={durationMinutes}
           onChange={(e) => setDurationMinutes(Number(e.target.value))}
-          className="mt-1 w-full rounded border border-stone-300 px-3 py-1.5 text-sm"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm"
         />
       </label>
       <label className="w-28">
-        <span className="text-xs uppercase tracking-wide text-stone-500">Prix (€)</span>
+        <span className="text-xs uppercase tracking-wide text-slate-500">Prix (€)</span>
         <input
           type="text"
           inputMode="decimal"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           placeholder="—"
-          className="mt-1 w-full rounded border border-stone-300 px-3 py-1.5 text-sm"
+          className="mt-1 w-full rounded border border-slate-300 px-3 py-1.5 text-sm"
         />
       </label>
       <button
         type="submit"
         disabled={busy || !name.trim()}
-        className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700 disabled:opacity-50"
+        className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
       >
         {busy ? "…" : "Ajouter"}
       </button>

@@ -81,25 +81,76 @@ export function setCurrentTenantId(id: string): void {
   window.localStorage.setItem("okito_current_tenant_id", id);
 }
 
+export function clearCurrentTenantId(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem("okito_current_tenant_id");
+}
+
+/**
+ * Vide TOUT l'état client OKITO. À appeler au logout pour éviter que le
+ * prochain login (potentiellement un autre user sur la même machine)
+ * hérite du tenant précédent, du token expiré, ou d'autres reliquats.
+ * Ratisse par prefix `okito_` pour capter les clés futures sans oubli.
+ */
+export function clearAllOkitoState(): void {
+  if (typeof window === "undefined") return;
+  const store = window.localStorage;
+  const keys: string[] = [];
+  for (let i = 0; i < store.length; i++) {
+    const k = store.key(i);
+    if (k?.startsWith("okito_")) keys.push(k);
+  }
+  for (const k of keys) store.removeItem(k);
+}
+
 export interface ApiError {
   status: number;
   code: string;
   message: string;
 }
 
+/**
+ * Timeout global des requêtes (15 s). Évite les fetchs pendus quand l'API
+ * ne répond pas ou qu'un composant a été démonté avant la fin.
+ */
+const REQUEST_TIMEOUT_MS = 15_000;
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await resolveToken();
   const tenantId = getCurrentTenantId();
-  const res = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(tenantId ? { "X-Tenant-Id": tenantId } : {}),
-      ...(init?.headers ?? {}),
-    },
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...init,
+      signal: init?.signal ?? controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(tenantId ? { "X-Tenant-Id": tenantId } : {}),
+        ...(init?.headers ?? {}),
+      },
+    });
+  } finally {
+    clearTimeout(timer);
+  }
   if (!res.ok) {
+    // 401 = session invalide/expirée : on nettoie et on force le remount du
+    // LoginGate. Le reload est brutal mais élimine les écrans "zombie" où
+    // toutes les requêtes échouent en silence après expiration.
+    if (res.status === 401 && typeof window !== "undefined") {
+      clearToken();
+      // Évite les boucles : ne recharge que si on n'est PAS déjà sur la page
+      // publique (/, /pricing, /welcome, /legal).
+      const path = window.location.pathname;
+      const publicRoute =
+        path === "/" ||
+        path.startsWith("/pricing") ||
+        path.startsWith("/welcome") ||
+        path.startsWith("/legal");
+      if (!publicRoute) window.location.assign("/app");
+    }
     const body = await res.json().catch(() => null);
     const err: ApiError = {
       status: res.status,

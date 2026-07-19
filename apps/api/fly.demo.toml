@@ -1,0 +1,50 @@
+# fly.demo.toml — apps/api variante DÉMO (app okito-demo-api)
+#
+# Déploie sur l'app démo :
+#   cd apps/api
+#   fly deploy --config fly.demo.toml
+#
+# Diffère de fly.toml (prod) : app name, min_machines_running=0 (auto_stop pour
+# économiser vu qu'aucun appel Twilio en démo), APP_URL vers okito-demo-dashboard.
+
+app = "okito-demo-api"
+primary_region = "cdg"
+kill_signal = "SIGTERM"
+kill_timeout = "30s"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "8080"
+  APP_URL = "https://okito-demo-dashboard.fly.dev"
+  LOG_LEVEL = "info"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "connections"
+    soft_limit = 50
+    hard_limit = 100
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+[metrics]
+  port = 8080
+  path = "/metrics"

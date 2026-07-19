@@ -113,7 +113,7 @@ function ReservationDetail() {
   }
 
   if (loading) {
-    return <div className="p-8 text-sm text-stone-500">Chargement…</div>;
+    return <div className="p-8 text-sm text-slate-500">Chargement…</div>;
   }
 
   if (err && !reservation) {
@@ -131,7 +131,7 @@ function ReservationDetail() {
     return (
       <div>
         <BackLink />
-        <div className="mt-4 text-sm text-stone-500">Réservation introuvable.</div>
+        <div className="mt-4 text-sm text-slate-500">Réservation introuvable.</div>
       </div>
     );
   }
@@ -146,23 +146,23 @@ function ReservationDetail() {
             {reservation.customerName} · {reservation.couverts} couvert
             {reservation.couverts > 1 ? "s" : ""}
           </h1>
-          <p className="mt-1 text-sm text-stone-500">
+          <p className="mt-1 text-sm text-slate-500">
             {fmtDateFR(reservation.dateReservation)} à {reservation.heure.slice(0, 5)}
             <span className="ml-2">·</span>
             <StatusBadge className="ml-2" status={reservation.status} />
             <span className="ml-2">·</span>
-            <span className="ml-2 uppercase tracking-wide text-stone-500">
+            <span className="ml-2 uppercase tracking-wide text-slate-500">
               {reservation.source}
             </span>
           </p>
         </div>
-        <div className="text-right text-xs text-stone-500">
+        <div className="text-right text-xs text-slate-500">
           <div>Créée : {fmtDateTime(reservation.createdAt)}</div>
         </div>
       </header>
 
       {cancelled && (
-        <div className="mt-4 rounded border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600">
+        <div className="mt-4 rounded border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
           Cette réservation est annulée. L'édition est désactivée.
         </div>
       )}
@@ -177,7 +177,7 @@ function ReservationDetail() {
                 onChange={(e) => patchForm({ dateReservation: e.target.value })}
                 disabled={cancelled}
                 required
-                className="w-full rounded border border-stone-300 px-3 py-2 text-sm disabled:bg-stone-50 disabled:text-stone-400"
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-400"
               />
             </Field>
             <Field label="Heure *">
@@ -187,7 +187,7 @@ function ReservationDetail() {
                 onChange={(e) => patchForm({ heure: `${e.target.value}:00` })}
                 disabled={cancelled}
                 required
-                className="w-full rounded border border-stone-300 px-3 py-2 text-sm disabled:bg-stone-50 disabled:text-stone-400"
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-400"
               />
             </Field>
             <Field label="Couverts *">
@@ -199,7 +199,7 @@ function ReservationDetail() {
                 onChange={(e) => patchForm({ couverts: Number(e.target.value) })}
                 disabled={cancelled}
                 required
-                className="w-full rounded border border-stone-300 px-3 py-2 text-sm disabled:bg-stone-50 disabled:text-stone-400"
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-400"
               />
             </Field>
           </div>
@@ -215,7 +215,7 @@ function ReservationDetail() {
                 required
                 minLength={2}
                 maxLength={100}
-                className="w-full rounded border border-stone-300 px-3 py-2 text-sm disabled:bg-stone-50 disabled:text-stone-400"
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-400"
               />
             </Field>
             <Field label="Téléphone *">
@@ -225,7 +225,7 @@ function ReservationDetail() {
                 onChange={(e) => patchForm({ customerPhone: e.target.value })}
                 disabled={cancelled}
                 required
-                className="w-full rounded border border-stone-300 px-3 py-2 text-sm disabled:bg-stone-50 disabled:text-stone-400"
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-400"
               />
             </Field>
             <Field label="Email">
@@ -235,7 +235,7 @@ function ReservationDetail() {
                 onChange={(e) => patchForm({ customerEmail: e.target.value })}
                 disabled={cancelled}
                 placeholder="paul@exemple.fr"
-                className="w-full rounded border border-stone-300 px-3 py-2 text-sm disabled:bg-stone-50 disabled:text-stone-400"
+                className="w-full rounded border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-400"
               />
             </Field>
           </div>
@@ -247,7 +247,7 @@ function ReservationDetail() {
               value={form.assignedMemberId}
               onChange={(e) => patchForm({ assignedMemberId: e.target.value })}
               disabled={cancelled}
-              className="w-full rounded border border-stone-300 px-3 py-2 text-sm disabled:bg-stone-50 disabled:text-stone-400 md:w-1/2"
+              className="w-full rounded border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-400 md:w-1/2"
             >
               <option value="">— Personne —</option>
               {members.map((m) => (
@@ -257,7 +257,7 @@ function ReservationDetail() {
               ))}
             </select>
           </Field>
-          <p className="mt-1 text-xs text-stone-400">
+          <p className="mt-1 text-xs text-slate-400">
             Le membre du staff qui prend en charge cette réservation (coiffeur, mécanicien,
             praticien…).
           </p>
@@ -271,9 +271,9 @@ function ReservationDetail() {
             rows={3}
             maxLength={500}
             placeholder="Allergies, demandes spéciales, table préférée…"
-            className="w-full rounded border border-stone-300 px-3 py-2 text-sm disabled:bg-stone-50 disabled:text-stone-400"
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-400"
           />
-          <p className="mt-1 text-xs text-stone-400">{form.notes.length} / 500 caractères</p>
+          <p className="mt-1 text-xs text-slate-400">{form.notes.length} / 500 caractères</p>
         </Section>
 
         {err && (
@@ -282,8 +282,8 @@ function ReservationDetail() {
           </div>
         )}
 
-        <div className="flex items-center justify-between border-t border-stone-200 pt-4">
-          <div className="text-xs text-stone-500">
+        <div className="flex items-center justify-between border-t border-slate-200 pt-4">
+          <div className="text-xs text-slate-500">
             {cancelled
               ? "Annulée."
               : dirty
@@ -306,14 +306,14 @@ function ReservationDetail() {
             <button
               type="button"
               onClick={() => router.push("/reservations")}
-              className="rounded border border-stone-300 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50"
+              className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
             >
               Retour
             </button>
             <button
               type="submit"
               disabled={!dirty || saving || cancelled}
-              className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
               {saving ? "Sauvegarde…" : "Sauvegarder"}
             </button>
@@ -402,8 +402,8 @@ function fmtDateTime(iso: string): string {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-stone-200 bg-white p-6">
-      <h2 className="text-base font-semibold text-stone-900">{title}</h2>
+    <section className="rounded-lg border border-slate-200 bg-white p-6">
+      <h2 className="text-base font-semibold text-slate-900">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -412,7 +412,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="block">
-      <span className="mb-1 block text-xs font-medium text-stone-700">{label}</span>
+      <span className="mb-1 block text-xs font-medium text-slate-700">{label}</span>
       {children}
     </div>
   );
@@ -422,7 +422,7 @@ function BackLink() {
   return (
     <Link
       href="/reservations"
-      className="text-sm text-stone-500 hover:text-stone-900 hover:underline"
+      className="text-sm text-slate-500 hover:text-slate-900 hover:underline"
     >
       ← Réservations
     </Link>
@@ -434,7 +434,7 @@ function StatusBadge({ status, className = "" }: { status: string; className?: s
     status === "confirmed"
       ? "bg-emerald-50 text-emerald-800 border-emerald-200"
       : status === "cancelled"
-        ? "bg-stone-100 text-stone-500 border-stone-200"
+        ? "bg-slate-100 text-slate-500 border-slate-200"
         : "bg-amber-50 text-amber-800 border-amber-200";
   return (
     <span

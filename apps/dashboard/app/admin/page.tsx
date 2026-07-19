@@ -24,11 +24,11 @@ const STATUS_LABEL: Record<InvoiceStatus, string> = {
 };
 
 const STATUS_COLOR: Record<InvoiceStatus, string> = {
-  draft: "bg-stone-200 text-stone-700",
+  draft: "bg-slate-200 text-slate-700",
   sent: "bg-blue-100 text-blue-800",
   paid: "bg-emerald-100 text-emerald-800",
   overdue: "bg-rose-100 text-rose-800",
-  cancelled: "bg-stone-200 text-stone-500",
+  cancelled: "bg-slate-200 text-slate-500",
 };
 
 function euros(cents: number, currency: string): string {
@@ -88,19 +88,19 @@ function AdminView() {
     <div className="mx-auto max-w-5xl">
       <div className="mb-5">
         <div className="flex items-center gap-3 text-sm">
-          <span className="font-semibold text-stone-900">Factures clients</span>
+          <span className="font-semibold text-slate-900">Factures clients</span>
           <Link
             href="/admin/fournisseurs"
-            className="text-stone-500 hover:text-stone-800 hover:underline"
+            className="text-slate-500 hover:text-slate-800 hover:underline"
           >
             Fournisseurs
           </Link>
-          <Link href="/admin/tva" className="text-stone-500 hover:text-stone-800 hover:underline">
+          <Link href="/admin/tva" className="text-slate-500 hover:text-slate-800 hover:underline">
             TVA
           </Link>
         </div>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Admin — Factures</h1>
-        <p className="mt-1 text-sm text-stone-500">
+        <p className="mt-1 text-sm text-slate-500">
           Émets tes factures ; Jarvis relance automatiquement les impayés (tu peux annuler pendant
           24 h).
         </p>
@@ -119,7 +119,7 @@ function AdminView() {
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value as InvoiceStatus | "all")}
-          className="rounded border border-stone-300 bg-white px-3 py-1.5 text-sm"
+          className="rounded border border-slate-300 bg-white px-3 py-1.5 text-sm"
         >
           <option value="all">Toutes</option>
           <option value="draft">Brouillons</option>
@@ -131,7 +131,7 @@ function AdminView() {
         <button
           type="button"
           onClick={fetchData}
-          className="rounded bg-stone-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-stone-700"
+          className="rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
         >
           Recharger
         </button>
@@ -148,9 +148,9 @@ function AdminView() {
       ) : rows.length === 0 ? (
         <Empty>Aucune facture. Crée-en une ci-dessus.</Empty>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-stone-200 bg-white">
+        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
           <table className="w-full text-sm">
-            <thead className="border-b border-stone-200 bg-stone-50 text-left text-xs uppercase tracking-wide text-stone-500">
+            <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-2">Numéro</th>
                 <th className="px-4 py-2">Client</th>
@@ -162,12 +162,12 @@ function AdminView() {
             </thead>
             <tbody>
               {rows.map((inv) => (
-                <tr key={inv.id} className="border-b border-stone-100 last:border-0">
+                <tr key={inv.id} className="border-b border-slate-100 last:border-0">
                   <td className="px-4 py-3 font-mono text-xs">{inv.number}</td>
                   <td className="px-4 py-3">
                     {inv.customerName}
                     {inv.remindersSent > 0 && (
-                      <span className="ml-2 text-xs text-stone-400">
+                      <span className="ml-2 text-xs text-slate-400">
                         {inv.remindersSent} relance(s)
                       </span>
                     )}
@@ -175,7 +175,7 @@ function AdminView() {
                   <td className="px-4 py-3 text-right font-medium">
                     {euros(inv.amountCents, inv.currency)}
                   </td>
-                  <td className="px-4 py-3 text-xs text-stone-500">
+                  <td className="px-4 py-3 text-xs text-slate-500">
                     {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("fr-FR") : "—"}
                   </td>
                   <td className="px-4 py-3">
@@ -209,7 +209,7 @@ function AdminView() {
                         <button
                           type="button"
                           onClick={() => act(cancelInvoice, inv.id)}
-                          className="text-stone-400 hover:underline"
+                          className="text-slate-400 hover:underline"
                         >
                           Annuler
                         </button>
@@ -240,9 +240,9 @@ function summarize(rows: Invoice[]) {
 
 function Stat({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
   return (
-    <div className="rounded-lg bg-stone-100/70 p-3">
-      <div className="text-[11px] text-stone-500">{label}</div>
-      <div className={`mt-1 text-lg font-medium ${warn ? "text-rose-700" : "text-stone-900"}`}>
+    <div className="rounded-lg bg-slate-100/70 p-3">
+      <div className="text-[11px] text-slate-500">{label}</div>
+      <div className={`mt-1 text-lg font-medium ${warn ? "text-rose-700" : "text-slate-900"}`}>
         {value}
       </div>
     </div>
@@ -251,7 +251,7 @@ function Stat({ label, value, warn }: { label: string; value: string; warn?: boo
 
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-white px-4 py-8 text-center text-sm text-stone-500">
+    <div className="rounded-lg border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
       {children}
     </div>
   );
@@ -298,26 +298,26 @@ function NewInvoiceForm({ onCreated }: { onCreated: () => void }) {
   }
 
   return (
-    <div className="rounded-lg border border-stone-200 bg-white p-4">
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
       <h2 className="mb-3 text-sm font-medium">Nouvelle facture</h2>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
         <input
           value={customerName}
           onChange={(e) => setCustomerName(e.target.value)}
           placeholder="Client"
-          className="rounded border border-stone-300 px-3 py-1.5 text-sm"
+          className="rounded border border-slate-300 px-3 py-1.5 text-sm"
         />
         <input
           value={customerEmail}
           onChange={(e) => setCustomerEmail(e.target.value)}
           placeholder="Email (pour relance)"
-          className="rounded border border-stone-300 px-3 py-1.5 text-sm"
+          className="rounded border border-slate-300 px-3 py-1.5 text-sm"
         />
         <input
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="Prestation"
-          className="rounded border border-stone-300 px-3 py-1.5 text-sm"
+          className="rounded border border-slate-300 px-3 py-1.5 text-sm"
         />
         <input
           value={quantity}
@@ -325,7 +325,7 @@ function NewInvoiceForm({ onCreated }: { onCreated: () => void }) {
           type="number"
           min="1"
           placeholder="Qté"
-          className="rounded border border-stone-300 px-3 py-1.5 text-sm"
+          className="rounded border border-slate-300 px-3 py-1.5 text-sm"
         />
         <input
           value={unitPrice}
@@ -334,7 +334,7 @@ function NewInvoiceForm({ onCreated }: { onCreated: () => void }) {
           min="0"
           step="0.01"
           placeholder="Prix unit. (€)"
-          className="rounded border border-stone-300 px-3 py-1.5 text-sm"
+          className="rounded border border-slate-300 px-3 py-1.5 text-sm"
         />
       </div>
       <div className="mt-3 flex items-center gap-3">

@@ -60,13 +60,13 @@ function OnboardingView() {
     <div className="mx-auto max-w-2xl">
       <div className="mb-8 text-center">
         <h1 className="text-2xl font-semibold tracking-tight">Premier diagnostic</h1>
-        <p className="mt-2 text-sm text-stone-500">
+        <p className="mt-2 text-sm text-slate-500">
           Donne à Jarvis ton site et/ou le nom de ton commerce : il scanne tout et te dit par quoi
           commencer. 30 secondes.
         </p>
       </div>
 
-      <div className="rounded-lg border border-stone-200 bg-white p-6">
+      <div className="rounded-lg border border-slate-200 bg-white p-6">
         <label className="mb-1 block text-sm font-medium" htmlFor="onboarding-site">
           Ton site web
         </label>
@@ -76,7 +76,7 @@ function OnboardingView() {
           value={websiteUrl}
           onChange={(e) => setWebsiteUrl(e.target.value)}
           placeholder="chezmarcel.fr"
-          className="mb-4 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+          className="mb-4 w-full rounded border border-slate-300 px-3 py-2 text-sm"
         />
         <label className="mb-1 block text-sm font-medium" htmlFor="onboarding-biz">
           Ton commerce sur Google
@@ -87,7 +87,7 @@ function OnboardingView() {
           value={businessQuery}
           onChange={(e) => setBusinessQuery(e.target.value)}
           placeholder="Boulangerie Chez Marcel Lyon"
-          className="mb-5 w-full rounded border border-stone-300 px-3 py-2 text-sm"
+          className="mb-5 w-full rounded border border-slate-300 px-3 py-2 text-sm"
         />
         <button
           type="button"
@@ -104,17 +104,17 @@ function OnboardingView() {
         <div className="mt-6 space-y-4">
           <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-5">
             <h2 className="mb-2 text-sm font-semibold text-indigo-900">Le diagnostic de Jarvis</h2>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-stone-800">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
               {diag.text}
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {diag.website && (
-              <div className="rounded-lg border border-stone-200 bg-white p-4 text-sm">
+              <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm">
                 <h3 className="mb-2 font-semibold">Ton site</h3>
                 {diag.website.reachable ? (
-                  <ul className="space-y-1 text-stone-600">
+                  <ul className="space-y-1 text-slate-600">
                     <li>
                       Temps de réponse :{" "}
                       <Verdict
@@ -149,10 +149,10 @@ function OnboardingView() {
               </div>
             )}
             {diag.business && (
-              <div className="rounded-lg border border-stone-200 bg-white p-4 text-sm">
+              <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm">
                 <h3 className="mb-2 font-semibold">Ta fiche Google</h3>
                 {diag.business.found ? (
-                  <ul className="space-y-1 text-stone-600">
+                  <ul className="space-y-1 text-slate-600">
                     <li>
                       Note :{" "}
                       <Verdict
@@ -167,10 +167,10 @@ function OnboardingView() {
                         label={`${diag.business.reviewCount}`}
                       />
                     </li>
-                    <li className="text-xs text-stone-400">{diag.business.address}</li>
+                    <li className="text-xs text-slate-400">{diag.business.address}</li>
                   </ul>
                 ) : (
-                  <p className="text-stone-500">
+                  <p className="text-slate-500">
                     Fiche introuvable{diag.business.error ? ` — ${diag.business.error}` : ""}
                   </p>
                 )}

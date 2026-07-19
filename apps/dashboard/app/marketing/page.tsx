@@ -89,7 +89,7 @@ function Marketing() {
 
   if (unavailable) {
     return (
-      <div className="p-8 text-sm text-stone-500">
+      <div className="p-8 text-sm text-slate-500">
         Module marketing non monté côté API (redémarrer l&apos;API après mise à jour).
       </div>
     );
@@ -99,9 +99,9 @@ function Marketing() {
     <div>
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Marketing</h1>
-        <p className="mt-1 text-sm text-stone-500">
+        <p className="mt-1 text-sm text-slate-500">
           Campagnes email et WhatsApp vers des segments calculés depuis les réservations. Utilise{" "}
-          <code className="rounded bg-stone-100 px-1 text-xs">{"{prenom}"}</code> pour
+          <code className="rounded bg-slate-100 px-1 text-xs">{"{prenom}"}</code> pour
           personnaliser.
         </p>
       </header>
@@ -115,9 +115,9 @@ function Marketing() {
       {counts && (
         <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
           {(Object.keys(SEGMENT_LABEL) as CampaignSegment[]).map((s) => (
-            <div key={s} className="rounded-lg border border-stone-200 bg-white p-4">
+            <div key={s} className="rounded-lg border border-slate-200 bg-white p-4">
               <div className="text-2xl font-semibold">{counts[s]}</div>
-              <div className="mt-1 text-xs text-stone-500">{SEGMENT_LABEL[s]}</div>
+              <div className="mt-1 text-xs text-slate-500">{SEGMENT_LABEL[s]}</div>
             </div>
           ))}
         </div>
@@ -125,14 +125,14 @@ function Marketing() {
 
       <CreateCampaignForm counts={counts} onCreated={reload} />
 
-      <div className="mt-6 overflow-hidden rounded-lg border border-stone-200 bg-white">
+      <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white">
         {campaigns.length === 0 ? (
-          <div className="p-8 text-center text-sm text-stone-500">
+          <div className="p-8 text-center text-sm text-slate-500">
             Aucune campagne pour l&apos;instant.
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Nom</th>
                 <th className="px-4 py-3 text-left font-medium">Canal</th>
@@ -144,10 +144,10 @@ function Marketing() {
             </thead>
             <tbody>
               {campaigns.map((c) => (
-                <tr key={c.id} className="border-t border-stone-100">
+                <tr key={c.id} className="border-t border-slate-100">
                   <td className="px-4 py-3 font-medium">{c.name}</td>
                   <td className="px-4 py-3">{CHANNEL_LABEL[c.channel]}</td>
-                  <td className="px-4 py-3 text-stone-600">{SEGMENT_LABEL[c.segment]}</td>
+                  <td className="px-4 py-3 text-slate-600">{SEGMENT_LABEL[c.segment]}</td>
                   <td className="px-4 py-3">
                     {c.status === "sent" ? (
                       <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
@@ -155,12 +155,12 @@ function Marketing() {
                         {c.sentAt ? ` le ${new Date(c.sentAt).toLocaleDateString("fr-FR")}` : ""}
                       </span>
                     ) : (
-                      <span className="rounded bg-stone-200 px-2 py-0.5 text-xs font-medium text-stone-700">
+                      <span className="rounded bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-700">
                         Brouillon
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-stone-600">
+                  <td className="px-4 py-3 text-slate-600">
                     {c.status === "sent"
                       ? `${c.sentCount}/${c.recipientCount}${c.failedCount ? ` (${c.failedCount} échec${c.failedCount > 1 ? "s" : ""})` : ""}`
                       : "—"}
@@ -236,36 +236,36 @@ function CreateCampaignForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-6 rounded-lg border border-stone-200 bg-white p-6">
+    <form onSubmit={handleSubmit} className="mt-6 rounded-lg border border-slate-200 bg-white p-6">
       <h2 className="text-lg font-semibold">Nouvelle campagne</h2>
       <div className="mt-4 grid gap-4 md:grid-cols-3">
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-stone-700">Nom *</span>
+          <span className="mb-1 block text-xs font-medium text-slate-700">Nom *</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
             placeholder="Relance clients dormants"
-            className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-stone-700">Canal</span>
+          <span className="mb-1 block text-xs font-medium text-slate-700">Canal</span>
           <select
             value={channel}
             onChange={(e) => setChannel(e.target.value as CampaignChannel)}
-            className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
           >
             <option value="email">Email</option>
             <option value="whatsapp">WhatsApp</option>
           </select>
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-stone-700">Segment</span>
+          <span className="mb-1 block text-xs font-medium text-slate-700">Segment</span>
           <select
             value={segment}
             onChange={(e) => setSegment(e.target.value as CampaignSegment)}
-            className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
           >
             {(Object.keys(SEGMENT_LABEL) as CampaignSegment[]).map((s) => (
               <option key={s} value={s}>
@@ -278,25 +278,25 @@ function CreateCampaignForm({
       </div>
       {channel === "email" && (
         <label className="mt-4 block">
-          <span className="mb-1 block text-xs font-medium text-stone-700">Sujet *</span>
+          <span className="mb-1 block text-xs font-medium text-slate-700">Sujet *</span>
           <input
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             required
             placeholder="On ne vous a pas vu depuis un moment…"
-            className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+            className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
           />
         </label>
       )}
       <label className="mt-4 block">
-        <span className="mb-1 block text-xs font-medium text-stone-700">Message *</span>
+        <span className="mb-1 block text-xs font-medium text-slate-700">Message *</span>
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
           required
           rows={4}
           placeholder={"Bonjour {prenom}, …"}
-          className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+          className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
         />
       </label>
       {err && <div className="mt-3 text-sm text-red-700">{err}</div>}
@@ -304,7 +304,7 @@ function CreateCampaignForm({
         <button
           type="submit"
           disabled={busy}
-          className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
           {busy ? "Création…" : "Créer le brouillon"}
         </button>

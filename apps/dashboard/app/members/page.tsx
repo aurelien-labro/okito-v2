@@ -93,13 +93,13 @@ function MembersView() {
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Membres</h1>
-          <p className="mt-1 text-sm text-stone-500">Invite ton équipe et attribue des rôles.</p>
+          <p className="mt-1 text-sm text-slate-500">Invite ton équipe et attribue des rôles.</p>
         </div>
         <div className="flex items-center gap-2">
           <select
             value={tenantId}
             onChange={(e) => setTenantId(e.target.value)}
-            className="rounded border border-stone-300 px-3 py-2 text-sm"
+            className="rounded border border-slate-300 px-3 py-2 text-sm"
           >
             {tenants.map((t) => (
               <option key={t.id} value={t.id}>
@@ -110,7 +110,7 @@ function MembersView() {
           <button
             type="button"
             onClick={() => setShowInvite((v) => !v)}
-            className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
+            className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
           >
             {showInvite ? "Annuler" : "Inviter"}
           </button>
@@ -133,16 +133,16 @@ function MembersView() {
         />
       )}
 
-      <div className="mt-6 overflow-hidden rounded-lg border border-stone-200 bg-white">
+      <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white">
         {loading ? (
-          <div className="p-8 text-center text-sm text-stone-500">Chargement…</div>
+          <div className="p-8 text-center text-sm text-slate-500">Chargement…</div>
         ) : members.length === 0 ? (
-          <div className="p-8 text-center text-sm text-stone-500">
+          <div className="p-8 text-center text-sm text-slate-500">
             Aucun membre. Invite ton équipe pour commencer.
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <Th>Identifiant</Th>
                 <Th>Rôle</Th>
@@ -153,7 +153,7 @@ function MembersView() {
             </thead>
             <tbody>
               {members.map((m) => (
-                <tr key={m.id} className="border-t border-stone-100">
+                <tr key={m.id} className="border-t border-slate-100">
                   <Td>
                     {m.invitedEmail ?? <code className="text-xs">{m.userId?.slice(0, 8)}…</code>}
                   </Td>
@@ -161,7 +161,7 @@ function MembersView() {
                     <select
                       value={m.role}
                       onChange={(e) => handleChangeRole(m.id, e.target.value as TenantMemberRole)}
-                      className="rounded border border-stone-300 px-2 py-1 text-xs"
+                      className="rounded border border-slate-300 px-2 py-1 text-xs"
                     >
                       {ROLES.map((r) => (
                         <option key={r} value={r}>
@@ -173,7 +173,7 @@ function MembersView() {
                   <Td>
                     <StatusBadge member={m} />
                   </Td>
-                  <Td className="text-xs text-stone-500">
+                  <Td className="text-xs text-slate-500">
                     {m.invitedAt ? fmtDate(m.invitedAt) : "—"}
                   </Td>
                   <Td>
@@ -222,9 +222,9 @@ function InviteForm({
   }
 
   return (
-    <form onSubmit={handle} className="mt-6 rounded-lg border border-stone-200 bg-white p-6">
-      <h2 className="text-base font-semibold text-stone-900">Inviter un membre</h2>
-      <p className="mt-1 text-xs text-stone-500">
+    <form onSubmit={handle} className="mt-6 rounded-lg border border-slate-200 bg-white p-6">
+      <h2 className="text-base font-semibold text-slate-900">Inviter un membre</h2>
+      <p className="mt-1 text-xs text-slate-500">
         L'invité reçoit accès au tenant dès qu'il signup Supabase avec cet email.
       </p>
       <div className="mt-4 grid gap-4 md:grid-cols-[2fr_1fr_auto]">
@@ -234,12 +234,12 @@ function InviteForm({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="pierre@bistrot.fr"
-          className="rounded border border-stone-300 px-3 py-2 text-sm"
+          className="rounded border border-slate-300 px-3 py-2 text-sm"
         />
         <select
           value={role}
           onChange={(e) => setRole(e.target.value as TenantMemberRole)}
-          className="rounded border border-stone-300 px-3 py-2 text-sm"
+          className="rounded border border-slate-300 px-3 py-2 text-sm"
         >
           {ROLES.map((r) => (
             <option key={r} value={r}>
@@ -250,7 +250,7 @@ function InviteForm({
         <button
           type="submit"
           disabled={submitting}
-          className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
           {submitting ? "…" : "Inviter"}
         </button>

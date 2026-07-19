@@ -88,7 +88,7 @@ function AuditView() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Timeline — qui a fait quoi</h1>
-          <p className="mt-1 text-sm text-stone-500">
+          <p className="mt-1 text-sm text-slate-500">
             Actions de l'équipe (journal d'audit) et actions de Jarvis, dans un seul fil. 200
             entrées max.
           </p>
@@ -98,7 +98,7 @@ function AuditView() {
           <button
             type="button"
             onClick={load}
-            className="rounded bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
+            className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
           >
             Recharger
           </button>
@@ -149,14 +149,14 @@ function Segmented({
     { v: "jarvis", label: "Jarvis" },
   ];
   return (
-    <div className="flex rounded-lg border border-stone-300 p-0.5 text-sm">
+    <div className="flex rounded-lg border border-slate-300 p-0.5 text-sm">
       {options.map((o) => (
         <button
           key={o.v}
           type="button"
           onClick={() => onChange(o.v)}
           className={`rounded-md px-3 py-1.5 ${
-            value === o.v ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-100"
+            value === o.v ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"
           }`}
         >
           {o.label}
@@ -168,7 +168,7 @@ function Segmented({
 
 function Placeholder({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-stone-200 bg-white p-8 text-center text-sm text-stone-500">
+    <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
       {children}
     </div>
   );
@@ -181,37 +181,37 @@ function HumanEntry({ entry, actorEmail }: { entry: AuditLogEntry; actorEmail?: 
     actorEmail ??
     (entry.actorUserId ? `${entry.actorUserId.slice(0, 8)}…` : "inconnu");
   return (
-    <div className="rounded-lg border border-stone-200 bg-white">
+    <div className="rounded-lg border border-slate-200 bg-white">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-stone-50"
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-slate-50"
       >
         <div className="flex min-w-0 items-center gap-3">
-          <span className="ti ti-user shrink-0 text-stone-400" aria-hidden="true" />
+          <span className="ti ti-user shrink-0 text-slate-400" aria-hidden="true" />
           <ActionBadge action={entry.action} />
-          <span className="text-xs text-stone-500">{entry.entityType}</span>
+          <span className="text-xs text-slate-500">{entry.entityType}</span>
           {entry.entityId && (
-            <code className="rounded bg-stone-100 px-1 py-0.5 text-xs text-stone-600">
+            <code className="rounded bg-slate-100 px-1 py-0.5 text-xs text-slate-600">
               {entry.entityId.slice(0, 8)}…
             </code>
           )}
         </div>
-        <div className="shrink-0 text-xs text-stone-500">
-          par <span className="font-medium text-stone-700">{who}</span>
+        <div className="shrink-0 text-xs text-slate-500">
+          par <span className="font-medium text-slate-700">{who}</span>
           <span className="ml-3">{fmtDateTime(entry.createdAt)}</span>
         </div>
       </button>
       {open && (
-        <div className="grid gap-4 border-t border-stone-100 px-4 py-3 text-xs md:grid-cols-2">
+        <div className="grid gap-4 border-t border-slate-100 px-4 py-3 text-xs md:grid-cols-2">
           <PreBlock title="Avant" payload={entry.before} />
           <PreBlock title="Après" payload={entry.after} />
           {entry.ip && (
-            <div className="text-stone-500">
-              IP : <code className="rounded bg-stone-100 px-1 py-0.5">{entry.ip}</code>
+            <div className="text-slate-500">
+              IP : <code className="rounded bg-slate-100 px-1 py-0.5">{entry.ip}</code>
             </div>
           )}
-          {entry.userAgent && <div className="truncate text-stone-500">UA : {entry.userAgent}</div>}
+          {entry.userAgent && <div className="truncate text-slate-500">UA : {entry.userAgent}</div>}
         </div>
       )}
     </div>
@@ -222,7 +222,7 @@ const JARVIS_STATUS: Record<JarvisAction["status"], { label: string; cls: string
   executed: { label: "Fait", cls: "bg-emerald-50 text-emerald-800 border-emerald-200" },
   scheduled: { label: "Programmée", cls: "bg-blue-50 text-blue-800 border-blue-200" },
   awaiting_approval: { label: "À valider", cls: "bg-amber-50 text-amber-800 border-amber-200" },
-  cancelled: { label: "Annulée", cls: "bg-stone-100 text-stone-600 border-stone-200" },
+  cancelled: { label: "Annulée", cls: "bg-slate-100 text-slate-600 border-slate-200" },
   failed: { label: "Échec", cls: "bg-red-50 text-red-800 border-red-200" },
 };
 
@@ -235,7 +235,7 @@ function JarvisEntry({ action }: { action: JarvisAction }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-stone-50"
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-slate-50"
       >
         <div className="flex min-w-0 items-center gap-3">
           <span
@@ -248,10 +248,10 @@ function JarvisEntry({ action }: { action: JarvisAction }) {
           >
             {status.label}
           </span>
-          <span className="truncate text-stone-700">{action.summary}</span>
-          <span className="shrink-0 text-xs text-stone-400">{action.type}</span>
+          <span className="truncate text-slate-700">{action.summary}</span>
+          <span className="shrink-0 text-xs text-slate-400">{action.type}</span>
         </div>
-        <div className="shrink-0 text-xs text-stone-500">
+        <div className="shrink-0 text-xs text-slate-500">
           par{" "}
           <span className="font-medium" style={{ color: "#534AB7" }}>
             Jarvis
@@ -260,7 +260,7 @@ function JarvisEntry({ action }: { action: JarvisAction }) {
         </div>
       </button>
       {open && (
-        <div className="grid gap-4 border-t border-stone-100 px-4 py-3 text-xs md:grid-cols-2">
+        <div className="grid gap-4 border-t border-slate-100 px-4 py-3 text-xs md:grid-cols-2">
           <PreBlock title="Payload" payload={action.payload} />
           <PreBlock title="Résultat" payload={action.result} />
         </div>
@@ -272,8 +272,8 @@ function JarvisEntry({ action }: { action: JarvisAction }) {
 function PreBlock({ title, payload }: { title: string; payload: unknown }) {
   return (
     <div>
-      <div className="mb-1 text-xs font-medium text-stone-500">{title}</div>
-      <pre className="max-h-64 overflow-auto rounded bg-stone-50 p-2 text-[11px] text-stone-700">
+      <div className="mb-1 text-xs font-medium text-slate-500">{title}</div>
+      <pre className="max-h-64 overflow-auto rounded bg-slate-50 p-2 text-[11px] text-slate-700">
         {payload ? JSON.stringify(payload, null, 2) : "—"}
       </pre>
     </div>
@@ -290,7 +290,7 @@ function ActionBadge({ action }: { action: string }) {
       ? "bg-blue-50 text-blue-800 border-blue-200"
       : isSuspend
         ? "bg-red-50 text-red-800 border-red-200"
-        : "bg-stone-100 text-stone-700 border-stone-200";
+        : "bg-slate-100 text-slate-700 border-slate-200";
   return (
     <span
       className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${cls}`}
