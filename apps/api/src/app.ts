@@ -43,6 +43,7 @@ import { adminServiceCatalogRoute } from "./routes/admin-service-catalog.js";
 import { adminShopifyRoute } from "./routes/admin-shopify.js";
 import { adminSiteAnalyticsRoute } from "./routes/admin-site-analytics.js";
 import { adminSiteRoute } from "./routes/admin-site.js";
+import { adminSocialRoute } from "./routes/admin-social.js";
 import { adminStatsRoute } from "./routes/admin-stats.js";
 import { adminStripeAnalyticsRoute, adminStripeRoute } from "./routes/admin-stripe.js";
 import { adminSupplierInvoicesRoute } from "./routes/admin-supplier-invoices.js";
@@ -113,6 +114,7 @@ import type { ShopifyConnectionService } from "./services/shopify-connection.js"
 import type { ShopifySyncService } from "./services/shopify-sync.js";
 import type { SiteGeneratorService } from "./services/site-generator.js";
 import type { SiteService } from "./services/site.js";
+import type { SocialDrafterService } from "./services/social-drafter.js";
 import type { StatsService } from "./services/stats.js";
 import type { StripeAccountService } from "./services/stripe-account.js";
 import type { StripeSyncService } from "./services/stripe-sync.js";
@@ -195,6 +197,8 @@ export interface AppServices {
   jarvisExecutor?: JarvisExecutor;
   /** Advisor Jarvis — ajoute la function Inngest brief matinal si fourni. */
   jarvisAdvisor?: JarvisAdvisorService;
+  /** Skill Social — monté sur /v1/admin/social si fourni (LLM requis). */
+  socialDrafter?: SocialDrafterService;
   /** Observer Jarvis — ajoute la function Inngest 10-min si fourni. */
   jarvisObserver?: JarvisObserverService;
   /** Boîtes Gmail — monté sur /v1/admin/mailboxes + /oauth/google/callback si OAuth configuré. */
@@ -517,6 +521,7 @@ export function createApp(env: Env, services: AppServices = {}) {
         "/jarvis-brief",
         adminJarvisBriefRoute(services.db, services.jarvisAdvisor, services.jarvisVoice),
       );
+      v1Admin.route("/social", adminSocialRoute(services.db, services.socialDrafter));
       v1Admin.route("/site-analytics", adminSiteAnalyticsRoute(services.db));
     }
     if (services.mailbox || services.imapMailbox || services.microsoftMailbox) {
