@@ -81,6 +81,28 @@ export function setCurrentTenantId(id: string): void {
   window.localStorage.setItem("okito_current_tenant_id", id);
 }
 
+export function clearCurrentTenantId(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem("okito_current_tenant_id");
+}
+
+/**
+ * Vide TOUT l'état client OKITO. À appeler au logout pour éviter que le
+ * prochain login (potentiellement un autre user sur la même machine)
+ * hérite du tenant précédent, du token expiré, ou d'autres reliquats.
+ * Ratisse par prefix `okito_` pour capter les clés futures sans oubli.
+ */
+export function clearAllOkitoState(): void {
+  if (typeof window === "undefined") return;
+  const store = window.localStorage;
+  const keys: string[] = [];
+  for (let i = 0; i < store.length; i++) {
+    const k = store.key(i);
+    if (k?.startsWith("okito_")) keys.push(k);
+  }
+  for (const k of keys) store.removeItem(k);
+}
+
 export interface ApiError {
   status: number;
   code: string;
