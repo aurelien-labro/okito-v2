@@ -6,7 +6,7 @@ import {
   clearToken,
   getCurrentTenantId,
   getToken,
-  listTenants,
+  listAccessibleTenants,
   setCurrentTenantId,
   setToken,
 } from "../_lib/api-client";
@@ -20,12 +20,17 @@ import { getSupabase, isSupabaseConfigured } from "../_lib/supabase";
 async function ensureCurrentTenant(): Promise<void> {
   if (getCurrentTenantId()) return;
   try {
-    const { data } = await listTenants();
+    const { data } = await listAccessibleTenants();
     const first = data[0];
-    if (first) setCurrentTenantId(first.id);
+    if (first) {
+      setCurrentTenantId(first.id);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("okito:tenant-change"));
+      }
+    }
   } catch {
-    // pas grave — l'utilisateur n'est peut-être pas admin, le tenant_id
-    // viendra du JWT directement.
+    // pas grave — l'utilisateur n'a peut-être aucun tenant accessible ;
+    // le tenant_id peut venir du JWT directement pour un admin.
   }
 }
 

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Chrome } from "./_components/chrome";
+import { TenantProvider } from "./_lib/tenant-context";
+import { ToastProvider } from "./_lib/toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,7 +20,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="bg-white text-slate-900">
-        <Chrome>{children}</Chrome>
+        <TenantProvider>
+          <ToastProvider>
+            <Chrome>{children}</Chrome>
+          </ToastProvider>
+        </TenantProvider>
       </body>
     </html>
   );

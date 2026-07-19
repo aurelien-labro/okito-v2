@@ -20,6 +20,7 @@ import {
   regenerateJarvisBrief,
   voiceChatJarvis,
 } from "../_lib/api-client";
+import { useToast } from "../_lib/toast";
 import { playAudioBase64, speak, useMicRecorder, useVoiceInput } from "../_lib/use-voice";
 
 const STATUS_LABEL: Record<JarvisActionStatus, string> = {
@@ -47,6 +48,7 @@ export default function JarvisPage() {
 }
 
 function JarvisView() {
+  const toast = useToast();
   const [brief, setBrief] = useState<JarvisBrief | null>(null);
   const [briefErr, setBriefErr] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState(false);
@@ -122,8 +124,9 @@ function JarvisView() {
       if (kind === "approve") await approveJarvisAction(tenantId, id);
       else await cancelJarvisAction(tenantId, id);
       await fetchActions();
+      toast(kind === "approve" ? "Action validée." : "Action annulée.", "success");
     } catch (e) {
-      alert(`Action échouée : ${e instanceof Error ? e.message : "erreur"}`);
+      toast(`Action échouée : ${e instanceof Error ? e.message : "erreur"}`, "error");
     }
   }
 
@@ -289,6 +292,7 @@ const POLICY_LABEL: Record<JarvisPolicy, string> = {
 };
 
 function JarvisToolShop() {
+  const toast = useToast();
   const [tools, setTools] = useState<JarvisToolStatus[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -322,8 +326,9 @@ function JarvisToolShop() {
     try {
       await patchJarvisTool(tenantId, type, patch);
       await fetchTools();
+      toast("Réglage enregistré.", "success");
     } catch (e) {
-      alert(`Réglage échoué : ${e instanceof Error ? e.message : "erreur"}`);
+      toast(`Réglage échoué : ${e instanceof Error ? e.message : "erreur"}`, "error");
     } finally {
       setBusy(null);
     }

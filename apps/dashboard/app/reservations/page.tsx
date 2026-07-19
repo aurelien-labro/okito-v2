@@ -14,6 +14,7 @@ import {
   statsForPhones,
 } from "../_lib/api-client";
 import { formatDuration, hhmmToMinutes } from "../_lib/format";
+import { useToast } from "../_lib/toast";
 
 function todayISO(): string {
   const d = new Date();
@@ -32,6 +33,7 @@ export default function ReservationsPage() {
 }
 
 function ReservationsList() {
+  const toast = useToast();
   const [date, setDate] = useState(todayISO());
   const [rows, setRows] = useState<Reservation[]>([]);
   const [loyalty, setLoyalty] = useState<Record<string, CustomerStats>>({});
@@ -81,7 +83,7 @@ function ReservationsList() {
       await cancelReservation(id);
       fetchData();
     } catch (e) {
-      alert(`Échec annulation : ${e instanceof Error ? e.message : "erreur"}`);
+      toast(`Échec annulation : ${e instanceof Error ? e.message : "erreur"}`, "error");
     }
   }
 
@@ -363,6 +365,7 @@ function AgendaView({ rows, loading }: { rows: Reservation[]; loading: boolean }
 }
 
 function IcalButton() {
+  const toast = useToast();
   const [busy, setBusy] = useState(false);
 
   async function handleClick() {
@@ -376,10 +379,11 @@ function IcalButton() {
         window.location.href = data.httpsUrl;
       }
     } catch (e) {
-      alert(
+      toast(
         e instanceof Error
           ? e.message
           : "Export iCal indisponible (ICAL_FEED_SECRET non configuré ?)",
+        "error",
       );
     } finally {
       setBusy(false);
