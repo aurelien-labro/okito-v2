@@ -74,4 +74,78 @@ describe("SupplierInvoiceExtractionService", () => {
     const service = new SupplierInvoiceExtractionService(fakeLLM(null));
     await expect(service.extract(FILE)).rejects.toMatchObject({ code: "extraction_empty" });
   });
+
+  describe("fallback texte pdf-parse", () => {
+    const PDF_TEXT = `
+      Metro France
+      Facture n° F-2026-889
+      Date : 01/07/2026
+      Échéance : 31/07/2026
+      Total TTC : 450,50 EUR
+      Catégorie : matières premières
+    `.repeat(3);
+
+    it("relance en mode texte quand la vision renvoie vide, et réussit", async () => {
+      const llm = {
+        complete: vi
+          .fn<LLMClient["complete"]>()
+          // 1re passe : vision, muette
+          .mockResolvedValueOnce({
+            text: null,
+            toolCalls: [],
+            finishReason: "stop",
+            usage: { promptTokens: 100, completionTokens: 0 },
+          })
+          // 2e passe : texte, réussit
+          .mockResolvedValueOnce({
+            text: JSON.stringify(VALID),
+            toolCalls: [],
+            finishReason: "stop",
+            usage: { promptTokens: 300, completionTokens: 60 },
+          }),
+      };
+      const extractor = vi.fn().mockResolvedValue(PDF_TEXT);
+      const service = new SupplierInvoiceExtractionService(llm as unknown as LLMClient, extractor);
+
+      const result = await service.extract(FILE);
+      expect(result.supplierName).toBe("Metro France");
+      expect(llm.complete).toHaveBeenCalledTimes(2);
+      expect(extractor).toHaveBeenCalledOnce();
+      // 2e appel : pas d'attachment, texte inline dans le content
+      const second = llm.complete.mock.calls[1]?.[0] as {
+        messages: Array<{ content: string; attachments?: unknown }>;
+      };
+      expect(second.messages[0]?.attachments).toBeUndefined();
+      expect(second.messages[0]?.content).toContain("Metro France");
+    });
+
+    it("ne fallback PAS sur not_an_invoice (décision LLM, pas lecture ratée)", async () => {
+      const llm = fakeLLM(JSON.stringify({ error: "not_an_invoice" }));
+      const extractor = vi.fn().mockResolvedValue(PDF_TEXT);
+      const service = new SupplierInvoiceExtractionService(llm, extractor);
+
+      await expect(service.extract(FILE)).rejects.toMatchObject({ code: "not_an_invoice" });
+      expect(extractor).not.toHaveBeenCalled();
+    });
+
+    it("ne fallback PAS sur une image (fallback réservé au PDF)", async () => {
+      const llm = fakeLLM(null);
+      const extractor = vi.fn().mockResolvedValue(PDF_TEXT);
+      const service = new SupplierInvoiceExtractionService(llm, extractor);
+
+      await expect(
+        service.extract({ mimeType: "image/jpeg", dataBase64: "AAAA" }),
+      ).rejects.toMatchObject({ code: "extraction_empty" });
+      expect(extractor).not.toHaveBeenCalled();
+    });
+
+    it("laisse remonter l'erreur d'origine si le PDF n'a pas de calque texte", async () => {
+      const llm = fakeLLM(null);
+      const extractor = vi.fn().mockResolvedValue("trop court");
+      const service = new SupplierInvoiceExtractionService(llm, extractor);
+
+      await expect(service.extract(FILE)).rejects.toMatchObject({ code: "extraction_empty" });
+      expect(extractor).toHaveBeenCalledOnce();
+    });
+  });
 });
