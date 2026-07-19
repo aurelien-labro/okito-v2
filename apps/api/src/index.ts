@@ -279,7 +279,11 @@ if (env.DATABASE_URL) {
     if (services.googleBusiness) {
       jarvisExecutor.registerTool(new GoogleReviewReplyTool(llm, services.googleBusiness));
     }
-    services.supplierInvoiceExtraction = new SupplierInvoiceExtractionService(llm);
+    const { defaultPdfTextExtractor } = await import("./lib/pdf-text.js");
+    services.supplierInvoiceExtraction = new SupplierInvoiceExtractionService(
+      llm,
+      defaultPdfTextExtractor,
+    );
     services.onboardingScan = new OnboardingScanService(
       db,
       llm,
