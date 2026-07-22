@@ -29,16 +29,20 @@ RUN pnpm --filter @okito/api build
 
 # ------------------------------------------------------------------
 FROM node:22-alpine AS runner
-WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# On copie node_modules + le dist compilé + le package.json pour les scripts.
-COPY --from=builder /repo/node_modules /app/node_modules
-COPY --from=builder /repo/packages /app/packages
-COPY --from=builder /repo/apps/api/dist /app/dist
-COPY --from=builder /repo/apps/api/package.json /app/package.json
+# pnpm workspace : les deps de @okito/api sont des symlinks dans
+# apps/api/node_modules → ../../node_modules/.pnpm. On reproduit donc la
+# structure exacte du repo (racine + packages + apps/api) pour que la
+# résolution Node fonctionne.
+COPY --from=builder /repo/node_modules /repo/node_modules
+COPY --from=builder /repo/packages /repo/packages
+COPY --from=builder /repo/apps/api/node_modules /repo/apps/api/node_modules
+COPY --from=builder /repo/apps/api/dist /repo/apps/api/dist
+COPY --from=builder /repo/apps/api/package.json /repo/apps/api/package.json
 
+WORKDIR /repo/apps/api
 EXPOSE 8080
 CMD ["node", "dist/index.js"]
