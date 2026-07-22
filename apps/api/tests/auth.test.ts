@@ -5,12 +5,12 @@ import type { Env } from "../src/lib/env.js";
 import { loadEnv } from "../src/lib/env.js";
 import { HttpError } from "../src/lib/errors.js";
 import type { AppEnv } from "../src/lib/types.js";
-import { createAuthMiddleware } from "../src/middleware/auth.js";
+import { type TenantAccessLookup, createAuthMiddleware } from "../src/middleware/auth.js";
 
 const TENANT_A = "11111111-1111-4111-8111-111111111111";
 const SECRET = "test-secret-must-be-at-least-16-chars-long";
 
-function makeApp(envOverrides: Partial<NodeJS.ProcessEnv>) {
+function makeApp(envOverrides: Partial<NodeJS.ProcessEnv>, access?: TenantAccessLookup) {
   const env: Env = loadEnv({
     NODE_ENV: "test",
     PORT: "3001",
@@ -29,7 +29,7 @@ function makeApp(envOverrides: Partial<NodeJS.ProcessEnv>) {
     }
     return c.json({ error: { code: "server", message: "boom" } }, 500);
   });
-  app.use("*", createAuthMiddleware(env));
+  app.use("*", createAuthMiddleware(env, access));
   app.get("/me", (c) => c.json({ tenantId: c.get("tenantId"), userId: c.get("userId") ?? null }));
   return app;
 }
@@ -95,6 +95,41 @@ describe("authMiddleware — JWT", () => {
       .sign(new TextEncoder().encode(SECRET));
     const res = await app.request("/me", { headers: { Authorization: `Bearer ${token}` } });
     expect(res.status).toBe(401);
+  });
+
+  it("tenant_id en app_metadata (service-role) → accepté sans lookup", async () => {
+    const app = makeApp({ SUPABASE_JWT_SECRET: SECRET });
+    const token = await new SignJWT({ sub: "user-1", app_metadata: { tenant_id: TENANT_A } })
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("1h")
+      .sign(new TextEncoder().encode(SECRET));
+    const res = await app.request("/me", { headers: { Authorization: `Bearer ${token}` } });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { tenantId: string }).tenantId).toBe(TENANT_A);
+  });
+
+  it("tenant_id en user_metadata SANS appartenance en base → 401 (anti-usurpation)", async () => {
+    const app = makeApp({ SUPABASE_JWT_SECRET: SECRET }, { canAccess: async () => false });
+    const token = await new SignJWT({ sub: "user-1", user_metadata: { tenant_id: TENANT_A } })
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("1h")
+      .sign(new TextEncoder().encode(SECRET));
+    const res = await app.request("/me", { headers: { Authorization: `Bearer ${token}` } });
+    expect(res.status).toBe(401);
+  });
+
+  it("tenant_id en user_metadata AVEC appartenance prouvée → 200", async () => {
+    const app = makeApp(
+      { SUPABASE_JWT_SECRET: SECRET },
+      { canAccess: async (_u, _c, target) => target === TENANT_A },
+    );
+    const token = await new SignJWT({ sub: "user-1", user_metadata: { tenant_id: TENANT_A } })
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("1h")
+      .sign(new TextEncoder().encode(SECRET));
+    const res = await app.request("/me", { headers: { Authorization: `Bearer ${token}` } });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { tenantId: string }).tenantId).toBe(TENANT_A);
   });
 
   it("JWT non signé accepté en dev (sans secret configuré)", async () => {
