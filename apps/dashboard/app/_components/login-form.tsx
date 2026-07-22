@@ -52,10 +52,14 @@ export function LoginForm() {
     setErr(null);
     try {
       const sb = getSupabase();
-      const { error } = await sb.auth.signInWithOAuth({
+      const { data, error } = await sb.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/welcome`,
+          // On récupère l'URL sans naviguer : si le provider est désactivé
+          // côté Supabase, l'authorize renvoie un 400 JSON — naviguer dessus
+          // afficherait l'erreur brute plein écran au lieu du message inline.
+          skipBrowserRedirect: true,
           queryParams: {
             // Force le consent screen pour proposer clairement le compte à
             // utiliser (utile si le user a plusieurs comptes Google).
@@ -64,6 +68,13 @@ export function LoginForm() {
         },
       });
       if (error) throw error;
+      if (!data?.url) throw new Error("URL OAuth manquante");
+      const probe = await fetch(data.url, { redirect: "manual" });
+      // opaqueredirect = Supabase redirige vers Google : le provider est actif.
+      if (probe.type !== "opaqueredirect" && !probe.ok) {
+        throw new Error("Provider is not enabled");
+      }
+      window.location.assign(data.url);
       // Redirect en cours — busy reste true jusqu'au navigate.
     } catch (e) {
       const msg =
@@ -102,7 +113,7 @@ export function LoginForm() {
         <div className="mx-auto mb-4 flex size-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 anim-scale-in">
           <span className="ti ti-mail-check text-[19px]" aria-hidden="true" />
         </div>
-        <h2 className="text-xl font-medium tracking-tight text-slate-900">Lien envoyé</h2>
+        <h2 className="okito-display text-2xl text-slate-900">Lien envoyé</h2>
         <p className="mx-auto mt-3 max-w-sm text-sm text-slate-600">
           Ouvre l'email envoyé à <span className="font-medium text-slate-900">{email}</span> et
           clique sur le lien pour continuer.
@@ -124,7 +135,7 @@ export function LoginForm() {
         <div className="mx-auto mb-3 flex size-9 items-center justify-center rounded-lg okito-brand-mark text-[14px] font-medium text-white anim-scale-in">
           O
         </div>
-        <h2 className="text-xl font-medium tracking-tight text-slate-900">Bon retour</h2>
+        <h2 className="okito-display text-2xl text-slate-900">Bon retour</h2>
         <p className="mt-1 text-[13px] text-slate-500">
           Connecte-toi pour retrouver ton cockpit Jarvis.
         </p>

@@ -817,11 +817,73 @@ footer.site {
   }
 }
 
+/* ---------- Reveal au scroll ---------- */
+:root {
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-reveal],
+[data-reveal-stagger] > * {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+}
+[data-reveal].revealed,
+[data-reveal-stagger].revealed > * {
+  opacity: 1;
+  transform: none;
+}
+[data-reveal-stagger].revealed > *:nth-child(1) {
+  transition-delay: 60ms;
+}
+[data-reveal-stagger].revealed > *:nth-child(2) {
+  transition-delay: 140ms;
+}
+[data-reveal-stagger].revealed > *:nth-child(3) {
+  transition-delay: 220ms;
+}
+[data-reveal-stagger].revealed > *:nth-child(4) {
+  transition-delay: 300ms;
+}
+
+/* ---------- Micro-interactions cartes ---------- */
+.skill,
+.price {
+  transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), border-color 0.18s
+    var(--ease);
+}
+.skill:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+.price:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+.chip {
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+details.q summary {
+  transition: color 0.15s ease;
+}
+details.q summary:hover {
+  color: var(--violet-ink);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .msg {
     animation: none;
     opacity: 1;
     transform: none;
+  }
+  [data-reveal],
+  [data-reveal-stagger] > * {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .skill,
+  .price {
+    transition: none;
   }
 }
 

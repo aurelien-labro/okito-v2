@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { JarvisDemo } from "./_components/jarvis-demo";
+import { RevealObserver } from "./_components/reveal-observer";
 import { ThemeToggle } from "./_components/theme-toggle";
 import { CONTENT, type LandingContent, type Lang, resolveLang } from "./_content";
 
@@ -24,6 +25,7 @@ export default async function LandingPage({
         <FAQ t={t} />
       </main>
       <Footer t={t} />
+      <RevealObserver />
     </>
   );
 }
@@ -138,7 +140,7 @@ function SectionHeader({
   sub: string;
 }) {
   return (
-    <header className="sec">
+    <header className="sec" data-reveal>
       <div>
         <div className="kicker">{kicker}</div>
         <h2>{heading}</h2>
@@ -153,7 +155,7 @@ function Skills({ t }: { t: LandingContent }) {
     <section id="skills">
       <div className="wrap">
         <SectionHeader kicker={t.skills.kicker} heading={t.skills.heading} sub={t.skills.sub} />
-        <div className="skills">
+        <div className="skills" data-reveal-stagger>
           {t.skills.items.map((s) => (
             <div className="skill" key={s.num}>
               <div className="num">{s.num}</div>
@@ -174,7 +176,7 @@ function How({ t }: { t: LandingContent }) {
     <section id="how" className="section-tint">
       <div className="wrap">
         <SectionHeader kicker={t.how.kicker} heading={t.how.heading} sub={t.how.sub} />
-        <div className="steps">
+        <div className="steps" data-reveal-stagger>
           {t.how.steps.map((s) => (
             <div className="step" key={s.n}>
               <span className="n">{s.n}</span>
@@ -193,7 +195,7 @@ function Pricing({ t }: { t: LandingContent }) {
     <section id="pricing">
       <div className="wrap">
         <SectionHeader kicker={t.pricing.kicker} heading={t.pricing.heading} sub={t.pricing.sub} />
-        <div className="prices">
+        <div className="prices" data-reveal-stagger>
           {t.pricing.plans.map((p) => (
             <div className={`price${p.featured ? " featured" : ""}`} key={p.name}>
               {p.tag && <span className="tag">{p.tag}</span>}
@@ -225,7 +227,7 @@ function FAQ({ t }: { t: LandingContent }) {
     <section id="faq">
       <div className="wrap">
         <SectionHeader kicker={t.faq.kicker} heading={t.faq.heading} sub={t.faq.sub} />
-        <div className="faq">
+        <div className="faq" data-reveal>
           {t.faq.items.map((it, i) => (
             <details className="q" key={it.q} open={i === 0}>
               <summary>{it.q}</summary>
