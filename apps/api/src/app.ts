@@ -64,6 +64,7 @@ import { playgroundRoute } from "./routes/playground.js";
 import { portalRoute } from "./routes/portal.js";
 import { reservationsRoute } from "./routes/reservations.js";
 import { reviewRoute } from "./routes/review.js";
+import { signupRoute } from "./routes/signup.js";
 import { sitesPublicRoute } from "./routes/sites-public.js";
 import { stripeWebhookRoute } from "./routes/stripe-webhook.js";
 import { tenantsAccessibleRoute } from "./routes/tenants-accessible.js";
@@ -345,11 +346,21 @@ export function createApp(env: Env, services: AppServices = {}) {
   }
 
   // Switcher multi-établissements — auth simple (membre), pas admin.
+  // requireTenant:false : un nouvel inscrit sans tenant doit pouvoir lister
+  // (liste vide) sans 401, sinon le dashboard boucle sur le login.
   if (services.tenantAccess) {
     const v1Tenants = new Hono<AppEnv>();
-    v1Tenants.use("*", createAuthMiddleware(env, services.tenantAccess));
+    v1Tenants.use("*", createAuthMiddleware(env, services.tenantAccess, { requireTenant: false }));
     v1Tenants.route("/", tenantsAccessibleRoute(services.tenantAccess));
     app.route("/v1/tenants", v1Tenants);
+
+    // Signup self-serve : crée l'établissement + membership owner du user.
+    if (services.db) {
+      const v1Signup = new Hono<AppEnv>();
+      v1Signup.use("*", createAuthMiddleware(env, services.tenantAccess, { requireTenant: false }));
+      v1Signup.route("/", signupRoute(services.db));
+      app.route("/v1/signup", v1Signup);
+    }
   }
 
   // Portail self-service client — public, le token est l'auth (hashé en DB).

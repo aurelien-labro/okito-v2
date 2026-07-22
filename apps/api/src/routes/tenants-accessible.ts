@@ -14,7 +14,7 @@ export function tenantsAccessibleRoute(service: TenantAccessService) {
   app.get("/accessible", async (c) => {
     const userId = c.get("userId") ?? null;
     const claim = c.get("tenantId");
-    const claimTenantId = claim && claim !== "admin" ? claim : null;
+    const claimTenantId = claim && claim !== "admin" && claim !== "none" ? claim : null;
     const rows = await service.listAccessible(userId, claimTenantId);
     return c.json({
       data: rows.map((t) => ({

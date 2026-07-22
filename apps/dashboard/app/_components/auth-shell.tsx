@@ -10,6 +10,7 @@ import {
   setToken,
 } from "../_lib/api-client";
 import { getSupabase, isSupabaseConfigured } from "../_lib/supabase";
+import { CreateBusinessForm } from "./create-business-form";
 import { LoginForm } from "./login-form";
 
 /**
@@ -80,6 +81,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
   const [ssrConfigured] = useState(() => isSupabaseConfigured());
+  // null = pas encore vérifié ; true = au moins un tenant accessible.
+  const [hasTenant, setHasTenant] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!ssrConfigured) {
@@ -95,6 +98,36 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, [ssrConfigured]);
 
+  // Nouvel inscrit : session OK mais aucun établissement → écran de création.
+  useEffect(() => {
+    if (!session) {
+      setHasTenant(null);
+      return;
+    }
+    if (getCurrentTenantId()) {
+      setHasTenant(true);
+      return;
+    }
+    let cancelled = false;
+    listAccessibleTenants()
+      .then(({ data }) => {
+        if (cancelled) return;
+        if (data[0]) {
+          setCurrentTenantId(data[0].id);
+          setHasTenant(true);
+        } else {
+          setHasTenant(false);
+        }
+      })
+      .catch(() => {
+        // API injoignable : on laisse passer, les écrans gèrent leurs erreurs.
+        if (!cancelled) setHasTenant(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
+
   if (!ready) return <SplashScreen />;
 
   if (!ssrConfigured) {
@@ -103,6 +136,18 @@ export function AuthGate({ children }: { children: ReactNode }) {
   }
 
   if (!session) return <LoginScreen />;
+
+  if (hasTenant === null) return <SplashScreen />;
+
+  if (hasTenant === false) {
+    return (
+      <div className="anim-fade-in fixed inset-0 z-40 flex items-center justify-center bg-[var(--okito-bg)] px-6">
+        <div className="anim-fade-up w-full max-w-sm">
+          <CreateBusinessForm onCreated={() => setHasTenant(true)} />
+        </div>
+      </div>
+    );
+  }
 
   return <>{children}</>;
 }
