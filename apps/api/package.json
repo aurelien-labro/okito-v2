@@ -27,6 +27,7 @@
     "imapflow": "^1.4.3",
     "inngest": "^4.11.0",
     "jose": "^5.9.6",
+    "pdf-parse": "^1.1.1",
     "pino": "^9.5.0",
     "prom-client": "^15.1.3",
     "zod": "^3.23.8"
@@ -34,6 +35,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.3",
     "@types/node": "^22.10.2",
+    "@types/pdf-parse": "^1.1.4",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"

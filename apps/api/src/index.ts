@@ -17,10 +17,15 @@ import { CampaignService } from "./services/campaign.js";
 import { CapacityService } from "./services/capacity.js";
 import { ChatService } from "./services/chat.js";
 import { CoachService } from "./services/coach.js";
+import {
+  ConnectorMarketplaceService,
+  parseTrustedPublishers,
+} from "./services/connector-marketplace.js";
 import { ConversationService } from "./services/conversation.js";
 import { CustomerPrivacyService } from "./services/customer-privacy.js";
 import { CustomerTimelineService } from "./services/customer-timeline.js";
 import { EventBusService } from "./services/event-bus.js";
+import { ExternalConnectorTool } from "./services/external-connector-tool.js";
 import { GmailSyncService } from "./services/gmail-sync.js";
 import { GoogleAdsService } from "./services/google-ads.js";
 import { GoogleBusinessService } from "./services/google-business.js";
@@ -122,7 +127,18 @@ if (env.DATABASE_URL) {
     jarvisToolSettings,
   );
   services.jarvisAction = jarvisAction;
-  const jarvisExecutor = new JarvisExecutor(db, jarvisAction, [], jarvisToolSettings);
+  const connectorMarketplace = new ConnectorMarketplaceService(
+    db,
+    parseTrustedPublishers(env.MARKETPLACE_TRUSTED_PUBLISHERS),
+  );
+  services.connectorMarketplace = connectorMarketplace;
+  const jarvisExecutor = new JarvisExecutor(
+    db,
+    jarvisAction,
+    [],
+    jarvisToolSettings,
+    new ExternalConnectorTool(connectorMarketplace),
+  );
   services.jarvisExecutor = jarvisExecutor;
   const supplierInvoice = new SupplierInvoiceService(db, eventBus);
   services.supplierInvoice = supplierInvoice;
@@ -281,7 +297,11 @@ if (env.DATABASE_URL) {
     if (services.googleBusiness) {
       jarvisExecutor.registerTool(new GoogleReviewReplyTool(llm, services.googleBusiness));
     }
-    services.supplierInvoiceExtraction = new SupplierInvoiceExtractionService(llm);
+    const { defaultPdfTextExtractor } = await import("./lib/pdf-text.js");
+    services.supplierInvoiceExtraction = new SupplierInvoiceExtractionService(
+      llm,
+      defaultPdfTextExtractor,
+    );
     services.onboardingScan = new OnboardingScanService(
       db,
       llm,

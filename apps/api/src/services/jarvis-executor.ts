@@ -37,6 +37,8 @@ export class JarvisExecutor {
     private readonly actions: JarvisActionService,
     tools: JarvisTool[] = [],
     private readonly toolSettings?: JarvisToolSettingsService,
+    /** Tool de repli par préfixe (connecteurs tiers `ext.*`, marketplace vague 5). */
+    private readonly fallbackTool?: JarvisTool & { matches(type: string): boolean },
   ) {
     this.tools = new Map(tools.map((t) => [t.type, t]));
   }
@@ -78,7 +80,9 @@ export class JarvisExecutor {
       );
       return "skipped";
     }
-    const tool = this.tools.get(action.type);
+    const tool =
+      this.tools.get(action.type) ??
+      (this.fallbackTool?.matches(action.type) ? this.fallbackTool : undefined);
     if (!tool) {
       await this.actions.markFailed(action.tenantId, action.id, `tool inconnu : ${action.type}`);
       logger.warn({ actionId: action.id, type: action.type }, "Jarvis: tool inconnu");

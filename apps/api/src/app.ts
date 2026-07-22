@@ -15,6 +15,7 @@ import { adminBillingRoute } from "./routes/admin-billing.js";
 import { adminCalendarsRoute, googleCalendarCallbackRoute } from "./routes/admin-calendars.js";
 import { adminCampaignsRoute } from "./routes/admin-campaigns.js";
 import { adminCoachRoute } from "./routes/admin-coach.js";
+import { adminConnectorsRoute } from "./routes/admin-connectors.js";
 import { adminCustomerTimelineRoute } from "./routes/admin-customer-timeline.js";
 import { adminCustomersRoute } from "./routes/admin-customers.js";
 import { adminGoogleAdsRoute, googleAdsCallbackRoute } from "./routes/admin-google-ads.js";
@@ -79,6 +80,7 @@ import type { CampaignService } from "./services/campaign.js";
 import type { CapacityService } from "./services/capacity.js";
 import type { ChatService } from "./services/chat.js";
 import type { CoachService } from "./services/coach.js";
+import type { ConnectorMarketplaceService } from "./services/connector-marketplace.js";
 import type { CustomerPrivacyService } from "./services/customer-privacy.js";
 import type { CustomerTimelineService } from "./services/customer-timeline.js";
 import { type BusinessEventEmitter, EventBusService } from "./services/event-bus.js";
@@ -185,6 +187,8 @@ export interface AppServices {
   jarvisAction?: JarvisActionService;
   /** Boutique d'automatisations — monté sur /v1/admin/jarvis-tools si fourni. */
   jarvisToolSettings?: JarvisToolSettingsService;
+  /** Marketplace de connecteurs tiers signés — monté sur /v1/admin/connectors si fourni. */
+  connectorMarketplace?: ConnectorMarketplaceService;
   /** Pipeline voix maison (banc d'essai) — monté sur /v1/admin/voice si fourni. */
   voiceTurn?: VoiceTurnService;
   /** Voice cloning — profil vocal par tenant (routes /v1/admin/voice/:id/profile). */
@@ -491,6 +495,9 @@ export function createApp(env: Env, services: AppServices = {}) {
     }
     if (services.jarvisToolSettings) {
       v1Admin.route("/jarvis-tools", adminJarvisToolsRoute(services.jarvisToolSettings));
+    }
+    if (services.connectorMarketplace) {
+      v1Admin.route("/connectors", adminConnectorsRoute(services.connectorMarketplace));
     }
     if (services.voiceTurn) {
       v1Admin.route(

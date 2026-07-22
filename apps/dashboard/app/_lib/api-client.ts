@@ -81,6 +81,28 @@ export function setCurrentTenantId(id: string): void {
   window.localStorage.setItem("okito_current_tenant_id", id);
 }
 
+export function clearCurrentTenantId(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem("okito_current_tenant_id");
+}
+
+/**
+ * Vide TOUT l'état client OKITO. À appeler au logout pour éviter que le
+ * prochain login (potentiellement un autre user sur la même machine)
+ * hérite du tenant précédent, du token expiré, ou d'autres reliquats.
+ * Ratisse par prefix `okito_` pour capter les clés futures sans oubli.
+ */
+export function clearAllOkitoState(): void {
+  if (typeof window === "undefined") return;
+  const store = window.localStorage;
+  const keys: string[] = [];
+  for (let i = 0; i < store.length; i++) {
+    const k = store.key(i);
+    if (k?.startsWith("okito_")) keys.push(k);
+  }
+  for (const k of keys) store.removeItem(k);
+}
+
 export interface ApiError {
   status: number;
   code: string;
@@ -776,6 +798,54 @@ export async function patchJarvisTool(
   return request(`/v1/admin/jarvis-tools/${tenantId}/${encodeURIComponent(type)}`, {
     method: "PATCH",
     body: JSON.stringify(patch),
+  });
+}
+
+/** Connecteur tiers installé (marketplace, vague 5). Secret jamais exposé. */
+export interface ConnectorStatus {
+  connectorId: string;
+  name: string;
+  description: string;
+  publisher: string;
+  version: string;
+  endpoint: string;
+  enabled: boolean;
+  actionType: string;
+  installedAt: string;
+}
+
+export async function listConnectors(tenantId: string): Promise<{ data: ConnectorStatus[] }> {
+  return request(`/v1/admin/connectors/${tenantId}`);
+}
+
+export async function installConnector(
+  tenantId: string,
+  manifest: string,
+  signature: string,
+): Promise<{ data: ConnectorStatus }> {
+  return request(`/v1/admin/connectors/${tenantId}`, {
+    method: "POST",
+    body: JSON.stringify({ manifest, signature }),
+  });
+}
+
+export async function patchConnector(
+  tenantId: string,
+  connectorId: string,
+  patch: { enabled: boolean },
+): Promise<{ data: ConnectorStatus }> {
+  return request(`/v1/admin/connectors/${tenantId}/${encodeURIComponent(connectorId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function uninstallConnector(
+  tenantId: string,
+  connectorId: string,
+): Promise<{ data: { ok: true } }> {
+  return request(`/v1/admin/connectors/${tenantId}/${encodeURIComponent(connectorId)}`, {
+    method: "DELETE",
   });
 }
 
