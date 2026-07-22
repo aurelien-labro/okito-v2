@@ -1791,3 +1791,24 @@ export async function createBillingCheckout(tenantId: string): Promise<{ data: {
 export async function createBillingPortal(tenantId: string): Promise<{ data: { url: string } }> {
   return request(`/v1/admin/billing/${tenantId}/portal`, { method: "POST" });
 }
+
+// --- Skill Social ------------------------------------------------------------
+
+export type SocialTone = "chaleureux" | "expert" | "malicieux";
+
+export interface SocialDraft {
+  caption: string;
+  hashtags: string[];
+  callToAction: string;
+  warnings: string[];
+}
+
+export async function draftSocialPost(
+  tenantId: string,
+  input: { note: string; tone?: SocialTone },
+): Promise<{ data: SocialDraft }> {
+  return request(`/v1/admin/social/${tenantId}/draft`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}

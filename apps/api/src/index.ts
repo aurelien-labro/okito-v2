@@ -63,6 +63,7 @@ import { ShopifyConnectionService } from "./services/shopify-connection.js";
 import { ShopifySyncService } from "./services/shopify-sync.js";
 import { SiteGeneratorService } from "./services/site-generator.js";
 import { SiteService } from "./services/site.js";
+import { SocialDrafterService } from "./services/social-drafter.js";
 import { StatsService } from "./services/stats.js";
 import { StripeAccountService } from "./services/stripe-account.js";
 import { StripeSyncService } from "./services/stripe-sync.js";
@@ -290,6 +291,7 @@ if (env.DATABASE_URL) {
       webhooks: services.eventBus,
     });
     services.jarvisAdvisor = new JarvisAdvisorService(db, llm, eventBus, notifier);
+    services.socialDrafter = new SocialDrafterService(llm);
     jarvisExecutor.registerTool(new ReviewReplyTool(db, llm, notifier));
     jarvisExecutor.registerTool(new InvoiceRemindTool(db, llm, notifier, invoice));
     if (services.googleBusiness) {
