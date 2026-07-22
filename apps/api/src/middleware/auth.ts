@@ -42,7 +42,20 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * `ADMIN_USER_IDS`) peuvent passer sans `tenant_id` — leur tenantId est
  * marqué `"admin"` (sentinel non-UUID, à ignorer côté routes admin).
  */
-export function createAuthMiddleware(env: Env, access?: TenantAccessLookup) {
+export interface AuthMiddlewareOptions {
+  /**
+   * false = accepte un JWT valide SANS tenant (nouvel inscrit self-serve) :
+   * tenantId est posé à la sentinelle "none". Réservé aux routes qui n'ont
+   * pas besoin d'un établissement (signup bootstrap, liste des tenants).
+   */
+  requireTenant?: boolean;
+}
+
+export function createAuthMiddleware(
+  env: Env,
+  access?: TenantAccessLookup,
+  options?: AuthMiddlewareOptions,
+) {
   const jwks = env.SUPABASE_URL
     ? createRemoteJWKSet(new URL(`${env.SUPABASE_URL}/auth/v1/.well-known/jwks.json`))
     : null;
@@ -106,7 +119,22 @@ export function createAuthMiddleware(env: Env, access?: TenantAccessLookup) {
           c.set("tenantId", "admin");
         }
       } else {
-        throw new UnauthorizedError("Token sans claim tenant_id");
+        // JWT valide mais sans claim tenant_id : cas des comptes self-serve
+        // (le claim n'est posé qu'après le premier login). On accepte si la
+        // ligne tenant_members prouve l'appartenance au tenant demandé.
+        const overrideTenant = c.req.header("X-Tenant-Id");
+        if (
+          overrideTenant &&
+          UUID_RE.test(overrideTenant) &&
+          access &&
+          (await access.canAccess(userId ?? null, null, overrideTenant))
+        ) {
+          c.set("tenantId", overrideTenant);
+        } else if (options?.requireTenant === false) {
+          c.set("tenantId", "none");
+        } else {
+          throw new UnauthorizedError("Token sans claim tenant_id");
+        }
       }
 
       if (userId) c.set("userId", userId);

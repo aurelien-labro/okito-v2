@@ -304,6 +304,17 @@ export async function listAccessibleTenants(): Promise<{ data: AccessibleTenant[
   return request("/v1/tenants/accessible");
 }
 
+/**
+ * Signup self-serve : crée l'établissement du nouvel inscrit (+ membership
+ * owner). Idempotent — renvoie le tenant existant si déjà créé.
+ */
+export async function bootstrapTenant(input: {
+  name: string;
+  industry?: string;
+}): Promise<{ data: { id: string; slug: string; name: string }; created: boolean }> {
+  return request("/v1/signup", { method: "POST", body: JSON.stringify(input) });
+}
+
 export async function listTenants(): Promise<{ data: Tenant[] }> {
   return request("/v1/admin/tenants");
 }
