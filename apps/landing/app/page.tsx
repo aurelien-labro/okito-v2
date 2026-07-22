@@ -80,7 +80,7 @@ function Nav({ t, lang }: { t: LandingContent; lang: Lang }) {
           <a href={DASHBOARD_URL} className="btn ghost">
             {t.nav.login}
           </a>
-          <a href="#pricing" className="btn primary">
+          <a href={DASHBOARD_URL} className="btn primary">
             {t.nav.cta}
             <ArrowIcon />
           </a>
@@ -105,7 +105,7 @@ function Hero({ t }: { t: LandingContent }) {
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: contenu statique de _content.ts, aucune entrée utilisateur */}
         <p className="lede" dangerouslySetInnerHTML={{ __html: t.hero.ledeHtml }} />
         <div className="hero-cta">
-          <a href="#pricing" className="btn primary">
+          <a href={DASHBOARD_URL} className="btn primary">
             {t.hero.ctaPrimary}
             <ArrowIcon />
           </a>
@@ -208,7 +208,7 @@ function Pricing({ t }: { t: LandingContent }) {
               </ul>
               <a
                 className={`btn${p.featured ? " primary" : ""}`}
-                href="mailto:hello@okito.app?subject=OKITO"
+                href={p.name === "Scale" ? "mailto:hello@okito.app?subject=OKITO" : DASHBOARD_URL}
               >
                 {p.cta}
               </a>
