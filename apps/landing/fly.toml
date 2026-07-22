@@ -1,0 +1,36 @@
+# fly.toml — apps/landing OKITO (Next.js 15, vitrine publique)
+#
+# Déploiement (depuis la RACINE du repo — le contexte de build est le monorepo) :
+#   flyctl launch --no-deploy --copy-config --name okito-demo-landing --config apps/landing/fly.toml
+#   flyctl deploy . -a okito-demo-landing --config apps/landing/fly.toml --dockerfile apps/landing/Dockerfile --remote-only
+
+app = "okito-demo-landing"
+primary_region = "cdg"
+kill_signal = "SIGINT"
+kill_timeout = "5s"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
