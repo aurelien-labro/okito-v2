@@ -142,7 +142,15 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (hasTenant === false) {
     return (
       <div className="anim-fade-in fixed inset-0 z-40 flex items-center justify-center bg-[var(--okito-bg)] px-6">
-        <div className="anim-fade-up w-full max-w-sm">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-[420px]"
+          style={{
+            background:
+              "radial-gradient(560px 300px at 50% 18%, rgba(79,70,229,0.07), transparent 70%)",
+          }}
+        />
+        <div className="anim-fade-up okito-hairline relative w-full max-w-sm rounded-2xl bg-white/85 p-7 shadow-[0_6px_24px_-8px_rgba(10,10,11,0.10),0_2px_6px_rgba(10,10,11,0.04)] backdrop-blur">
           <CreateBusinessForm onCreated={() => setHasTenant(true)} />
         </div>
       </div>
@@ -166,7 +174,16 @@ function SplashScreen() {
 function LoginScreen() {
   return (
     <div className="anim-fade-in fixed inset-0 z-40 flex items-center justify-center bg-[var(--okito-bg)] px-6">
-      <div className="anim-fade-up w-full max-w-sm">
+      {/* Halo violet signature de la vitrine, très discret. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[420px]"
+        style={{
+          background:
+            "radial-gradient(560px 300px at 50% 18%, rgba(79,70,229,0.07), transparent 70%)",
+        }}
+      />
+      <div className="anim-fade-up okito-hairline relative w-full max-w-sm rounded-2xl bg-white/85 p-7 shadow-[0_6px_24px_-8px_rgba(10,10,11,0.10),0_2px_6px_rgba(10,10,11,0.04)] backdrop-blur">
         <LoginForm />
       </div>
     </div>
