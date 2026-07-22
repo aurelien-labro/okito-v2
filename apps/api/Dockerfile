@@ -40,9 +40,13 @@ ENV PORT=8080
 COPY --from=builder /repo/node_modules /repo/node_modules
 COPY --from=builder /repo/packages /repo/packages
 COPY --from=builder /repo/apps/api/node_modules /repo/apps/api/node_modules
-COPY --from=builder /repo/apps/api/dist /repo/apps/api/dist
+COPY --from=builder /repo/apps/api/src /repo/apps/api/src
 COPY --from=builder /repo/apps/api/package.json /repo/apps/api/package.json
+COPY --from=builder /repo/apps/api/tsconfig.json /repo/apps/api/tsconfig.json
+COPY --from=builder /repo/tsconfig.base.json /repo/tsconfig.base.json
 
 WORKDIR /repo/apps/api
 EXPOSE 8080
-CMD ["node", "dist/index.js"]
+# Les packages workspace (@okito/db, etc.) exportent leurs sources .ts :
+# on exécute via tsx (dépendance runtime), comme en dev.
+CMD ["./node_modules/.bin/tsx", "src/index.ts"]
