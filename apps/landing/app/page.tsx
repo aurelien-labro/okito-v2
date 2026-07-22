@@ -1,5 +1,9 @@
 import Link from "next/link";
+import { JarvisDemo } from "./_components/jarvis-demo";
+import { ThemeToggle } from "./_components/theme-toggle";
 import { CONTENT, type LandingContent, type Lang, resolveLang } from "./_content";
+
+const DASHBOARD_URL = process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "https://app.okito.app";
 
 export default async function LandingPage({
   searchParams,
@@ -10,39 +14,46 @@ export default async function LandingPage({
   const lang = resolveLang(rawLang);
   const t = CONTENT[lang];
   return (
-    <div>
+    <>
       <Nav t={t} lang={lang} />
-      <Hero t={t} />
-      <SocialProof t={t} />
-      <Features t={t} />
-      <HowItWorks t={t} />
-      <Verticals t={t} />
-      <Pricing t={t} />
-      <FAQ t={t} />
-      <CTA t={t} />
+      <main id="top">
+        <Hero t={t} />
+        <Skills t={t} />
+        <How t={t} />
+        <Pricing t={t} />
+        <FAQ t={t} />
+      </main>
       <Footer t={t} />
-    </div>
+    </>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
   );
 }
 
 function LangToggle({ lang }: { lang: Lang }) {
   return (
-    <div className="flex items-center gap-1 text-xs">
-      <Link
-        href="?lang=fr"
-        className={
-          lang === "fr" ? "font-semibold text-stone-900" : "text-stone-400 hover:text-stone-700"
-        }
-      >
+    <div className="lang-toggle">
+      <Link href="?lang=fr" className={lang === "fr" ? "active" : ""}>
         FR
       </Link>
-      <span className="text-stone-300">/</span>
-      <Link
-        href="?lang=en"
-        className={
-          lang === "en" ? "font-semibold text-stone-900" : "text-stone-400 hover:text-stone-700"
-        }
-      >
+      <span>/</span>
+      <Link href="?lang=en" className={lang === "en" ? "active" : ""}>
         EN
       </Link>
     </div>
@@ -51,137 +62,105 @@ function LangToggle({ lang }: { lang: Lang }) {
 
 function Nav({ t, lang }: { t: LandingContent; lang: Lang }) {
   return (
-    <nav className="sticky top-0 z-50 border-b border-stone-200 bg-stone-50/80 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="text-lg font-semibold tracking-tight">
-          OKITO
-        </Link>
-        <div className="hidden gap-6 text-sm text-stone-600 md:flex">
-          <a href="#features" className="hover:text-stone-900">
-            {t.nav.features}
-          </a>
-          <a href="#how" className="hover:text-stone-900">
-            {t.nav.how}
-          </a>
-          <a href="#pricing" className="hover:text-stone-900">
-            {t.nav.pricing}
-          </a>
-          <a href="#faq" className="hover:text-stone-900">
-            {t.nav.faq}
-          </a>
-        </div>
-        <div className="flex items-center gap-3">
+    <header className="nav">
+      <div className="wrap nav-inner">
+        <a className="brand" href="#top" aria-label="OKITO, retour en haut">
+          <span className="brand-mark" aria-hidden="true" />
+          <span>OKITO</span>
+        </a>
+        <nav className="links" aria-label="Sections">
+          <a href="#skills">{t.nav.skills}</a>
+          <a href="#how">{t.nav.how}</a>
+          <a href="#pricing">{t.nav.pricing}</a>
+          <a href="#faq">{t.nav.faq}</a>
+        </nav>
+        <div className="nav-cta">
           <LangToggle lang={lang} />
-          <a href="#cta" className="hidden text-sm text-stone-600 hover:text-stone-900 md:inline">
-            {t.nav.trial}
+          <ThemeToggle />
+          <a href={DASHBOARD_URL} className="btn ghost">
+            {t.nav.login}
           </a>
-          <a
-            href="mailto:hello@okito.app?subject=Demande%20de%20d%C3%A9mo%20OKITO"
-            className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-700"
-          >
-            {t.nav.demo}
+          <a href="#pricing" className="btn primary">
+            {t.nav.cta}
+            <ArrowIcon />
           </a>
         </div>
       </div>
-    </nav>
+    </header>
   );
 }
 
 function Hero({ t }: { t: LandingContent }) {
   return (
-    <section className="mx-auto max-w-6xl px-6 pt-20 pb-24 text-center">
-      <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-3 py-1 text-xs text-stone-600">
-        <span className="size-1.5 rounded-full bg-emerald-500" />
-        {t.hero.badge}
-      </div>
-      <h1 className="mx-auto mt-6 max-w-3xl text-5xl font-semibold leading-tight tracking-tight md:text-6xl">
-        {t.hero.titleLead}
-        <br />
-        <span className="text-stone-500">{t.hero.titleAccent}</span>
-      </h1>
-      <p className="mx-auto mt-6 max-w-2xl text-lg text-stone-600">{t.hero.subtitle}</p>
-      <div className="mt-8 flex items-center justify-center gap-3">
-        <a
-          href="mailto:hello@okito.app?subject=Demande%20de%20d%C3%A9mo%20OKITO"
-          className="rounded-full bg-stone-900 px-6 py-3 text-sm font-medium text-white hover:bg-stone-700"
-        >
-          {t.hero.ctaDemo}
-        </a>
-        <a
-          href="#how"
-          className="rounded-full border border-stone-300 bg-white px-6 py-3 text-sm font-medium hover:bg-stone-100"
-        >
-          {t.hero.ctaHow}
-        </a>
-      </div>
-      <p className="mt-4 text-xs text-stone-500">{t.hero.reassurance}</p>
-    </section>
-  );
-}
-
-function SocialProof({ t }: { t: LandingContent }) {
-  return (
-    <section className="border-y border-stone-200 bg-white py-10">
-      <div className="mx-auto max-w-6xl px-6">
-        <p className="text-center text-xs uppercase tracking-widest text-stone-500">
-          {t.proof.tagline}
-        </p>
-        <div className="mt-8 grid grid-cols-2 gap-6 text-center md:grid-cols-4">
-          {t.proof.stats.map((s) => (
-            <Stat key={s.label} value={s.value} label={s.label} />
+    <section className="hero wrap">
+      <div>
+        <span className="eyebrow">
+          <span className="dot" /> {t.hero.eyebrow}
+        </span>
+        <h1 className="display">
+          {t.hero.titleLead}
+          <em>{t.hero.titleEm}</em>
+          {t.hero.titleTail}
+        </h1>
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: contenu statique de _content.ts, aucune entrée utilisateur */}
+        <p className="lede" dangerouslySetInnerHTML={{ __html: t.hero.ledeHtml }} />
+        <div className="hero-cta">
+          <a href="#pricing" className="btn primary">
+            {t.hero.ctaPrimary}
+            <ArrowIcon />
+          </a>
+          <a href="#how" className="btn">
+            {t.hero.ctaSecondary}
+          </a>
+          <span className="note">{t.hero.note}</span>
+        </div>
+        <div className="trust-strip" aria-label="Intégrations">
+          {t.hero.integrations.map((name, i) => (
+            <span key={name} style={{ display: "contents" }}>
+              {i > 0 && <span className="sep" />}
+              <span>{name}</span>
+            </span>
           ))}
         </div>
       </div>
+      <JarvisDemo t={t.demo} />
     </section>
   );
 }
 
-function Stat({ value, label }: { value: string; label: string }) {
+function SectionHeader({
+  kicker,
+  heading,
+  sub,
+}: {
+  kicker: string;
+  heading: string;
+  sub: string;
+}) {
   return (
-    <div>
-      <div className="text-3xl font-semibold tracking-tight">{value}</div>
-      <div className="mt-1 text-xs text-stone-500">{label}</div>
-    </div>
-  );
-}
-
-function Features({ t }: { t: LandingContent }) {
-  return (
-    <section id="features" className="mx-auto max-w-6xl px-6 py-24">
-      <h2 className="text-center text-3xl font-semibold tracking-tight md:text-4xl">
-        {t.features.heading}
-        <br />
-        <span className="text-stone-500">{t.features.headingAccent}</span>
-      </h2>
-      <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {t.features.items.map((it) => (
-          <div
-            key={it.title}
-            className="rounded-2xl border border-stone-200 bg-white p-5 hover:shadow-sm"
-          >
-            <div className="text-sm font-semibold">{it.title}</div>
-            <p className="mt-2 text-sm text-stone-600">{it.body}</p>
-          </div>
-        ))}
+    <header className="sec">
+      <div>
+        <div className="kicker">{kicker}</div>
+        <h2>{heading}</h2>
       </div>
-    </section>
+      <p className="sub">{sub}</p>
+    </header>
   );
 }
 
-function HowItWorks({ t }: { t: LandingContent }) {
+function Skills({ t }: { t: LandingContent }) {
   return (
-    <section id="how" className="border-y border-stone-200 bg-white">
-      <div className="mx-auto max-w-6xl px-6 py-24">
-        <h2 className="text-center text-3xl font-semibold tracking-tight md:text-4xl">
-          {t.how.heading}
-        </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-center text-stone-600">{t.how.subtitle}</p>
-        <div className="mt-12 grid gap-8 md:grid-cols-3">
-          {t.how.steps.map((s) => (
-            <div key={s.n} className="relative rounded-2xl border border-stone-200 p-6">
-              <div className="text-xs font-mono text-stone-400">{s.n}</div>
-              <div className="mt-2 text-base font-semibold">{s.title}</div>
-              <p className="mt-2 text-sm text-stone-600">{s.body}</p>
+    <section id="skills">
+      <div className="wrap">
+        <SectionHeader kicker={t.skills.kicker} heading={t.skills.heading} sub={t.skills.sub} />
+        <div className="skills">
+          {t.skills.items.map((s) => (
+            <div className="skill" key={s.num}>
+              <div className="num">{s.num}</div>
+              <h3>{s.title}</h3>
+              <p>{s.body}</p>
+              {/* biome-ignore lint/security/noDangerouslySetInnerHtml: contenu statique de _content.ts, aucune entrée utilisateur */}
+              <div className="loop" dangerouslySetInnerHTML={{ __html: s.loopHtml }} />
             </div>
           ))}
         </div>
@@ -190,21 +169,20 @@ function HowItWorks({ t }: { t: LandingContent }) {
   );
 }
 
-function Verticals({ t }: { t: LandingContent }) {
+function How({ t }: { t: LandingContent }) {
   return (
-    <section className="mx-auto max-w-6xl px-6 py-24 text-center">
-      <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">{t.verticals.heading}</h2>
-      <p className="mx-auto mt-4 max-w-2xl text-stone-600">{t.verticals.subtitle}</p>
-      <div className="mt-12 flex flex-wrap items-center justify-center gap-4">
-        {t.verticals.items.map((v) => (
-          <div
-            key={v.label}
-            className="rounded-full border border-stone-300 bg-white px-5 py-2 text-sm font-medium"
-          >
-            <span className="mr-2">{v.emoji}</span>
-            {v.label}
-          </div>
-        ))}
+    <section id="how" className="section-tint">
+      <div className="wrap">
+        <SectionHeader kicker={t.how.kicker} heading={t.how.heading} sub={t.how.sub} />
+        <div className="steps">
+          {t.how.steps.map((s) => (
+            <div className="step" key={s.n}>
+              <span className="n">{s.n}</span>
+              <h4>{s.title}</h4>
+              <p>{s.body}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -212,47 +190,25 @@ function Verticals({ t }: { t: LandingContent }) {
 
 function Pricing({ t }: { t: LandingContent }) {
   return (
-    <section id="pricing" className="border-y border-stone-200 bg-white">
-      <div className="mx-auto max-w-6xl px-6 py-24">
-        <h2 className="text-center text-3xl font-semibold tracking-tight md:text-4xl">
-          {t.pricing.heading}
-        </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-center text-stone-600">{t.pricing.subtitle}</p>
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+    <section id="pricing">
+      <div className="wrap">
+        <SectionHeader kicker={t.pricing.kicker} heading={t.pricing.heading} sub={t.pricing.sub} />
+        <div className="prices">
           {t.pricing.plans.map((p) => (
-            <div
-              key={p.name}
-              className={`relative rounded-2xl border p-6 ${
-                p.tag
-                  ? "border-stone-900 bg-stone-900 text-white"
-                  : "border-stone-200 bg-white text-stone-900"
-              }`}
-            >
-              {p.tag && (
-                <div className="absolute -top-3 right-6 rounded-full bg-amber-300 px-3 py-0.5 text-xs font-semibold text-stone-900">
-                  {p.tag}
-                </div>
-              )}
-              <div className="text-sm font-semibold">{p.name}</div>
-              <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-3xl font-semibold">{p.price}</span>
-                <span className="text-sm opacity-80">{p.period}</span>
+            <div className={`price${p.featured ? " featured" : ""}`} key={p.name}>
+              {p.tag && <span className="tag">{p.tag}</span>}
+              <h3>{p.name}</h3>
+              <div className="amount">
+                {p.amount} <small>{p.period}</small>
               </div>
-              <ul className="mt-6 space-y-2 text-sm">
+              <ul>
                 {p.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2">
-                    <span className={p.tag ? "text-amber-300" : "text-emerald-600"}>✓</span>
-                    <span>{f}</span>
-                  </li>
+                  <li key={f}>{f}</li>
                 ))}
               </ul>
               <a
-                href="mailto:hello@okito.app?subject=Demande%20OKITO%20-%20Plan%20"
-                className={`mt-6 block rounded-full px-4 py-2 text-center text-sm font-medium ${
-                  p.tag
-                    ? "bg-white text-stone-900 hover:bg-stone-100"
-                    : "bg-stone-900 text-white hover:bg-stone-700"
-                }`}
+                className={`btn${p.featured ? " primary" : ""}`}
+                href="mailto:hello@okito.app?subject=OKITO"
               >
                 {p.cta}
               </a>
@@ -266,35 +222,17 @@ function Pricing({ t }: { t: LandingContent }) {
 
 function FAQ({ t }: { t: LandingContent }) {
   return (
-    <section id="faq" className="mx-auto max-w-3xl px-6 py-24">
-      <h2 className="text-center text-3xl font-semibold tracking-tight md:text-4xl">
-        {t.faq.heading}
-      </h2>
-      <div className="mt-10 space-y-3">
-        {t.faq.items.map((it) => (
-          <details key={it.q} className="rounded-2xl border border-stone-200 bg-white p-5">
-            <summary className="cursor-pointer text-sm font-semibold">{it.q}</summary>
-            <p className="mt-3 text-sm text-stone-600">{it.a}</p>
-          </details>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function CTA({ t }: { t: LandingContent }) {
-  return (
-    <section id="cta" className="border-t border-stone-200 bg-stone-900 text-white">
-      <div className="mx-auto max-w-3xl px-6 py-20 text-center">
-        <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">{t.cta.heading}</h2>
-        <p className="mt-4 text-stone-300">{t.cta.subtitle}</p>
-        <a
-          href="mailto:hello@okito.app?subject=Demande%20de%20d%C3%A9mo%20OKITO"
-          className="mt-8 inline-block rounded-full bg-white px-6 py-3 text-sm font-medium text-stone-900 hover:bg-stone-100"
-        >
-          {t.cta.button}
-        </a>
-        <p className="mt-4 text-xs text-stone-500">{t.cta.note}</p>
+    <section id="faq">
+      <div className="wrap">
+        <SectionHeader kicker={t.faq.kicker} heading={t.faq.heading} sub={t.faq.sub} />
+        <div className="faq">
+          {t.faq.items.map((it, i) => (
+            <details className="q" key={it.q} open={i === 0}>
+              <summary>{it.q}</summary>
+              <p>{it.a}</p>
+            </details>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -302,21 +240,30 @@ function CTA({ t }: { t: LandingContent }) {
 
 function Footer({ t }: { t: LandingContent }) {
   return (
-    <footer className="border-t border-stone-200 bg-stone-50">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 text-xs text-stone-500 md:flex-row">
-        <div>
-          © {new Date().getFullYear()} OKITO. {t.footer.rights}
+    <footer className="site">
+      <div className="wrap foot">
+        <div className="col">
+          <span className="brand">
+            <span className="brand-mark" aria-hidden="true" /> <strong>OKITO</strong>
+          </span>
+          <span>{t.footer.tagline}</span>
         </div>
-        <div className="flex gap-6">
-          <a href="/legal/terms" className="hover:text-stone-900">
-            {t.footer.legal}
-          </a>
-          <a href="/legal/privacy" className="hover:text-stone-900">
-            {t.footer.privacy}
-          </a>
-          <a href="mailto:hello@okito.app" className="hover:text-stone-900">
-            {t.footer.contact}
-          </a>
+        <div className="col">
+          <strong>{t.footer.product}</strong>
+          <a href="#skills">{t.nav.skills}</a>
+          <a href="#how">{t.nav.how}</a>
+          <a href="#pricing">{t.nav.pricing}</a>
+        </div>
+        <div className="col">
+          <strong>{t.footer.resources}</strong>
+          <a href="#faq">{t.nav.faq}</a>
+          <a href="/legal/terms">{t.footer.legal}</a>
+          <a href="/legal/privacy">{t.footer.privacy}</a>
+        </div>
+        <div className="col">
+          <strong>{t.footer.contact}</strong>
+          <a href="mailto:hello@okito.app">hello@okito.app</a>
+          <span>{t.footer.rights}</span>
         </div>
       </div>
     </footer>
