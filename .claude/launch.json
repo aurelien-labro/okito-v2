@@ -12,6 +12,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@okito/dashboard", "dev"],
       "port": 3000
+    },
+    {
+      "name": "okito-landing",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@okito/landing", "dev"],
+      "port": 3002
     }
   ]
 }
