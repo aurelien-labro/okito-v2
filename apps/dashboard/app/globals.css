@@ -20,6 +20,8 @@
   --okito-warm: #f97316;
   --okito-font-mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, "Roboto Mono",
     monospace;
+  --okito-font-serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --okito-violet: #534ab7;
   --okito-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -55,18 +57,22 @@ body {
 /* Marque OKITO : dégradé chaud subtil sur le carré de logo. Une seule
  * exception à la règle "flat" — c'est la signature visuelle. */
 .okito-brand-mark {
-  background:
-    radial-gradient(120% 120% at 20% 20%, #f97316 0%, transparent 55%),
-    linear-gradient(135deg, #1a1a1c 0%, #0a0a0b 100%);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.2), transparent 55%),
+    linear-gradient(135deg, var(--okito-accent), var(--okito-violet));
+}
+
+/* Titres display : la serif signature de la vitrine, pour les moments forts
+ * (login, welcome, empty states) — le reste de l'app reste en sans. */
+.okito-display {
+  font-family: var(--okito-font-serif);
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 
 /* Cartes plus douces : léger shadow ambre à hover, transition rapide. */
 .okito-hover {
-  transition:
-    background-color 160ms var(--okito-ease),
-    border-color 160ms var(--okito-ease),
-    transform 160ms var(--okito-ease),
-    box-shadow 160ms var(--okito-ease);
+  transition: background-color 160ms var(--okito-ease), border-color 160ms var(--okito-ease),
+    transform 160ms var(--okito-ease), box-shadow 160ms var(--okito-ease);
 }
 .okito-hover:hover {
   transform: translateY(-1px);
@@ -78,24 +84,51 @@ body {
  * ============================================================ */
 
 @keyframes okito-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes okito-fade-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @keyframes okito-scale-in {
-  from { opacity: 0; transform: scale(0.94); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 @keyframes okito-pulse-dot {
-  0%, 100% { transform: scale(1); opacity: 0.85; }
-  50% { transform: scale(1.25); opacity: 0.35; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.35;
+  }
 }
 @keyframes okito-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .anim-fade-in {
@@ -115,14 +148,30 @@ body {
 .anim-stagger > * {
   animation: okito-fade-up 480ms var(--okito-ease) both;
 }
-.anim-stagger > *:nth-child(1) { animation-delay: 40ms; }
-.anim-stagger > *:nth-child(2) { animation-delay: 100ms; }
-.anim-stagger > *:nth-child(3) { animation-delay: 160ms; }
-.anim-stagger > *:nth-child(4) { animation-delay: 220ms; }
-.anim-stagger > *:nth-child(5) { animation-delay: 280ms; }
-.anim-stagger > *:nth-child(6) { animation-delay: 340ms; }
-.anim-stagger > *:nth-child(7) { animation-delay: 400ms; }
-.anim-stagger > *:nth-child(8) { animation-delay: 460ms; }
+.anim-stagger > *:nth-child(1) {
+  animation-delay: 40ms;
+}
+.anim-stagger > *:nth-child(2) {
+  animation-delay: 100ms;
+}
+.anim-stagger > *:nth-child(3) {
+  animation-delay: 160ms;
+}
+.anim-stagger > *:nth-child(4) {
+  animation-delay: 220ms;
+}
+.anim-stagger > *:nth-child(5) {
+  animation-delay: 280ms;
+}
+.anim-stagger > *:nth-child(6) {
+  animation-delay: 340ms;
+}
+.anim-stagger > *:nth-child(7) {
+  animation-delay: 400ms;
+}
+.anim-stagger > *:nth-child(8) {
+  animation-delay: 460ms;
+}
 
 /* Skeleton shimmer pour loading states. */
 .okito-skeleton {
