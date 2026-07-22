@@ -4,21 +4,21 @@ import { CookieBanner } from "./_components/cookie-banner";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "OKITO — L'assistant qui prend vos réservations 24/7",
+  title: "OKITO — Jarvis pour commerçants",
   description:
-    "Bot vocal multilingue + WhatsApp + widget web pour restaurants, hôtels et services. Plus jamais une réservation ratée.",
+    "OKITO lit vos avis, e-mails et factures. Jarvis rédige, relance, extrait — et vous laisse 24 h pour annuler avant d'agir.",
   openGraph: {
-    title: "OKITO — Réservations automatisées",
+    title: "OKITO — Jarvis pour commerçants",
     description:
-      "L'IA qui répond au téléphone, sur WhatsApp et sur votre site, à votre place, 24h/24.",
+      "Le copilote autonome des commerces qui n'ont pas d'assistant. Rien ne part sans que vous puissiez dire non.",
     type: "website",
   },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="fr">
-      <body className="bg-stone-50 text-stone-900 antialiased">
+    <html lang="fr" suppressHydrationWarning>
+      <body className="antialiased">
         {children}
         <CookieBanner />
       </body>

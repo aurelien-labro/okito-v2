@@ -98,6 +98,8 @@ const envSchema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   /** Price ID du plan unique OKITO (price_...). Avec STRIPE_SECRET_KEY, active /v1/admin/billing. */
   STRIPE_PRICE_ID: z.string().optional(),
+  /** Registre des éditeurs de connecteurs tiers : JSON {"éditeur": "clé publique Ed25519 base64 SPKI"}. Active la marketplace. */
+  MARKETPLACE_TRUSTED_PUBLISHERS: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

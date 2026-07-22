@@ -28,3 +28,4 @@ export * from "./meta-connections.js";
 export * from "./tenant-sites.js";
 export * from "./jarvis-tool-settings.js";
 export * from "./voice-profiles.js";
+export * from "./tenant-connectors.js";

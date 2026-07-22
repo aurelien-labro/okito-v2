@@ -1,422 +1,506 @@
 export type Lang = "fr" | "en";
 
+export interface DemoStep {
+  delay: number;
+  kind: "system" | "customer" | "jarvis" | "owner";
+  who?: string;
+  stars?: string;
+  html: string;
+  chips?: { label: string; tone?: "warn" | "good"; countdown?: number }[];
+}
+
 export interface LandingContent {
-  nav: { features: string; how: string; pricing: string; faq: string; trial: string; demo: string };
+  nav: { skills: string; how: string; pricing: string; faq: string; login: string; cta: string };
   hero: {
-    badge: string;
+    eyebrow: string;
     titleLead: string;
-    titleAccent: string;
-    subtitle: string;
-    ctaDemo: string;
-    ctaHow: string;
-    reassurance: string;
+    titleEm: string;
+    titleTail: string;
+    ledeHtml: string;
+    ctaPrimary: string;
+    ctaSecondary: string;
+    note: string;
+    integrations: string[];
   };
-  proof: { tagline: string; stats: { value: string; label: string }[] };
-  features: { heading: string; headingAccent: string; items: { title: string; body: string }[] };
-  how: { heading: string; subtitle: string; steps: { n: string; title: string; body: string }[] };
-  verticals: { heading: string; subtitle: string; items: { emoji: string; label: string }[] };
-  pricing: {
+  demo: {
+    title: string;
+    titleBold: string;
+    footIdle: string;
+    footRunning: string;
+    footDone: string;
+    replay: string;
+    sent: string;
+    countdownPrefix: string;
+    steps: DemoStep[];
+  };
+  skills: {
+    kicker: string;
     heading: string;
-    subtitle: string;
-    perMonth: string;
+    sub: string;
+    items: { num: string; title: string; body: string; loopHtml: string }[];
+  };
+  how: {
+    kicker: string;
+    heading: string;
+    sub: string;
+    steps: { n: string; title: string; body: string }[];
+  };
+  pricing: {
+    kicker: string;
+    heading: string;
+    sub: string;
     plans: {
       name: string;
-      price: string;
+      amount: string;
       period: string;
       tag: string | null;
       features: string[];
       cta: string;
+      featured: boolean;
     }[];
   };
-  faq: { heading: string; items: { q: string; a: string }[] };
-  cta: { heading: string; subtitle: string; button: string; note: string };
-  footer: { rights: string; legal: string; privacy: string; contact: string };
+  faq: { kicker: string; heading: string; sub: string; items: { q: string; a: string }[] };
+  footer: {
+    tagline: string;
+    product: string;
+    resources: string;
+    contact: string;
+    status: string;
+    changelog: string;
+    legal: string;
+    privacy: string;
+    rights: string;
+  };
 }
 
 const fr: LandingContent = {
   nav: {
-    features: "Fonctionnalités",
+    skills: "Skills",
     how: "Comment ça marche",
     pricing: "Tarifs",
     faq: "FAQ",
-    trial: "Essai gratuit",
-    demo: "Demander une démo",
+    login: "Se connecter",
+    cta: "Essayer OKITO",
   },
   hero: {
-    badge: "En production · agents IA voix & WhatsApp",
-    titleLead: "L'IA qui prend vos réservations",
-    titleAccent: "24h/24, à votre place.",
-    subtitle:
-      "Vos clients appellent, WhatsAppent, cliquent sur votre widget. OKITO répond, comprend, confirme et note la résa dans votre agenda. Vous récupérez le temps perdu au téléphone.",
-    ctaDemo: "Demander une démo",
-    ctaHow: "Voir comment ça marche",
-    reassurance: "Sans engagement · Mise en route en 24h · Vos données restent en Europe.",
+    eyebrow: "Jarvis · copilote autonome",
+    titleLead: "Votre commerce tourne. ",
+    titleEm: "Jarvis",
+    titleTail: " s'occupe du reste.",
+    ledeHtml:
+      "OKITO lit vos avis, vos e-mails et vos factures. Il rédige la réponse, prépare la relance, extrait la facture fournisseur — et <b>vous laisse 24 h pour annuler</b> avant d'agir. Rien ne part sans que vous puissiez dire non.",
+    ctaPrimary: "Démarrer gratuitement",
+    ctaSecondary: "Voir comment ça marche",
+    note: "Sans carte bancaire · 14 jours",
+    integrations: ["Gmail", "Outlook", "IMAP", "Google Business", "Stripe"],
   },
-  proof: {
-    tagline: "Pensé pour la restauration, hôtellerie, garages, salons, services à booking",
-    stats: [
-      { value: "< 2s", label: "Réponse vocale" },
-      { value: "24/7", label: "Disponibilité" },
-      { value: "-80%", label: "Appels manqués" },
-      { value: "FR · EN · ES", label: "Multilingue" },
+  demo: {
+    title: "jarvis · ",
+    titleBold: "fil du jour",
+    footIdle: "Simulation temps réel · 3 boucles",
+    footRunning: "Simulation en cours…",
+    footDone: "3 boucles proposées · 0 envoi automatique sans votre accord",
+    replay: "Rejouer",
+    sent: "Envoyé",
+    countdownPrefix: "Envoi dans",
+    steps: [
+      {
+        delay: 200,
+        kind: "system",
+        html: "08:12 — nouvel événement <b>review.submitted</b> · Google Business",
+      },
+      {
+        delay: 900,
+        kind: "customer",
+        who: "Léa M. · 2★",
+        stars: "★★",
+        html: "Service correct mais l'attente à midi est vraiment longue. Dommage, la cuisine est bonne.",
+      },
+      {
+        delay: 1800,
+        kind: "jarvis",
+        who: "Jarvis · réponse proposée",
+        html: "Bonjour Léa, merci pour votre retour. L'attente du midi est un vrai sujet chez nous en ce moment — nous testons un service en deux temps dès la semaine prochaine. Nous serions ravis de vous revoir pour vous montrer le changement.",
+        chips: [{ label: "", tone: "warn", countdown: 6 }, { label: "Annuler" }],
+      },
+      {
+        delay: 8200,
+        kind: "system",
+        html: "10:04 — <b>invoice.overdue</b> · facture 2026-0184 · 1&nbsp;240&nbsp;€",
+      },
+      {
+        delay: 9000,
+        kind: "jarvis",
+        who: "Jarvis · relance préparée",
+        html: "Je propose un e-mail de relance à <b>Traiteur Bellini</b> pour la facture <b>2026-0184</b> échue depuis 6 jours. Ton cordial, montant rappelé, lien de paiement inclus.",
+        chips: [{ label: "", tone: "warn", countdown: 5 }, { label: "Voir le brouillon" }],
+      },
+      {
+        delay: 15200,
+        kind: "system",
+        html: "14:37 — pièce jointe PDF détectée · fournisseur METRO",
+      },
+      {
+        delay: 16000,
+        kind: "jarvis",
+        who: "Jarvis · facture fournisseur extraite",
+        html: "Facture <b>METRO — 847,20&nbsp;€ TTC</b> (dont TVA 5,5&nbsp;% : 44,20&nbsp;€), échéance <b>31/07</b>. Je prépare un rappel de paiement pour le 28/07.",
+        chips: [{ label: "Extraction · confiance 96 %", tone: "good" }, { label: "Modifier" }],
+      },
+      {
+        delay: 21000,
+        kind: "owner",
+        who: "Vous",
+        html: "Parfait, laisse tourner.",
+      },
     ],
   },
-  features: {
-    heading: "Tout ce qu'un·e bon·ne réceptionniste fait.",
-    headingAccent: "Sans pauses, sans absences, sans rage du vendredi soir.",
+  skills: {
+    kicker: "Skills",
+    heading: "Trois boucles fermées, tout de suite.",
+    sub: "Chaque skill est une boucle complète : Jarvis observe un signal du bus d'événements, propose une action, attend 24 h, puis l'exécute — ou l'annule si vous cliquez.",
     items: [
       {
-        title: "Voix naturelle",
-        body: "L'agent parle comme un employé qui connaît votre maison. Pas de répondeur, pas de 'appuyez sur 1'. Une vraie conversation.",
+        num: "Skill 01",
+        title: "Réponse aux avis clients",
+        body: "Un avis ≤ 3★ arrive. Jarvis rédige une réponse vouvoyée, sans promesse chiffrée, prête à envoyer.",
+        loopHtml:
+          "observer · <b>review.submitted</b> → propose <b>review.reply</b> → 24&nbsp;h → envoi",
       },
       {
-        title: "WhatsApp natif",
-        body: "Vos clients vous écrivent au numéro pro habituel. OKITO répond, propose des créneaux, confirme. Vous récupérez l'historique dans le dashboard.",
+        num: "Skill 02",
+        title: "Relance de factures",
+        body: "Une facture passe en retard. Jarvis prépare la relance client par e-mail, avec le bon ton et le bon montant.",
+        loopHtml:
+          "cron · <b>invoice.overdue</b> → propose <b>invoice.remind</b> → 24&nbsp;h → envoi",
       },
       {
-        title: "Widget web 1 ligne",
-        body: "Copiez le script sur votre site. Bouton de chat aux couleurs de votre marque. Pas de redirection, le client reste chez vous.",
-      },
-      {
-        title: "Liste d'attente intelligente",
-        body: "Quand un créneau est plein, le bot propose la liste d'attente. Annulation → notification automatique au prochain client.",
-      },
-      {
-        title: "Inventaire de ressources",
-        body: "Définissez vos tables, chambres, ponts ou fauteuils. OKITO sélectionne la plus petite ressource qui passe. Vous n'optimisez plus à la main.",
-      },
-      {
-        title: "Fidélité automatique",
-        body: "À partir de 3 visites, l'agent reconnaît votre habitué·e par son téléphone et adapte son accueil. Naturel, pas commercial.",
-      },
-      {
-        title: "Rappels J-1",
-        body: "Le matin, OKITO envoie un rappel personnalisé par email ou WhatsApp à chaque résa du jour. Le no-show s'effondre.",
-      },
-      {
-        title: "Acomptes anti no-show",
-        body: "Pour les grandes tablées ou les événements, demande de carte au moment de la résa. Garanti par Stripe.",
+        num: "Skill 03",
+        title: "Factures fournisseurs",
+        body: "Un PDF arrive dans l'inbox. Jarvis extrait montant, TVA, échéance, et rappelle J-3 avant l'échéance.",
+        loopHtml: "upload · extraction LLM → <b>supplier_invoice.dueSoon</b> → rappel J-3",
       },
     ],
   },
   how: {
-    heading: "Comment ça marche",
-    subtitle: "Pas de setup à rallonge. Pas d'intégration douloureuse. On s'occupe de tout.",
+    kicker: "Comment ça marche",
+    heading: "Un bus d'événements, un garde-fou, un journal.",
+    sub: "Rien de magique : chaque signal métier passe par un bus interne. Jarvis y écoute, propose, attend, agit. Vous voyez tout, vous pouvez tout annuler.",
     steps: [
       {
-        n: "01",
-        title: "On vous connecte en 24h",
-        body: "Numéro vocal dédié + numéro WhatsApp Business + snippet à coller sur votre site. On configure vos horaires, vos ressources et votre ton.",
+        n: "Étape 01",
+        title: "Vous connectez vos comptes",
+        body: "Gmail, Outlook, IMAP, Google Business, Stripe. OAuth chiffré, aucune fuite de token.",
       },
       {
-        n: "02",
-        title: "OKITO répond, vous regardez",
-        body: "Chaque conversation est tracée dans le dashboard. Vous voyez ce qui s'est dit, les résas créées, les annulations. Reprise en main à 1 clic.",
+        n: "Étape 02",
+        title: "Le bus capte les événements",
+        body: "Avis reçus, e-mails, factures, visites du site — tout devient un événement horodaté.",
       },
       {
-        n: "03",
-        title: "Vous gardez le contrôle",
-        body: "Synchronisation vers votre agenda existant (ou notre tableau résa). Filtres par jour, recherche par téléphone, édition manuelle.",
+        n: "Étape 03",
+        title: "Jarvis propose une action",
+        body: "Rédaction LLM, calcul, préparation. L'action apparaît dans votre fil avec un compte à rebours de 24 h.",
       },
-    ],
-  },
-  verticals: {
-    heading: "Vertical-agnostique.",
-    subtitle:
-      "Le moteur s'adapte au vocabulaire et aux règles de votre métier. Un même compte, plusieurs établissements.",
-    items: [
-      { emoji: "🍽️", label: "Restaurants" },
-      { emoji: "🏨", label: "Hôtels" },
-      { emoji: "💇", label: "Salons / spa" },
-      { emoji: "🚗", label: "Garages" },
-      { emoji: "🏡", label: "Locations courte durée" },
-      { emoji: "📅", label: "Tout métier à booking" },
+      {
+        n: "Étape 04",
+        title: "Vous annulez ou vous laissez faire",
+        body: "Un clic pour annuler. Sinon, Jarvis exécute — envoi, relance, mise à jour. Chaque geste est tracé.",
+      },
     ],
   },
   pricing: {
-    heading: "Tarifs simples",
-    subtitle: "Sans engagement. Premier mois gratuit. Annulable à tout moment.",
-    perMonth: "/ mois",
+    kicker: "Tarifs",
+    heading: "Simple. Un plan, un compte, un commerce.",
+    sub: "Démarrez gratuitement. Passez à Pro quand une boucle vous a fait gagner une heure. Sans engagement, résiliable en un clic depuis le dashboard.",
     plans: [
       {
-        name: "Essentiel",
-        price: "39 €",
+        name: "Starter",
+        amount: "0 €",
         period: "/ mois",
         tag: null,
+        featured: false,
         features: [
-          "Widget web embarqué",
-          "Bot WhatsApp",
-          "Jusqu'à 200 résas / mois",
-          "Dashboard temps réel",
-          "Rappels J-1 email",
-          "Setup inclus",
+          "1 boîte e-mail connectée",
+          "Boucle avis clients",
+          "Historique 30 jours",
+          "Support communauté",
         ],
         cta: "Commencer",
       },
       {
         name: "Pro",
-        price: "69 €",
+        amount: "49 €",
         period: "/ mois",
-        tag: "Le plus populaire",
+        tag: "Recommandé",
+        featured: true,
         features: [
-          "Tout l'Essentiel",
-          "Agent vocal Vapi",
-          "WhatsApp + SMS rappels",
-          "Inventaire de ressources",
-          "Liste d'attente automatique",
-          "Programme fidélité",
-          "Acomptes Stripe inclus",
-          "Volume résas illimité",
+          "3 boîtes + Google Business",
+          "Les 3 boucles autonomes",
+          "Brief matinal WhatsApp",
+          "Chat vocal avec Jarvis",
+          "Historique 12 mois",
         ],
-        cta: "Demander une démo",
+        cta: "Essayer 14 jours gratuits",
       },
       {
-        name: "Multi-établissements",
-        price: "Sur devis",
-        period: "",
+        name: "Scale",
+        amount: "129 €",
+        period: "/ mois",
         tag: null,
+        featured: false,
         features: [
-          "Tout le Pro",
-          "Plusieurs tenants",
-          "Rôles & équipes",
-          "API access",
-          "SLA dédié",
-          "On-prem possible",
+          "Multi-établissements",
+          "Marketplace de connecteurs",
+          "Préparation TVA export",
+          "Support prioritaire",
         ],
         cta: "Nous contacter",
       },
     ],
   },
   faq: {
-    heading: "FAQ",
+    kicker: "FAQ",
+    heading: "Ce que vous voulez savoir avant.",
+    sub: "Trois questions reviennent tout le temps. Voici les vraies réponses, sans langue de bois.",
     items: [
       {
-        q: "Mes clients vont s'apercevoir que ce n'est pas un humain ?",
-        a: "Si vous leur demandez, oui — on ne ment pas. Mais le ton, les hésitations, les acknowledgments font que dans 95% des cas ils raccrochent en pensant avoir parlé à votre réceptionniste.",
+        q: "Jarvis peut-il envoyer un e-mail sans que je le voie ?",
+        a: "Non. Chaque action passe par une fenêtre de 24 h annulable, affichée dans votre fil. Un compte à rebours court en clair. Un clic sur « Annuler » stoppe l'action définitivement. Vous pouvez aussi passer une skill en mode approbation manuelle : rien ne part sans votre clic.",
       },
       {
-        q: "Et si OKITO se trompe ?",
-        a: "Vous voyez chaque conversation dans le dashboard. Annulation ou édition manuelle à 1 clic. Les cas limites (groupes > 20, demandes spéciales) sont redirigés vers vous automatiquement.",
+        q: "Que se passe-t-il pour mes données ?",
+        a: "Tokens OAuth chiffrés côté serveur avec AES-256-GCM. Les pièces jointes utilisées pour l'extraction ne sont jamais stockées. Aucun modèle tiers n'est entraîné sur vos données. Vous pouvez exporter puis supprimer votre compte en une action.",
       },
       {
-        q: "Mes données ?",
-        a: "Stockées en Europe (Supabase Paris). RGPD. Vous restez propriétaire. Export à tout moment, suppression sur demande.",
-      },
-      {
-        q: "Compatible avec mon logiciel actuel ?",
-        a: "On synchronise avec les agendas type Google Calendar / Outlook. Pour TheFork / OpenTable / GuestOnline, on étudie sur demande.",
-      },
-      {
-        q: "Combien de temps pour démarrer ?",
-        a: "24h en moyenne. On configure votre ligne, vos horaires, vos ressources. Vous validez quelques messages-types et c'est en route.",
+        q: "Combien de temps pour être opérationnel ?",
+        a: "Environ 10 minutes : connexion Gmail, connexion Google Business, choix des skills à activer. Le premier brief matinal arrive le lendemain à 8 h. La première boucle se déclenche dès qu'un événement métier arrive.",
       },
     ],
   },
-  cta: {
-    heading: "Reprenez votre soirée.",
-    subtitle:
-      "15 minutes de démo. Une simulation sur votre vraie ligne. Vous voyez si ça tient ou pas.",
-    button: "Demander une démo",
-    note: "hello@okito.app — réponse sous 24h ouvrées",
-  },
   footer: {
-    rights: "Tous droits réservés.",
+    tagline: "Le copilote autonome des commerces qui n'ont pas d'assistant.",
+    product: "Produit",
+    resources: "Ressources",
+    contact: "Contact",
+    status: "Statut",
+    changelog: "Changelog",
     legal: "Mentions légales",
     privacy: "Confidentialité",
-    contact: "Contact",
+    rights: "© 2026 OKITO — Paris",
   },
 };
 
 const en: LandingContent = {
   nav: {
-    features: "Features",
+    skills: "Skills",
     how: "How it works",
     pricing: "Pricing",
     faq: "FAQ",
-    trial: "Free trial",
-    demo: "Book a demo",
+    login: "Sign in",
+    cta: "Try OKITO",
   },
   hero: {
-    badge: "Live · voice & WhatsApp AI agents",
-    titleLead: "The AI that takes your bookings",
-    titleAccent: "24/7, in your place.",
-    subtitle:
-      "Your customers call, WhatsApp you, click your widget. OKITO answers, understands, confirms and logs the booking in your calendar. You get back the time lost on the phone.",
-    ctaDemo: "Book a demo",
-    ctaHow: "See how it works",
-    reassurance: "No commitment · Live in 24h · Your data stays in Europe.",
+    eyebrow: "Jarvis · autonomous copilot",
+    titleLead: "Your business runs. ",
+    titleEm: "Jarvis",
+    titleTail: " handles the rest.",
+    ledeHtml:
+      "OKITO reads your reviews, emails and invoices. It drafts the reply, prepares the reminder, extracts the supplier invoice — and <b>gives you 24 h to cancel</b> before acting. Nothing goes out without you being able to say no.",
+    ctaPrimary: "Start for free",
+    ctaSecondary: "See how it works",
+    note: "No credit card · 14 days",
+    integrations: ["Gmail", "Outlook", "IMAP", "Google Business", "Stripe"],
   },
-  proof: {
-    tagline: "Built for restaurants, hotels, garages, salons, any booking-based service",
-    stats: [
-      { value: "< 2s", label: "Voice response" },
-      { value: "24/7", label: "Availability" },
-      { value: "-80%", label: "Missed calls" },
-      { value: "FR · EN · ES", label: "Multilingual" },
+  demo: {
+    title: "jarvis · ",
+    titleBold: "today's feed",
+    footIdle: "Real-time simulation · 3 loops",
+    footRunning: "Simulation running…",
+    footDone: "3 loops proposed · 0 automatic sends without your approval",
+    replay: "Replay",
+    sent: "Sent",
+    countdownPrefix: "Sending in",
+    steps: [
+      {
+        delay: 200,
+        kind: "system",
+        html: "08:12 — new event <b>review.submitted</b> · Google Business",
+      },
+      {
+        delay: 900,
+        kind: "customer",
+        who: "Léa M. · 2★",
+        stars: "★★",
+        html: "Decent service but the lunch wait is really long. A shame, the food is good.",
+      },
+      {
+        delay: 1800,
+        kind: "jarvis",
+        who: "Jarvis · proposed reply",
+        html: "Hello Léa, thank you for your feedback. The lunch wait is a real issue for us right now — we are testing a two-stage service starting next week. We would love to see you again to show you the change.",
+        chips: [{ label: "", tone: "warn", countdown: 6 }, { label: "Cancel" }],
+      },
+      {
+        delay: 8200,
+        kind: "system",
+        html: "10:04 — <b>invoice.overdue</b> · invoice 2026-0184 · €1,240",
+      },
+      {
+        delay: 9000,
+        kind: "jarvis",
+        who: "Jarvis · reminder prepared",
+        html: "I suggest a reminder email to <b>Traiteur Bellini</b> for invoice <b>2026-0184</b>, 6 days overdue. Friendly tone, amount restated, payment link included.",
+        chips: [{ label: "", tone: "warn", countdown: 5 }, { label: "View draft" }],
+      },
+      {
+        delay: 15200,
+        kind: "system",
+        html: "14:37 — PDF attachment detected · supplier METRO",
+      },
+      {
+        delay: 16000,
+        kind: "jarvis",
+        who: "Jarvis · supplier invoice extracted",
+        html: "Invoice <b>METRO — €847.20 incl. tax</b> (VAT 5.5%: €44.20), due <b>07/31</b>. I'm scheduling a payment reminder for 07/28.",
+        chips: [{ label: "Extraction · 96% confidence", tone: "good" }, { label: "Edit" }],
+      },
+      {
+        delay: 21000,
+        kind: "owner",
+        who: "You",
+        html: "Perfect, keep it running.",
+      },
     ],
   },
-  features: {
-    heading: "Everything a great receptionist does.",
-    headingAccent: "No breaks, no absences, no Friday-night meltdown.",
+  skills: {
+    kicker: "Skills",
+    heading: "Three closed loops, right away.",
+    sub: "Each skill is a complete loop: Jarvis watches a signal on the event bus, proposes an action, waits 24 h, then executes it — or cancels it if you click.",
     items: [
       {
-        title: "Natural voice",
-        body: "The agent speaks like an employee who knows your business. No voicemail, no 'press 1'. A real conversation.",
+        num: "Skill 01",
+        title: "Review replies",
+        body: "A ≤ 3★ review arrives. Jarvis drafts a polite reply, no numeric promises, ready to send.",
+        loopHtml:
+          "observe · <b>review.submitted</b> → proposes <b>review.reply</b> → 24&nbsp;h → send",
       },
       {
-        title: "Native WhatsApp",
-        body: "Customers write to your usual business number. OKITO replies, offers slots, confirms. You get the history in the dashboard.",
+        num: "Skill 02",
+        title: "Invoice reminders",
+        body: "An invoice goes overdue. Jarvis prepares the customer reminder email, with the right tone and the right amount.",
+        loopHtml:
+          "cron · <b>invoice.overdue</b> → proposes <b>invoice.remind</b> → 24&nbsp;h → send",
       },
       {
-        title: "One-line web widget",
-        body: "Paste the script on your site. A chat button in your brand colors. No redirect — the customer stays with you.",
-      },
-      {
-        title: "Smart waitlist",
-        body: "When a slot is full, the bot offers the waitlist. On cancellation → automatic notification to the next customer.",
-      },
-      {
-        title: "Resource inventory",
-        body: "Define your tables, rooms, lifts or chairs. OKITO picks the smallest resource that fits. No more manual optimizing.",
-      },
-      {
-        title: "Automatic loyalty",
-        body: "From the 3rd visit, the agent recognizes your regular by their phone number and adapts its welcome. Natural, not salesy.",
-      },
-      {
-        title: "Day-before reminders",
-        body: "Each morning, OKITO sends a personalized reminder by email or WhatsApp for every booking of the day. No-shows collapse.",
-      },
-      {
-        title: "Anti no-show deposits",
-        body: "For large parties or events, request a card at booking time. Backed by Stripe.",
+        num: "Skill 03",
+        title: "Supplier invoices",
+        body: "A PDF lands in the inbox. Jarvis extracts amount, VAT, due date, and reminds you 3 days before it's due.",
+        loopHtml: "upload · LLM extraction → <b>supplier_invoice.dueSoon</b> → D-3 reminder",
       },
     ],
   },
   how: {
-    heading: "How it works",
-    subtitle: "No endless setup. No painful integration. We handle everything.",
+    kicker: "How it works",
+    heading: "An event bus, a safeguard, a journal.",
+    sub: "Nothing magic: every business signal goes through an internal bus. Jarvis listens, proposes, waits, acts. You see everything, you can cancel everything.",
     steps: [
       {
-        n: "01",
-        title: "We connect you in 24h",
-        body: "Dedicated voice number + WhatsApp Business number + snippet to paste on your site. We configure your hours, resources and tone.",
+        n: "Step 01",
+        title: "You connect your accounts",
+        body: "Gmail, Outlook, IMAP, Google Business, Stripe. Encrypted OAuth, no token leaks.",
       },
       {
-        n: "02",
-        title: "OKITO answers, you watch",
-        body: "Every conversation is tracked in the dashboard. You see what was said, bookings created, cancellations. Take over in 1 click.",
+        n: "Step 02",
+        title: "The bus captures events",
+        body: "Reviews, emails, invoices, site visits — everything becomes a timestamped event.",
       },
       {
-        n: "03",
-        title: "You stay in control",
-        body: "Sync to your existing calendar (or our booking board). Filter by day, search by phone, edit manually.",
+        n: "Step 03",
+        title: "Jarvis proposes an action",
+        body: "LLM drafting, computation, preparation. The action appears in your feed with a 24 h countdown.",
       },
-    ],
-  },
-  verticals: {
-    heading: "Vertical-agnostic.",
-    subtitle:
-      "The engine adapts to the vocabulary and rules of your trade. One account, multiple locations.",
-    items: [
-      { emoji: "🍽️", label: "Restaurants" },
-      { emoji: "🏨", label: "Hotels" },
-      { emoji: "💇", label: "Salons / spa" },
-      { emoji: "🚗", label: "Garages" },
-      { emoji: "🏡", label: "Short-term rentals" },
-      { emoji: "📅", label: "Any booking business" },
+      {
+        n: "Step 04",
+        title: "You cancel or let it run",
+        body: "One click to cancel. Otherwise, Jarvis executes — send, remind, update. Every move is logged.",
+      },
     ],
   },
   pricing: {
-    heading: "Simple pricing",
-    subtitle: "No commitment. First month free. Cancel anytime.",
-    perMonth: "/ month",
+    kicker: "Pricing",
+    heading: "Simple. One plan, one account, one business.",
+    sub: "Start for free. Upgrade to Pro once a loop has saved you an hour. No commitment, cancel in one click from the dashboard.",
     plans: [
       {
-        name: "Essential",
-        price: "€39",
+        name: "Starter",
+        amount: "€0",
         period: "/ month",
         tag: null,
-        features: [
-          "Embedded web widget",
-          "WhatsApp bot",
-          "Up to 200 bookings / month",
-          "Real-time dashboard",
-          "Day-before email reminders",
-          "Setup included",
-        ],
+        featured: false,
+        features: ["1 connected mailbox", "Review loop", "30-day history", "Community support"],
         cta: "Get started",
       },
       {
         name: "Pro",
-        price: "€69",
+        amount: "€49",
         period: "/ month",
-        tag: "Most popular",
+        tag: "Recommended",
+        featured: true,
         features: [
-          "Everything in Essential",
-          "Vapi voice agent",
-          "WhatsApp + SMS reminders",
-          "Resource inventory",
-          "Automatic waitlist",
-          "Loyalty program",
-          "Stripe deposits included",
-          "Unlimited bookings",
+          "3 mailboxes + Google Business",
+          "All 3 autonomous loops",
+          "Morning WhatsApp brief",
+          "Voice chat with Jarvis",
+          "12-month history",
         ],
-        cta: "Book a demo",
+        cta: "Try 14 days free",
       },
       {
-        name: "Multi-location",
-        price: "Custom",
-        period: "",
+        name: "Scale",
+        amount: "€129",
+        period: "/ month",
         tag: null,
+        featured: false,
         features: [
-          "Everything in Pro",
-          "Multiple tenants",
-          "Roles & teams",
-          "API access",
-          "Dedicated SLA",
-          "On-prem available",
+          "Multi-location",
+          "Connector marketplace",
+          "VAT export preparation",
+          "Priority support",
         ],
         cta: "Contact us",
       },
     ],
   },
   faq: {
-    heading: "FAQ",
+    kicker: "FAQ",
+    heading: "What you want to know beforehand.",
+    sub: "Three questions come up all the time. Here are the real answers, no corporate speak.",
     items: [
       {
-        q: "Will my customers realize it's not a human?",
-        a: "If they ask, yes — we don't lie. But the tone, the hesitations, the acknowledgments mean that in 95% of cases they hang up thinking they spoke to your receptionist.",
+        q: "Can Jarvis send an email without me seeing it?",
+        a: "No. Every action goes through a cancellable 24 h window, shown in your feed. A countdown runs in plain sight. One click on 'Cancel' stops the action for good. You can also switch a skill to manual approval mode: nothing goes out without your click.",
       },
       {
-        q: "What if OKITO gets it wrong?",
-        a: "You see every conversation in the dashboard. Cancel or edit manually in 1 click. Edge cases (groups > 20, special requests) are redirected to you automatically.",
+        q: "What happens to my data?",
+        a: "OAuth tokens encrypted server-side with AES-256-GCM. Attachments used for extraction are never stored. No third-party model is trained on your data. You can export then delete your account in one action.",
       },
       {
-        q: "What about my data?",
-        a: "Stored in Europe (Supabase Paris). GDPR. You stay the owner. Export anytime, deletion on request.",
-      },
-      {
-        q: "Compatible with my current software?",
-        a: "We sync with calendars like Google Calendar / Outlook. For TheFork / OpenTable / GuestOnline, we assess on request.",
-      },
-      {
-        q: "How long to get started?",
-        a: "24h on average. We configure your line, hours and resources. You approve a few sample messages and you're live.",
+        q: "How long until I'm up and running?",
+        a: "About 10 minutes: connect Gmail, connect Google Business, choose which skills to enable. The first morning brief arrives the next day at 8 am. The first loop fires as soon as a business event arrives.",
       },
     ],
   },
-  cta: {
-    heading: "Take back your evening.",
-    subtitle: "15-minute demo. A simulation on your real line. You decide if it holds up.",
-    button: "Book a demo",
-    note: "hello@okito.app — reply within 1 business day",
-  },
   footer: {
-    rights: "All rights reserved.",
+    tagline: "The autonomous copilot for businesses without an assistant.",
+    product: "Product",
+    resources: "Resources",
+    contact: "Contact",
+    status: "Status",
+    changelog: "Changelog",
     legal: "Legal notice",
     privacy: "Privacy",
-    contact: "Contact",
+    rights: "© 2026 OKITO — Paris",
   },
 };
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { listAccessibleTenants } from "../_lib/api-client";
+import { clearAllOkitoState, listAccessibleTenants } from "../_lib/api-client";
 import { getSupabase, isSupabaseConfigured } from "../_lib/supabase";
 import { useTenantId } from "../_lib/tenant-context";
 
@@ -32,10 +32,8 @@ export function Header() {
 
   async function logout() {
     if (isSupabaseConfigured()) await getSupabase().auth.signOut();
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem("okito_token");
-      window.location.reload();
-    }
+    clearAllOkitoState();
+    if (typeof window !== "undefined") window.location.assign("/");
   }
 
   return (

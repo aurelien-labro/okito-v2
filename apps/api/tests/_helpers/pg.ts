@@ -468,6 +468,22 @@ async function applySchema(pglite: PGlite): Promise<void> {
       unique (tenant_id, stripe_subscription_id)
     );
 
+    create table tenant_connectors (
+      id uuid primary key default gen_random_uuid(),
+      tenant_id uuid not null references tenants(id) on delete cascade,
+      connector_id text not null,
+      name text not null,
+      publisher text not null,
+      version text not null,
+      endpoint text not null,
+      manifest jsonb not null,
+      shared_secret text not null,
+      enabled boolean not null default true,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      unique (tenant_id, connector_id)
+    );
+
     create table audit_log (
       id uuid primary key default gen_random_uuid(),
       tenant_id uuid references tenants(id) on delete set null,

@@ -2,6 +2,13 @@ import type { LLMClient } from "@okito/shared/llm";
 import { z } from "zod";
 import { BadRequestError } from "../lib/errors.js";
 import { logger } from "../lib/logger.js";
+import type { PdfTextExtractor } from "../lib/pdf-text.js";
+
+/** En dessous, on considère qu'il n'y a pas de calque texte exploitable. */
+const MIN_FALLBACK_TEXT_CHARS = 80;
+
+/** Coupe le texte injecté au LLM pour éviter d'exploser le prompt sur un PDF long. */
+const MAX_FALLBACK_TEXT_CHARS = 12_000;
 
 export const EXTRACTION_MIME_TYPES = [
   "application/pdf",
@@ -63,9 +70,36 @@ export type SupplierInvoiceExtraction = z.infer<typeof extractionSchema>;
  * fichier part en inline_data — jamais stocké côté OKITO.
  */
 export class SupplierInvoiceExtractionService {
-  constructor(private readonly llm: LLMClient) {}
+  /**
+   * @param llm client LLM (obligatoire).
+   * @param pdfTextExtractor extracteur de calque texte pour le fallback
+   *   quand la passe vision renvoie vide/illisible sur un PDF. Optionnel :
+   *   sans lui, le service se comporte comme avant.
+   */
+  constructor(
+    private readonly llm: LLMClient,
+    private readonly pdfTextExtractor?: PdfTextExtractor,
+  ) {}
 
   async extract(file: {
+    mimeType: string;
+    dataBase64: string;
+  }): Promise<SupplierInvoiceExtraction> {
+    try {
+      return await this.extractFromVision(file);
+    } catch (err) {
+      if (!this.canFallback(err, file)) throw err;
+      const fallbackText = await this.readPdfText(file.dataBase64);
+      if (fallbackText.length < MIN_FALLBACK_TEXT_CHARS) throw err;
+      logger.info(
+        { originalCode: (err as { code?: string }).code, chars: fallbackText.length },
+        "extraction facture : fallback texte pdf-parse",
+      );
+      return this.extractFromText(fallbackText);
+    }
+  }
+
+  private async extractFromVision(file: {
     mimeType: string;
     dataBase64: string;
   }): Promise<SupplierInvoiceExtraction> {
@@ -81,17 +115,34 @@ export class SupplierInvoiceExtractionService {
       temperature: 0,
       maxOutputTokens: 600,
     });
+    return this.parseLlmText(response.text);
+  }
 
-    const text = response.text?.trim();
+  private async extractFromText(pdfText: string): Promise<SupplierInvoiceExtraction> {
+    const clipped = pdfText.slice(0, MAX_FALLBACK_TEXT_CHARS);
+    const response = await this.llm.complete({
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: `Voici le texte brut extrait du PDF (calque texte, pas d'image). Analyse-le comme une facture :\n\n${clipped}`,
+        },
+      ],
+      temperature: 0,
+      maxOutputTokens: 600,
+    });
+    return this.parseLlmText(response.text);
+  }
+
+  private parseLlmText(raw: string | null | undefined): SupplierInvoiceExtraction {
+    const text = raw?.trim();
     if (!text) {
       throw new BadRequestError("Le LLM n'a pas produit d'extraction", "extraction_empty");
     }
-
     const parsed = parseJson(stripFences(text));
     if (parsed && typeof parsed === "object" && "error" in parsed) {
       throw new BadRequestError("Le document ne ressemble pas à une facture", "not_an_invoice");
     }
-
     const result = extractionSchema.safeParse(parsed);
     if (!result.success) {
       logger.warn({ issues: result.error.issues }, "extraction facture : JSON invalide");
@@ -101,6 +152,20 @@ export class SupplierInvoiceExtractionService {
       );
     }
     return result.data;
+  }
+
+  private canFallback(err: unknown, file: { mimeType: string }): boolean {
+    if (!this.pdfTextExtractor) return false;
+    if (file.mimeType !== "application/pdf") return false;
+    const code = (err as { code?: string })?.code;
+    // not_an_invoice = décision du LLM, pas une lecture ratée : on n'insiste pas.
+    return code === "extraction_empty" || code === "extraction_invalid";
+  }
+
+  private async readPdfText(dataBase64: string): Promise<string> {
+    if (!this.pdfTextExtractor) return "";
+    const buffer = Buffer.from(dataBase64, "base64");
+    return this.pdfTextExtractor(buffer);
   }
 }
 
