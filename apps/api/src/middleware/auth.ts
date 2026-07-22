@@ -93,7 +93,17 @@ export function createAuthMiddleware(
       const userId = typeof claims.sub === "string" ? claims.sub : undefined;
       const isAdmin = userId !== undefined && adminIds.has(userId);
 
-      const tenantId = extractTenantId(claims);
+      const extracted = extractTenantId(claims);
+      let tenantId = extracted?.tenantId ?? null;
+      if (extracted && !extracted.trusted) {
+        // user_metadata est modifiable par l'utilisateur lui-même
+        // (supabase.auth.updateUser) : on n'accepte ce tenant_id que si une
+        // ligne tenant_members prouve l'appartenance. Sinon on l'ignore et on
+        // retombe dans le flux "sans claim".
+        if (!access || !(await access.canAccess(userId ?? null, null, extracted.tenantId))) {
+          tenantId = null;
+        }
+      }
       if (tenantId) {
         // Multi-établissements : un membre peut piloter un autre établissement
         // de son groupe via X-Tenant-Id, si TenantAccessService l'autorise
@@ -157,18 +167,32 @@ function getExpectedIssuer(env: Env): string | undefined {
   return env.SUPABASE_URL ? `${env.SUPABASE_URL}/auth/v1` : undefined;
 }
 
-function extractTenantId(claims: Record<string, unknown>): string | null {
+/**
+ * `trusted` : le claim vient d'une source que seul le serveur peut écrire
+ * (claim top-level posé par un hook auth, ou app_metadata service-role).
+ * `user_metadata` est réécrivable par l'utilisateur via updateUser → untrusted,
+ * l'appartenance doit être prouvée en base (tenant_members).
+ */
+function extractTenantId(
+  claims: Record<string, unknown>,
+): { tenantId: string; trusted: boolean } | null {
   const direct = claims.tenant_id;
-  if (typeof direct === "string" && UUID_RE.test(direct)) return direct;
-  const userMeta = claims.user_metadata;
-  if (userMeta && typeof userMeta === "object") {
-    const candidate = (userMeta as Record<string, unknown>).tenant_id;
-    if (typeof candidate === "string" && UUID_RE.test(candidate)) return candidate;
+  if (typeof direct === "string" && UUID_RE.test(direct)) {
+    return { tenantId: direct, trusted: true };
   }
   const appMeta = claims.app_metadata;
   if (appMeta && typeof appMeta === "object") {
     const candidate = (appMeta as Record<string, unknown>).tenant_id;
-    if (typeof candidate === "string" && UUID_RE.test(candidate)) return candidate;
+    if (typeof candidate === "string" && UUID_RE.test(candidate)) {
+      return { tenantId: candidate, trusted: true };
+    }
+  }
+  const userMeta = claims.user_metadata;
+  if (userMeta && typeof userMeta === "object") {
+    const candidate = (userMeta as Record<string, unknown>).tenant_id;
+    if (typeof candidate === "string" && UUID_RE.test(candidate)) {
+      return { tenantId: candidate, trusted: false };
+    }
   }
   return null;
 }
